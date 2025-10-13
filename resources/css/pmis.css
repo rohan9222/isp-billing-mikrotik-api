@@ -1,0 +1,98 @@
+fieldset.scheduler-border {
+    border: 2px groove #009e5c !important;
+    padding: 0 1em 1em 1em !important;
+    margin: 0 0 1.5em 0 !important;
+    -webkit-box-shadow: 0px 0px 0px 0px #60cc9f;
+    box-shadow: 0px 0px 0px 0px #60cc9f;
+}
+
+fieldset.scheduler-border {
+    border: 1px groove #009e5c !important;
+    padding: 0 1.4em 1.4em 1.4em !important;
+    margin: 0 0 1.5em 0 !important;
+    -webkit-box-shadow: 0px 0px 0px 0px #60cc9f;
+    box-shadow: 0px 0px 0px 0px #60cc9f;
+}
+fieldset {
+    border: 1px solid #cef2ef !important;
+    margin: 0;
+    min-width: 0;
+    /* padding: 5px; */
+    position: relative;
+    border-radius: 4px;
+    /* background-color: #cef2ef; */
+    padding-left: 10px !important;
+}
+
+user agent stylesheet
+fieldset {
+    display: block;
+    min-inline-size: min-content;
+    margin-inline: 2px;
+    border-width: 2px;
+    border-style: groove;
+    border-color: #009e5c;
+    border-image: initial;
+    padding-block: 0.35em 0.625em;
+    padding-inline: 0.75em;
+}
+
+
+element.style {
+    font-size: 14px !important;
+}
+
+legend.scheduler-border {
+    font-size: 1.2em !important;
+    font-weight: bold !important;
+    text-align: left !important;
+    width: auto;
+    padding: 0 10px;
+    border: 1px solid #009e5c;
+    border-radius: 15px;
+    background-image: linear-gradient(to right, #5393f8, #4a8cf4, #4285f0, #387eeb, #2e77e7);
+    color: #009e5c;
+    font-family: Lato;
+}
+legend.scheduler-border {
+    font-size: 1.2em !important;
+    font-weight: bold !important;
+    text-align: left !important;
+    width: auto;
+    padding: 0 10px;
+    border: 1px solid #cef2ef;
+    border-radius: 15px;
+    background: #cef2ef;
+    color: #009e5c;
+}
+legend {
+    font-size: 16px;
+    font-weight: bold;
+    /* margin-bottom: 0px; */
+    width: 35%;
+    border: 1px solid #cef2ef;
+    border-radius: 4px;
+    /* padding: 5px; */
+    color: #009e5c !important;
+    background-color: #cef2ef;
+}
+legend {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    margin-bottom: .5rem;
+    font-size: 1.5rem;
+    line-height: inherit;
+    color: inherit;
+    white-space: normal;
+}
+*, ::after, ::before {
+    box-sizing: border-box;
+}
+user agent stylesheet
+legend {
+    display: block;
+    unicode-bidi: isolate;
+    padding-inline: 2px;
+}
