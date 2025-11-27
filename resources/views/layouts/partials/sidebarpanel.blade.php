@@ -75,7 +75,12 @@
                 </a></li>
             <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('collection-edit') }}">
                 <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Collection Edit</span></div>
-                </a></li>
+                </a>
+            </li>
+            <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('payment-invoice') }}">
+                <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Payment Invoice</span></div>
+                </a>
+            </li>
         </ul>
     </li>
     <li class="nav-item">

@@ -38,12 +38,13 @@ class DashboardController extends Controller
             })->pluck('billing')->flatten()->sum('previous_due'),
             'advance' => $customersAllData->pluck('billing')->flatten()->sum('advance'),
             'paid_amount' => $customersAllData->pluck('billing')->flatten()->sum('paid_amount'),
-            'today_paid_amount' => $customersAllData->pluck('billing')->where('paid_date', '>=', Carbon::today())->flatten()->sum('paid_amount'),
+            'today_paid_amount' => CollectionSummary::whereDate('collection_date', Carbon::today())->sum('collection_amount'),
             'due_amount' => -1 * $customersAllData->reject(function ($customer) {
                 return $customer->status === 'inactive';
             })->pluck('billing')->flatten()->sum('due_amount'),
         ];
 
+        // Loop through each month
         for ($month = 1; $month <= 12; $month++) {
             // Cashflow (previous year's month's total)
             $cashflowPreviousYear = CollectionSummary::whereYear('collection_date', $previousYear)

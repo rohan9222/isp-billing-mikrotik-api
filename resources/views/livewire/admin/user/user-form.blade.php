@@ -28,7 +28,7 @@
                     <x-error name="email" />
                 </div>
             </div>
-            
+
             <div class="mb-3 row">
                 <label for="address" class="col-md-4 col-form-label text-md-end text-start">{{ __('Address') }}</label>
                 <div class="col-md-7">
@@ -48,7 +48,7 @@
             <div class="mb-3 row">
                 <label for="password_confirmation" class="col-md-4 col-form-label text-md-end text-start">{{ __('Confirm Password') }}</label>
                 <div class="col-md-7">
-                    <input id="password_confirmation" type="password" class="form-control" placeholder="Confirm Password" wire:model="password_confirmation" autocomplete="new-password"> 
+                    <input id="password_confirmation" type="password" class="form-control" placeholder="Confirm Password" wire:model="password_confirmation" autocomplete="new-password">
                 </div>
             </div>
 

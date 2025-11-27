@@ -91,10 +91,10 @@
                     >
                         <option value="vertical">Vertical</option>
                         <option value="top">Top</option>
-                        <option value="combo">Combo</option>
+                        <option class="d-none d-md-none d-lg-block" value="combo">Combo</option>
                         <option value="double-top">Double Top</option>
                     </select>
-                </div>                            
+                </div>
             </div>
         </div>
         <hr />

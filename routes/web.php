@@ -4,7 +4,6 @@ use App\Http\Controllers\CollectionReportController;
 use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportController;
-use App\Http\Controllers\ScheduledTasksController;
 use App\Http\Controllers\MikrotikController;
 use App\Livewire\AddressSetup;
 use App\Livewire\Admin\ManageRole;
@@ -21,7 +20,22 @@ use App\Livewire\PaymentCollection;
 use App\Livewire\SMSSetup;
 use App\Livewire\SiteSettings;
 use App\Livewire\Report\DisReport;
+use App\Livewire\Payment\Invoice;
 use Illuminate\Support\Facades\Route;
+
+// Main domain
+// Route::get('/', function () {
+//     return "Main domain home page";
+// });
+
+// Subdomain route (dynamic)
+// Route::domain('billing.{domain}')->group(function () {
+//     Route::get('/', function ($domain) {
+//         return "Billing subdomain for: $domain";
+//     });
+// });
+
+
 
 Route::get('/mikrotik-test', [MikrotikController::class, 'getPPPSecrets'])->name('mikrotik.overview');
 
@@ -71,9 +85,11 @@ Route::middleware([
     Route::get('/packages', PackageListSetup::class)->name('package-list-setup');
     Route::get('/sms', SMSSetup::class)->name('sms-setup');
     Route::get('/create-customer', NewCustomer::class)->name('new-customer');
+
+    // payment routes
     Route::get('/payment-collection', PaymentCollection::class)->name('payment-collection');
     Route::get('/payment-collection-edit', CollectionEdit::class)->name('collection-edit');
-    Route::get('/all-notifications', NotificationListAll::class)->name('notifications');
+    Route::get('/payment-invoice', Invoice::class)->name('payment-invoice');
 
     // all report
     Route::get('/customer-summary', CustomerSummary::class)->name('customer-summary');
@@ -83,6 +99,7 @@ Route::middleware([
     // site settings
     Route::get('/site-settings', SiteSettings::class)->name('site-settings');
 
+    Route::get('/all-notifications', NotificationListAll::class)->name('notifications');
     // Route::get('/edit-customer', EditCustomer::class);
     // Route::get('/customers', CustomerList::class);
 

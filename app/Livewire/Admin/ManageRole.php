@@ -33,14 +33,15 @@ class ManageRole extends Component
 
     public function mount()
     {
-        if (! hasAccess(['Super Admin'], ['create-role', 'edit-role', 'view-role'])) {
+        if (! hasAccess(['Super Admin'], ['create-user-role', 'edit-user-role', 'view-user-role','delete-user-role'])) {
             abort(403, 'Unauthorized Access.');
         }
     }
 
+
     public function newRole()
     {
-        if (abortIfNoAccess(['Super Admin'], ['create-role'], 'You do not have permission to create roles.')) {
+        if (abortIfNoAccess(['Super Admin'], ['create-user-role'], 'You do not have permission to create roles.')) {
             return;
         }
 
@@ -52,7 +53,7 @@ class ManageRole extends Component
 
     public function editRole($roleId)
     {
-        if (abortIfNoAccess(['Super Admin'], ['edit-role'], 'You do not have permission to edit roles.')) {
+        if (abortIfNoAccess(['Super Admin'], ['edit-user-role'], 'You do not have permission to edit roles.')) {
             return;
         }
 
@@ -72,7 +73,7 @@ class ManageRole extends Component
 
     public function saveRole()
     {
-        if (abortIfNoAccess(['Super Admin'], ['create-role', 'edit-role'], 'You do not have permission to save roles.')) {
+        if (abortIfNoAccess(['Super Admin'], ['create-user-role', 'edit-user-role'], 'You do not have permission to save roles.')) {
             return;
         }
 
@@ -117,24 +118,29 @@ class ManageRole extends Component
     }
 
     #[On('sweetalert:confirmed')]
-    public function onConfirmed(array $payload): void
+    public function onConfirmed(array $payload = []): void
     {
-        if (! $this->roleId) {
-            flash()->error('No role selected for deletion.');
+        try {
+            if (! $this->roleId) {
+                session()->flash('error', 'No role selected for deletion.');
+                return;
+            }
 
-            return;
+            $role = Role::find($this->roleId);
+
+            if (! $role) {
+                session()->flash('error', 'Role not found.');
+                $this->roleId = null;
+                return;
+            }
+
+            $role->delete();
+            $this->roleId = null;
+
+            session()->flash('success', 'Role successfully deleted.');
+        } catch (\Throwable $e) {
+            dd($e->getMessage(), $e->getFile(), $e->getLine());
         }
-        $role = Role::find($this->roleId);
-        if (! $role) {
-            flash()->error('Role not found.');
-            $this->roleId = null; // Reset roleId if not found
-
-            return;
-        }
-        $role->delete();
-        $this->roleId = null; // Reset roleId after deletion
-
-        flash()->success('Role successfully deleted.');
     }
 
     #[On('sweetalert:denied')]

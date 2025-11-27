@@ -26,7 +26,8 @@ class DisReport extends Component
             return DataTables::of($data)
                 ->addIndexColumn()
                 ->addColumn('ppp_remote_ip', function ($row) {
-                    return optional($row->pppUser)->ppp_remote_ip ?? optional($row->pppUser)->username;
+                    // return optional($row->pppUser)->ppp_remote_ip ?? optional($row->pppUser)->username;
+                    return optional($row->pppUser)->username;
                 })
                 ->addColumn('division', function ($row) {
                     $divisionData = '';

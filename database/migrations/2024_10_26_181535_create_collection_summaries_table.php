@@ -22,6 +22,8 @@ return new class extends Migration
             $table->string('payment_method')->nullable();
             $table->string('transaction_id')->nullable();
             $table->string('payment_status')->nullable();
+            $table->bigInteger('invoice_no')->unique();
+            $table->string('bill_month')->nullable();
             $table->timestamps();
         });
     }

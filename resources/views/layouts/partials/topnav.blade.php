@@ -4,13 +4,13 @@
             <span class="toggle-line"></span>
         </span>
     </button>
-    <a class="navbar-brand me-1 me-sm-3" href="index.html">
+    <a class="navbar-brand me-1 me-sm-3" href="{{ url('/') }}">
         <div class="d-flex align-items-center">
             @if (siteUrlSettings('site_logo'))
                 @if (file_exists(public_path(siteUrlSettings('site_logo'))))
-                    <img class="me-2" style="width: 190px; height: 53px;" src="{{ siteUrlSettings('site_logo') }}" alt="logo"/>
+                    <img class="me-2" style="width: 190px; height: 53px;" src="{{ asset(siteUrlSettings('site_logo')) }}" alt="logo"/>
                 @else
-                    <img class="me-2" style="width: 190px; height: 53px;" src="{{ asset('images/logo.png') }}" alt="logo"/>                        
+                    <img class="me-2" style="width: 190px; height: 53px;" src="{{ asset('images/logo.png') }}" alt="logo"/>
                 @endif
             @else
                 @if (siteUrlSettings('site_icon'))
@@ -34,13 +34,13 @@
             <span class="toggle-line"></span>
         </span>
     </button>
-    <a class="navbar-brand me-1 me-sm-3" href="index.html">
+    <a class="navbar-brand me-1 me-sm-3" href="{{ url('/') }}">
         <div class="d-flex align-items-center">
             @if (siteUrlSettings('site_logo'))
                 @if (file_exists(public_path(siteUrlSettings('site_logo'))))
                     <img class="me-2" style="width: 190px; height: 53px;" src="{{ asset(siteUrlSettings('site_logo')) }}" alt="logo"/>
                 @else
-                    <img class="me-2" style="width: 190px; height: 53px;" src="{{ asset('images/logo.png') }}" alt="logo"/>                        
+                    <img class="me-2" style="width: 190px; height: 53px;" src="{{ asset('images/logo.png') }}" alt="logo"/>
                 @endif
             @else
                 @if (siteUrlSettings('site_icon'))

@@ -62,53 +62,48 @@ class MikrotikController extends Controller
         return 'No API or SSH port provided';
     }
 
+    public function routerList($router_name = null, $api_command = null, $ssh_command = null)
+    {
+        if ($router_name) {
+            $routers = RouterList::where('action', 'connected')->where('router_name', $router_name)->get();
+        }else {
+            $routers = RouterList::where('action', 'connected')->get();
+        }
+        $results = [];
+        foreach ($routers as $router) {
+            try {
+                $systemOverview = $this->checkConnection(
+                    $router->ip_address,
+                    $router->ssh_port,
+                    $router->api_port,
+                    $router->username,
+                    $router->password,
+                    $api_command,
+                    $ssh_command
+                );
+                $results[$router->router_name] = $systemOverview;
+            } catch (\Exception $e) {
+                $results[$router->router_name] = 'Error: '.$e->getMessage();
+            }
+        }
+        return $results;
+    }
 
     public function systemOverview()
     {
-        $routers = RouterList::all();
-        $results = [];
-        foreach ($routers as $router) {
-            try {
-                $systemOverview = $this->checkConnection(
-                    $router->ip_address,
-                    $router->ssh_port,
-                    $router->api_port,
-                    $router->username,
-                    $router->password,
-                    '/system/resource/print',
-                    '/system resource print'
-                );
-                $results[$router->router_name] = $systemOverview;
-            } catch (\Exception $e) {
-                $results[$router->router_name] = 'Error: '.$e->getMessage();
-            }
-        }
-        return $results;
+        return $this->routerList(null, '/system/resource/print', '/system resource print');
     }
 
-    public function getPPPSecrets()
-    {
-        $routers = RouterList::all();
-        $results = [];
-        foreach ($routers as $router) {
-            try {
-                $systemOverview = $this->checkConnection(
-                    $router->ip_address,
-                    $router->ssh_port,
-                    $router->api_port,
-                    $router->username,
-                    $router->password,
-                    '/ppp/secret/print',
-                    '/ppp secret print without-paging terse'
-                );
-                $results[$router->router_name] = $systemOverview;
-            } catch (\Exception $e) {
-                $results[$router->router_name] = 'Error: '.$e->getMessage();
-            }
-        }
-        dd($results);
-        return $results;
-    }
+    /**
+     * Enable PPP Secret on Mikrotik Router
+     *
+     * @param int $customerID
+     * @param string $router_name
+     * @param string $PPPSecretPPPSecret
+     * @return string
+     *
+     * @throws \Exception
+     */
 
     public function enablePPPSecret($customerID, $router_name, $PPPSecretPPPSecret)
     {
@@ -225,69 +220,4 @@ class MikrotikController extends Controller
         }
     }
 
-    // use this as getPPPSecrets on mikrotikSSHService
-    // public function showPPPSecrets()
-    // {
-    //     $routerLists = RouterList::all();
-    //     foreach ($routerLists as $routerList) {
-
-    //         $host = $routerList->ip_address;
-
-    //         $port = $routerList->ssh_port; // Default SSH port
-    //         $username = $routerList->username;
-    //         $password = $routerList->password;
-    //         $router_name = $routerList->router_name;
-
-    //         try {
-    //             $mikrotikSSHService = new MikrotikSSHService($host, $port, $username, $password);
-
-    //             $pppSecrets = $mikrotikSSHService->getPPPSecrets();
-
-    //             // if (isset($pppSecrets['error'])) {
-    //             //     return view('ppp-secrets', ['error' => $pppSecrets['error']]);
-    //             // }
-    //         // \dd($pppSecrets);
-    //             // PPPSecrets::truncate();
-    //             PPPSecrets::query()->update(['status' => 'removed']);
-
-    //             foreach ($pppSecrets as $secret) {
-    //                 // কেস-সেনসিটিভ চেক করা হচ্ছে
-    //                 $existingSecret = PPPSecrets::where('router_name', $router_name)->whereRaw('BINARY `username` = ?', [$secret['name']])->first();
-    //                 // \dd($existingSecret);
-
-    //                 if ($existingSecret) {
-    //                     // যদি ডুপ্লিকেট পাওয়া যায়, তখন এটি আপডেট করুন
-    //                     $existingSecret->update([
-    //                         'caller_id' => $secret['caller_id'] ?? '',
-    //                         'service'   => $secret['service'] ?? '-',
-    //                         'profile'   => $secret['profile'] ?? '-',
-    //                         'password'  => $secret['password'] ?? '',
-    //                         'comment'   => $secret['comment'] ?? '',
-    //                         'status'    => ($secret['active'] === 'Disable') ? 'Disable' : $secret['active'],
-    //                         'updated_at' => date('Y-m-d H:i:s'),
-    //                     ]);
-    //                 } else {
-    //                     // যদি ডুপ্লিকেট না পাওয়া যায়, তখন নতুন ডাটা ইনসার্ট করুন
-    //                     PPPSecrets::create([
-    //                         'router_name' => $router_name,
-    //                         'username'      => $secret['name'],
-    //                         'caller_id' => $secret['caller_id'] ?? '',
-    //                         'service'   => $secret['service'] ?? '-',
-    //                         'profile'   => $secret['profile'] ?? '-',
-    //                         'password'  => $secret['password'] ?? '',
-    //                         'comment'   => $secret['comment'] ?? '',
-    //                         'status'    => ($secret['active'] === 'Disable') ? 'Disable' : $secret['active'],
-    //                     ]);
-    //                 }
-    //             }
-
-    //             PPPSecrets::where('status', 'removed')->delete();
-    //         } catch (\Exception $e) {
-    //             return response()->json(['error' => $e->getMessage()], 500);
-    //         }
-    //     }
-    //     $DBpppSecrets = PPPSecrets::all();
-    //     // return view('mikrotik.ppp-secrets', compact('DBpppSecrets','pppSecrets'));
-    //     return view('mikrotik.ppp-secrets', compact('DBpppSecrets'));
-    // }
 }

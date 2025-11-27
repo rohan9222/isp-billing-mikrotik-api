@@ -17,7 +17,6 @@
                             <span x-text="isOpen ? 'Hide This' : 'Add Mikrotik'"></span>
                         </button>
                     </div>
-
                     <!-- Collapse Section -->
                     <div x-show="isOpen" x-transition x-cloak>
                         <div class="card card-body">
@@ -29,23 +28,23 @@
                                     </div>
                                     <div class="col">
                                         <input class="form-control" type="text" id="ip_address" wire:model="ip_address" placeholder="IP Address" aria-label="IP Address">
-                                        <x-error name='ip_address' />
+                                        <x-input-error for='ip_address' />
                                     </div>
                                     <div class="col">
                                         <input class="form-control" type="text" id="username" wire:model="username" placeholder="Username" aria-label="Username">
-                                        @error('username') <span class="text-danger">{{ $message }}</span> @enderror
+                                        <x-input-error for='username' />
                                     </div>
                                     <div class="col">
                                         <input class="form-control" type="password" id="password" wire:model="password" placeholder="Password" aria-label="Password">
-                                        @error('password') <span class="text-danger">{{ $message }}</span> @enderror
+                                        <x-input-error for='password' />
                                     </div>
                                     <div class="col">
                                         <input class="form-control" type="number" id="ssh_port" wire:model="ssh_port" placeholder="SSH Port" aria-label="SSH Port">
-                                        @error('ssh_port') <span class="text-danger">{{ $message }}</span> @enderror
+                                        <x-input-error for='ssh_port' />
                                     </div>
                                     <div class="col">
                                         <input class="form-control" type="number" id="api_port" wire:model="api_port" placeholder="API Port" aria-label="API Port">
-                                        @error('api_port') <span class="text-danger">{{ $message }}</span> @enderror
+                                        <x-input-error for='api_port' />
                                     </div>
                                 </div>
                                 <button class="btn btn-primary mt-2" type="submit">Submit</button>

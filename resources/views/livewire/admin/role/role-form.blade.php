@@ -13,6 +13,7 @@
                 name="name"
                 required="true"
             />
+
             <x-mikrotik.form-input
                 labelClass="col-md-4 col-form-label text-md-end text-start"
                 groupClass="col-md-7"
@@ -38,7 +39,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="row">
                 <x-button-success type="submit" wire:loading.attr="disabled" class="col-md-3 offset-md-5">
                     {{ __('Save') }}

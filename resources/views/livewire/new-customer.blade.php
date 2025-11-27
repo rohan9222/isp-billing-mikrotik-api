@@ -327,10 +327,13 @@
                         />
                         @php
                             $usersData =[];
-                            foreach ($users as $user) {
-                                $usersData[$user->id] = $user->name;
+                            if (auth()->user()->hasRole('Super Admin')) {
+                                foreach ($users as $user) {
+                                    $usersData[$user->id] = $user->name;
+                                }
+                            } else {
+                                $usersData[auth()->id()] = auth()->user()->name;
                             }
-                            $users = $usersData;
                         @endphp
                         <x-mikrotik.form-group
                             label="Connected By"
@@ -352,7 +355,7 @@
             </div>
             <div class="col-12">
                 {{-- Buttons --}}
-                <div class="p-2 m-2 position-fixed bottom-0 end-0">
+                <div class="p-2 m-2 position-md-fixed bottom-0 end-0">
                     <button type="submit" class="btn btn-primary">Save</button>
                     <button type="reset" class="btn btn-danger">Clear All</button>
                 </div>

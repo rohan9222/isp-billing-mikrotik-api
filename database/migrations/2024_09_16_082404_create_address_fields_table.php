@@ -20,6 +20,7 @@ return new class extends Migration
             $table->boolean('print_preview')->default(false); // If field is required or not
             $table->boolean('complain_preview')->default(false); // If field is required or not
             $table->integer('order')->default(0); // Order for sorting
+            $table->integer('receipt_order')->default(0); // Order for sorting
             $table->timestamps();
         });
 

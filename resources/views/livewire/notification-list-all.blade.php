@@ -5,11 +5,11 @@
         </h2>
     </x-slot>
 
-    <div class="card-body fs-10 p-3" bis_skin_checked="1">
+    <div class="card-body fs-10 p-3">
         @foreach ($notifications as $notification)
             <div class="border-bottom-0 notification rounded-0 border-x-0 border-300">
-                <div class="notification-avatar" bis_skin_checked="1">
-                    <div class="avatar avatar-xl me-3" bis_skin_checked="1">
+                <div class="notification-avatar">
+                    <div class="avatar avatar-xl me-3">
                         <img class="rounded-circle" src="{{ generate_avatar($notification->title) }}" alt="{{$notification->title}}" />
                     </div>
                 </div>

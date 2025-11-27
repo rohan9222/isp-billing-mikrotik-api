@@ -1,4 +1,4 @@
-<div class="px-4 zoom-in" x-data @focus-paid-amount.window="document.getElementById('paid_amount').focus()">
+<div class="px-md-4 zoom-in" x-data @focus-paid-amount.window="document.getElementById('paid_amount').focus()">
     <x-slot name="header">
         {{ __('Collection') }}
     </x-slot>
@@ -165,10 +165,10 @@
                         </div>
                         <div class="col-md-12">
                             <form wire:submit.prevent="savePayment" class="row mt-3">
-                                <input type="number" class="form-control col m-1" name="paid_amount" id="paid_amount" wire:model="paid_amount" wire:keyup="calculatePayment" min="1" autofocus placeholder="Pay Amount" required>
-                                <input type="text" class="form-control col m-1" name="invoice" id="invoice" wire:model.live="invoice" placeholder="Invoice No">
-                                <input type="date" class="form-control col m-1" name="expire_date" id="expire_date" wire:model.live="expire_date">
-                                <button class="btn btn-success btn-sm col m-1">Pay Now</button>
+                                <input type="number" class="form-control col-md m-1" name="paid_amount" id="paid_amount" wire:model="paid_amount" wire:keyup="calculatePayment" min="1" autofocus placeholder="Pay Amount" required>
+                                <input type="text" class="form-control col-md m-1" name="invoice" id="invoice" wire:model.live="invoice" placeholder="Invoice No">
+                                <input type="date" class="form-control col-md m-1" name="expire_date" id="expire_date" wire:model.live="expire_date">
+                                <button class="btn btn-success btn-sm col-md m-1">Pay Now</button>
                             </form>
                         </div>
                     </x-slot>

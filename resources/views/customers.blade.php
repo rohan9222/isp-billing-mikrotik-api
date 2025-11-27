@@ -24,49 +24,51 @@
                 <label class="btn btn-outline-success" for="inactive_customer">Inactive Customer <span class="text-warning"></span></label>
             </div>
         </div>
-        <table class="data-table table table-striped table-hover display table-bordered">
-            <thead class="text-white text-center">
-                <tr>
-                    <th class="text-center">{{ __('SL') }}</th>
-                    <th class="text-center">{{ __('ID') }}</th>
-                    <th class="text-center">{{ __('Name') }}</th>
-                    <th class="text-center">{{ __('Address') }}</th>
-                    <th class="text-center">{{ __('Mobile') }}</th>
-                    <th class="text-center">{{ __('IP/Username') }}</th>
-                    <th class="text-center">{{ __('Monthly Rent') }}</th>
-                    <th class="text-center">{{ __('Previous Due') }}</th>
-                    <th class="text-center">{{ __('Discount') }}</th>
-                    <th class="text-center">{{ __('Advance') }}</th>
-                    <th class="text-center">{{ __('Add. Charge') }}</th>
-                    <th class="text-center">{{ __('Vat (%)') }}</th>
-                    <th class="text-center">{{ __('Bill Amount') }}</th>
-                    <th class="text-center">{{ __('Collection Amount') }}</th>
-                    <th class="text-center">{{ __('Total Due') }}</th>
-                    <th class="text-center">{{ __('Action') }}</th>
-                    <th class="text-center">{{ __('Disable Date') }}</th>
-                    <th class="text-center">{{ __('Disable Details') }}</th>
-                </tr>
-            </thead>
-            <tbody class="text-center">
-            </tbody>
-            <tfoot>
-                <tr>
-                    <th colspan="6" style="text-align:right">Total:</th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                </tr>
-            </tfoot>
-        </table>
+        <div class="table-responsive">
+            <table class="data-table table table-striped table-hover display table-bordered">
+                <thead class="text-white text-center">
+                    <tr>
+                        <th class="text-center">{{ __('SL') }}</th>
+                        <th class="text-center">{{ __('ID') }}</th>
+                        <th class="text-center">{{ __('Name') }}</th>
+                        <th class="text-center">{{ __('Address') }}</th>
+                        <th class="text-center">{{ __('Mobile') }}</th>
+                        <th class="text-center">{{ __('IP/Username') }}</th>
+                        <th class="text-center">{{ __('Monthly Rent') }}</th>
+                        <th class="text-center">{{ __('Previous Due') }}</th>
+                        <th class="text-center">{{ __('Discount') }}</th>
+                        <th class="text-center">{{ __('Advance') }}</th>
+                        <th class="text-center">{{ __('Add. Charge') }}</th>
+                        <th class="text-center">{{ __('Vat (%)') }}</th>
+                        <th class="text-center">{{ __('Bill Amount') }}</th>
+                        <th class="text-center">{{ __('Collection Amount') }}</th>
+                        <th class="text-center">{{ __('Total Due') }}</th>
+                        <th class="text-center">{{ __('Action') }}</th>
+                        <th class="text-center">{{ __('Disable Date') }}</th>
+                        <th class="text-center">{{ __('Disable Details') }}</th>
+                    </tr>
+                </thead>
+                <tbody class="text-center">
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="6" style="text-align:right">Total:</th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
     </div>
 
 
@@ -203,7 +205,7 @@
                 dom: 'Bfrtip',
                 buttons: ['pageLength',
                     {
-                        extend: 'excelHtml5',
+                        extend: 'excel',
                         text: '<i class="bi bi-journal-arrow-down"></i> (Excel)', // For Bootstrap Icons
                         titleAttr: 'Export to Excel',
                         exportOptions: {

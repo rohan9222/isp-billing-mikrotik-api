@@ -23,6 +23,9 @@ class AddressSetup extends Component
 
     public $complain_preview;
 
+    public $addressFields;
+    public $receiptOrders;
+
     public $addressFieldId; // Track the ID of the AddressField being edited
 
     public function mount()
@@ -33,6 +36,7 @@ class AddressSetup extends Component
 
         // Initialize properties
         $this->reset();
+        $this->dataRender();
     }
     protected function rules()
     {
@@ -134,10 +138,50 @@ class AddressSetup extends Component
         }
     }
 
+    public function updateSortOrderAddress($reorder)
+    {
+        // Map the incoming data structure to reorder the directorates array
+        $this->addressFields = collect($reorder)->map(function ($address) {
+            // Match each address based on its "value" (ID)
+            return collect($this->addressFields)->firstWhere('id', (int) $address['value']);
+        })->toArray();
+        flash()->addInfo('Address Field List Successfully Reordered. But Not Saved.');
+    }
+
+    public function saveSortOrderAddress()
+    {
+        foreach ($this->addressFields as $index => $field) {
+            AddressField::where('id', $field['id'])->update(['order' => $index + 1]);
+        }
+        flash()->success('Address Fields order saved successfully!');
+    }
+
+    public function updateSortOrderReceipt($reorder)
+    {
+        // Map the incoming data structure to reorder the directorates array
+        $this->receiptOrders = collect($reorder)->map(function ($receipt) {
+            // Match each receipt based on its "value" (ID)
+            return collect($this->receiptOrders)->firstWhere('id', (int) $receipt['value']);
+        })->toArray();
+        flash()->addInfo('Receipt Address Field List Successfully Reordered. But Not Saved.');
+    }
+
+    public function saveSortOrderReceipt()
+    {
+        foreach ($this->receiptOrders as $index => $field) {
+            AddressField::where('id', $field['id'])->update(['receipt_order' => $index + 1]);
+        }
+        flash()->success('Receipt Address Fields order saved successfully!');
+    }
+
+    public function dataRender()
+    {
+        $this->addressFields = AddressField::orderBy('order', 'asc')->get();
+        $this->receiptOrders = AddressField::orderBy('receipt_order', 'asc')->get();
+    }
+
     public function render()
     {
-        $addressFields = AddressField::orderBy('order', 'asc')->get();
-
-        return view('livewire.address-setup', compact('addressFields'))->layout('layouts.app');
+        return view('livewire.address-setup')->layout('layouts.app');
     }
 }

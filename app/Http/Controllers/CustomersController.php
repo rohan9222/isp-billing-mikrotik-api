@@ -172,13 +172,39 @@ class CustomersController extends Controller
                         if ($row->ppp_user_id == null) {
                             $btn .= $customers_edit_btn;
                         }
-                        return $btn . $enable_btn . $delete_btn;
+                        if (hasAccess(['Super Admin'], ['enable-pending-customer','delete-customer'])) {
+                            return $btn . $enable_btn . $delete_btn;
+                        }else if (hasAccess(['Super Admin'], ['enable-pending-customer'])) {
+                            return $btn . $enable_btn;
+                        }else if (hasAccess(['Super Admin'], ['delete-customer'])) {
+                            return $btn . $delete_btn;
+                        }
                     } elseif ($row->status === 'disable') {
-                        return $btn . $customers_edit_btn . $enable_btn . $delete_btn;
+                        if (hasAccess(['Super Admin'], ['edit-customer','enable-pending-customer','delete-customer'])) {
+                            return $btn . $customers_edit_btn . $enable_btn . $delete_btn;
+                        }else if (hasAccess(['Super Admin'], ['edit-customer'])) {
+                            return $btn . $customers_edit_btn;
+                        }else if (hasAccess(['Super Admin'], ['enable-pending-customer'])) {
+                            return $btn . $enable_btn;
+                        }else if (hasAccess(['Super Admin'], ['delete-customer'])) {
+                            return $btn . $delete_btn;
+                        }
                     } elseif ($row->status === 'inactive') {
-                        return $btn . $customers_edit_btn . $delete_btn;
+                        if (hasAccess(['Super Admin'], ['edit-customer','delete-customer'])) {
+                            return $btn . $customers_edit_btn . $delete_btn;
+                        }else if (hasAccess(['Super Admin'], ['edit-customer'])) {
+                            return $btn . $customers_edit_btn;
+                        }else if (hasAccess(['Super Admin'], ['delete-customer'])) {
+                            return $btn . $delete_btn;
+                        }
                     } else {
-                        return $btn . $customers_edit_btn . $bill_edit_btn;
+                        if (hasAccess(['Super Admin'], ['edit-customer','update-bill'])) {
+                            return $btn . $customers_edit_btn . $bill_edit_btn;
+                        }else if (hasAccess(['Super Admin'], ['edit-customer'])) {
+                            return $btn . $customers_edit_btn;
+                        }else if (hasAccess(['Super Admin'], ['update-bill'])) {
+                            return $btn . $bill_edit_btn;
+                        }
                     }
                 })
                 ->addColumn('disable_details', function ($row) {
@@ -283,7 +309,7 @@ class CustomersController extends Controller
         $autoDisableDate = Carbon::parse($bill->auto_disable_date)->startOfDay();
         $autoDisableMonth = $bill->auto_disable_month;
         $disableDate = $autoDisableDate->copy()->addMonths($autoDisableMonth);
-        
+
         if ($disableDate->lte(today())) {
             while ($disableDate->lte(today())) {
                 $disableDate->addMonth();

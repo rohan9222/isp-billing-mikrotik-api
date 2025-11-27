@@ -58,7 +58,6 @@
                 var reportTable; // DataTable instance সংরক্ষণের জন্য
                 $('#report-submit').on('click', function (e) {
                     e.preventDefault();
-
                     // if the table already exists, destroy it
                     if ($.fn.DataTable.isDataTable('.data-table')) {
                         reportTable.ajax.reload();

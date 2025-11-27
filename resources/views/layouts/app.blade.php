@@ -36,20 +36,6 @@
     <!--    Stylesheets-->
     <!-- ===============================================-->
     <script>
-        // var isRTL = JSON.parse(localStorage.getItem('isRTL'));
-        // if (isRTL) {
-        //     var linkDefault = document.getElementById('style-default');
-        //     var userLinkDefault = document.getElementById('user-style-default');
-        //     linkDefault.setAttribute('disabled', true);
-        //     userLinkDefault.setAttribute('disabled', true);
-        //     document.querySelector('html').setAttribute('dir', 'rtl');
-        // } else {
-        //     var linkRTL = document.getElementById('style-rtl');
-        //     var userLinkRTL = document.getElementById('user-style-rtl');
-        //     linkRTL.setAttribute('disabled', true);
-        //     userLinkRTL.setAttribute('disabled', true);
-        // }
-
         var isRTL = JSON.parse(localStorage.getItem('isRTL'));
         if (isRTL) {
             document.querySelector('html').setAttribute('dir', 'rtl');
@@ -96,8 +82,8 @@
         </script>
             @include('layouts.partials.sidenav')
             <div class="content">
-                {{-- <livewire:nav-content.top-navbar /> --}}
-                
+                @include('layouts.partials.mobile-button-nav')
+
                 @include('layouts.partials.topnav')
                 @if (isset($header))
                     <div class="card mb-3">
@@ -151,7 +137,7 @@
                     }
                 </script>
                     {{ $slot }}
-                <footer class="footer">
+                <footer class="footer mb-3">
                     <div class="row g-0 justify-content-between fs-10 mt-4 mb-3">
                         <div class="col-12 col-sm-auto text-center">
                             <p class="mb-0 text-600">Thank you for stay with us <span class="d-none d-sm-inline-block">| </span><br class="d-sm-none" /> 2024 &copy; <a href="https://github.com/rohan9222">Rohan</a></p>
@@ -236,7 +222,7 @@
                 }
             }
         }
-        
+
         // For theme toggle
         function themeToggle() {
             return {
@@ -267,7 +253,7 @@
                 }
             }
         }
-        
+
         function layoutController() {
             return {
                 isFluid: JSON.parse(localStorage.getItem('isFluid')), // default is container
@@ -296,7 +282,7 @@
                 }
             }
         }
-        
+
         // For side nav style
         function verticalNavbarStyle() {
             return {

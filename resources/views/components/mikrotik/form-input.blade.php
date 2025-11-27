@@ -79,7 +79,7 @@
                     <option value="">{{ __($placeholder ?? $label) }}</option>
                 @endif
                 @foreach ($options ?? [] as $option)
-                    <option value="{{ $option }}" >{{ $option }}</option>
+                    <option value="{{ $option }}" {{ (isset($selectedValue) && $selectedValue == $option) ? 'selected' : '' }}>{{ $option }}</option>
                 @endforeach
             </select>
             <x-error name='{{ $name }}' />

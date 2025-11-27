@@ -6,7 +6,7 @@
     <div class="card">
         <div class="card-body row">
             <div class="col-12">
-                @can('create-role')
+                @can('create-user-role')
                     <x-button-success wire:click="newRole" wire:loading.attr="disabled">
                         <i class="bi bi-plus-circle"></i>
                         {{ __('Add New Role') }}
@@ -56,10 +56,10 @@
                                     @endforelse
                                 </td>
                                 <td class="border border-success">
-                                    @can('edit-role')
+                                    @can('edit-user-role')
                                         <button class="btn btn-primary btn-sm" wire:click="editRole({{ $role->id }})"><i class="bi bi-pencil-square"></i> Edit</button>
                                     @endcan
-                                    @can('delete-role')
+                                    @can('delete-user-role')
                                         <button class="btn btn-danger btn-sm" wire:click="deleteRole({{ $role->id }}, '{{ $role->name }}')"><i class="bi bi-trash"></i> Delete</button>
                                     @endcan
                                 </td>

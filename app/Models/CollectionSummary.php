@@ -10,7 +10,7 @@ class CollectionSummary extends Model
 {
     use LogsActivity;
     protected static $recordEvents = ['deleted', 'updated'];
-    
+
     protected $fillable = [
         'customer_collection_unique_id',
         'collection_date',
@@ -20,6 +20,7 @@ class CollectionSummary extends Model
         'payment_method',
         'transaction_id',
         'payment_status',
+        'bill_month'
     ];
 
     public function customer()
@@ -39,7 +40,7 @@ class CollectionSummary extends Model
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
-    
+
     /**
      * Override the log name dynamically.
      */

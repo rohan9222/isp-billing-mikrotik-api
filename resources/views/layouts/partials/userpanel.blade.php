@@ -1,40 +1,62 @@
 {{-- theme, alerts and settings --}}
 <ul class="navbar-nav navbar-nav-icons ms-auto flex-row align-items-center">
-    <li class="nav-item ps-2 pe-0">
-        <div
-            x-data="{
-                current: new Date('{{ date('Y-m-d H:i:s') }}'),
-                timeString: '',
-                dateString: '',
-                init() {
+    <li class="nav-item dropdown" wire:ignore 
+        x-data="{
+            current: new Date('{{ now()->format('Y-m-d H:i:s') }}'),
+            timeString: '',
+            dateString: '',
+            init() {
+                this.updateDisplay();
+                setInterval(() => {
+                    this.current.setSeconds(this.current.getSeconds() + 1);
                     this.updateDisplay();
-                    setInterval(() => {
-                        this.current.setSeconds(this.current.getSeconds() + 1);
-                        this.updateDisplay();
-                    }, 1000);
-                },
-                updateDisplay() {
-                    const pad = n => n.toString().padStart(2, '0');
-                    let hours = this.current.getHours();
-                    const minutes = pad(this.current.getMinutes());
-                    const seconds = pad(this.current.getSeconds());
-                    const ampm = hours >= 12 ? 'PM' : 'AM';
-                    hours = hours % 12;
-                    hours = hours ? hours : 12; // 0 becomes 12
-                    this.timeString = `${pad(hours)}:${minutes}:${seconds} ${ampm}`;
-                    this.dateString = this.current.toLocaleDateString('en-US', {
-                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-                    });
-                }
-            }"
-            x-init="init()"
-            class="text-center"
-        >
+                }, 1000);
+            },
+            updateDisplay() {
+                const pad = n => n.toString().padStart(2, '0');
+                let hours = this.current.getHours();
+                const minutes = pad(this.current.getMinutes());
+                const seconds = pad(this.current.getSeconds());
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12 || 12;
+                this.timeString = `${pad(hours)}:${minutes}:${seconds} ${ampm}`;
+                this.dateString = this.current.toLocaleDateString('en-US', {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                });
+            }
+        }"
+        x-init="init()"
+    >
+        <!-- Mobile Clock Icon -->
+        <a class="d-block d-lg-none nav-link d-flex align-items-center fs-9 pe-1 py-0"
+        id="clockDropdown" role="button" data-bs-toggle="dropdown"
+        aria-haspopup="true" aria-expanded="false">
+            <i class="bi bi-clock fs-8"></i>
+        </a>
+
+        <!-- Dropdown for Mobile -->
+        <div class="dropdown-menu dropdown-caret dropdown-menu-end dropdown-menu-card dropdown-menu-notification dropdown-caret-bg mt-3"
+            aria-labelledby="clockDropdown">
+            <div class="card shadow-none py-4 text-center">
+                <div class="text-sm text-gray-500" x-text="dateString"></div>
+                <div class="text-2xl font-medium" x-text="timeString"></div>
+                <div class="text-xs text-muted">
+                    TimeZone: {{ config('app.timezone') }} (UTC {{ date('O') }})
+                </div>
+            </div>
+        </div>
+
+        <!-- Desktop Clock Display -->
+        <div class="text-center d-none d-lg-block">
             <div class="text-sm text-gray-500" x-text="dateString"></div>
             <div class="text-2xl font-medium" x-text="timeString"></div>
-        <div class="text-xs text-muted">TimeZone : {{ config('app.timezone') }} (UTC {{ date('O') }})</div>
+            <div class="text-xs text-muted">
+                TimeZone: {{ config('app.timezone') }} (UTC {{ date('O') }})
+            </div>
         </div>
     </li>
+
+
     <li class="nav-item ps-2 pe-0">
         <div x-data="themeToggle()" x-init="init()"  class="dropdown theme-control-dropdown">
             <a class="nav-link d-flex align-items-center dropdown-toggle fs-9 pe-1 py-0"
@@ -179,6 +201,12 @@
                 <div class="dropdown-divider"></div>
                 @if (hasAccess(['Super Admin'], ['site-settings']))
                     <a class="dropdown-item" wire:navigate.hover wire:current="active" href="{{route('site-settings')}}">Settings</a>
+                @endif
+                @if (hasAccess(['Super Admin'], ['create-user', 'edit-user', 'delete-user']))
+                    <a class="dropdown-item" wire:navigate.hover wire:current="active" href="{{route('admin-users')}}">Manage Users</a>
+                @endif
+                @if (hasAccess(['Super Admin'], ['create-user-role', 'edit-user-role', 'view-user-role','delete-user-role']))
+                    <a class="dropdown-item" wire:navigate.hover wire:current="active" href="{{route('admin-roles')}}">Manage Roles</a>
                 @endif
                 <form method="POST" action="{{ route('logout') }}" x-data>
                     @csrf

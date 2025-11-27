@@ -26,7 +26,7 @@
                             </div>
                             <h4 class="fw-bold mb-0">{{ $info['board-name'] ?? $routerName }}</h4>
                             <small class="opacity-75 text-white">
-                                Router • {{ $info['platform'] ?? 'MikroTik' }}
+                                Router • {{ $info['platform'] ?? 'N/A' }}
                             </small>
                         </div>
                     </div>

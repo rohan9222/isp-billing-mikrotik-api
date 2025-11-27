@@ -2,7 +2,7 @@
     <x-slot name="header">
         {{ __('Address Setup') }}
     </x-slot>
-    
+
     <div class="row g-2">
         <div class="col-md-3">
             <x-mikrotik.section-form>
@@ -72,8 +72,8 @@
                                                     </select>
                                                     <x-error name='input_type' />
                                                 </div> --}}
-                                                
-                                                <x-mikrotik.form-group 
+
+                                                <x-mikrotik.form-group
                                                     x-model="input_type"
                                                     column="col-12 mb-2"
                                                     label="Type"
@@ -217,47 +217,48 @@
             <x-mikrotik.section-form>
                 <x-slot name="title">{{ __('Address Section') }}</x-slot>
                 <x-slot name="aside">
-                    <div class="p-3">
-                        <h4>Address Fields</h4>
+                    <h4>Address Fields</h4>
+                    <div class="p-1">
                         @if (!empty($addressFields))
-                            <ul id="sortable-list" class="list-group">
+                            <ul wire:sortable="updateSortOrderAddress" id="sortable-list" class="list-group">
                                 @foreach ($addressFields as $field)
-                                    <li class="list-group-item">
+                                    <li wire:sortable.item="{{ $field['id'] }}" wire:key="field-{{ $field['id'] }}" class="list-group-item">
                                         <div class="row">
                                             <div class="col-md-4">
-                                                {{ $field->label }}
-                                                @if ($field->required == 1)
+                                        <i wire:sortable.handle class="bi bi-dpad-fill"></i>
+                                                {{ $field['label'] }}
+                                                @if ($field['required'] == 1)
                                                     <span style="color: #ff0000">*</span>
                                                 @endif
                                             </div>
                                             <div class="col-md-5">
-                                                @if ($field->input_type == 'dropdown')
+                                                @if ($field['input_type'] == 'dropdown')
                                                     <select class="form-control">
-                                                        @foreach (json_decode($field->dropdown_list) as $type)
+                                                        @foreach (json_decode($field['dropdown_list']) as $type)
                                                             <option value="{{ $type }}">{{ $type }}</option>
                                                         @endforeach
                                                     </select>
                                                 @else
-                                                    <input type="text" class="form-control" placeholder="{{ $field->input_type }}" disabled>
+                                                    <input type="text" class="form-control" placeholder="{{ $field['input_type'] }}" disabled>
                                                 @endif
                                             </div>
                                             <div class="col-md-3">
                                                 @can('address-setup-edit')
-                                                    <button type="button" class="btn btn-sm btn-info" wire:click="edit({{ $field->id }})"><i class="bi bi-pencil-square"></i></button>
+                                                    <button type="button" class="btn btn-sm btn-info" wire:click="edit({{ $field['id'] }})"><i class="bi bi-pencil-square"></i></button>
                                                 @else
                                                     <button type="button" class="btn btn-sm btn-info disabled"><i class="bi bi-pencil-square"></i></button>
                                                 @endcan
 
                                                 @can('address-setup-delete')
-                                                    <button type="button" class="btn btn-sm btn-danger" wire:click="delete({{ $field->id }})"><i class="bi bi-trash"></i></button>
+                                                    <button type="button" class="btn btn-sm btn-danger" wire:click="delete({{ $field['id'] }})"><i class="bi bi-trash"></i></button>
                                                 @else
                                                     <button type="button" class="btn btn-sm btn-danger disabled"><i class="bi bi-trash"></i></button>
                                                 @endcan
 
-                                                @if ( $field->print_preview == 1 )
+                                                @if ( $field['print_preview'] == 1 )
                                                     <button type="button" class="btn btn-sm btn-primary"><i class="bi bi-printer"></i></button>
                                                 @endif
-                                                @if ( $field->complain_preview == 1 )
+                                                @if ( $field['complain_preview'] == 1 )
                                                     <button type="button" class="btn btn-sm btn-primary"><i class="bi bi-person-arms-up"></i></button>
                                                 @endif
                                             </div>
@@ -266,7 +267,7 @@
                                 @endforeach
                             </ul>
                             <!-- Save Button -->
-                            <button type="button" class="btn btn-success mt-3" wire:click="saveOrder">Save Order</button>
+                            <button type="button" class="btn btn-success mt-3" wire:click="saveSortOrderAddress">Save Order</button>
                         @else
                             <p>No address fields available.</p>
                         @endif
@@ -280,18 +281,20 @@
             <x-mikrotik.section-form>
                 <x-slot name="title">{{ __('Receipt Section') }}</x-slot>
                 <x-slot name="aside">
-                    <div class="p-3">
-                        <h4>Address Fields</h4>
-                        @if (!empty($addressFields))
-                            @foreach ($addressFields as $field)
-                                <div class="row">
-                                    <div class="col-md-12 d-block p-1 m-1 border border-gray-300">
-                                        {{ $field->label }}
+                    <h4>Address Fields</h4>
+                    <div wire:sortable="updateSortOrderReceipt" class="p-1">
+                        @if (!empty($receiptOrders))
+                            @foreach ($receiptOrders as $field)
+                                <div wire:sortable.item="{{ $field['id'] }}" wire:key="field-{{ $field['id'] }}" class="row">
+                                    <div wire:sortable.handle class="col-md-12 d-block p-1 m-1 border border-gray-300">
+                                        {{ $field['label'] }}
                                     </div>
                                 </div>
                             @endforeach
+                            <!-- Save Button -->
+                            <button type="button" class="btn btn-success mt-3" wire:click="saveSortOrderReceipt">Save Order</button>
                         @else
-                        <p>No address fields available.</p>
+                            <p>No address fields available.</p>
                         @endif
                     </div>
                 </x-slot>

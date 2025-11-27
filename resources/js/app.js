@@ -6,6 +6,8 @@ import 'livewire-sortable';
 import jQuery from 'jquery';
 import Swal from "sweetalert2";
 window.Swal = Swal;
+import print from "print-js";
+window.print = print;
 // Make libraries available globally
 window.bootstrap = bootstrap;
 window.$ = window.jQuery = jQuery;
