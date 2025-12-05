@@ -442,7 +442,6 @@ class NewCustomer extends Component
                     $customerInputType = 'input_type_'.$inputType->input_type;
                     $customerAddress->$customerInputType = $value;
                 }
-
                 $customerAddress->save();
             }
 

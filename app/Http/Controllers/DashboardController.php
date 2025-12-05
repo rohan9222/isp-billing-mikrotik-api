@@ -21,6 +21,7 @@ class DashboardController extends Controller
         $previousYear = Carbon::now()->subYear()->year;
         $customersAllData = CustomersInfo::with('customerAddress', 'billing', 'official', 'pppUser')->get();
         $customersData = [
+            'total' => CustomersInfo::count(),
             'active' => CustomersInfo::where('status', 'active')->count(),
             'pending' => CustomersInfo::where('status', 'pending')->count(),
             'free' => CustomersInfo::where('status', 'free')->count(),

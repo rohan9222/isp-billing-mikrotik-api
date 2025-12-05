@@ -96,7 +96,6 @@ class PaymentCollection extends Component
         }
 
         if ($this->paid_amount >= 0 && $this->info_data) {
-
             $this->advance_paid = (int) $this->paid_amount - (int) $this->total_amount;
 
             if($this->due_amount > 0) {
@@ -113,7 +112,11 @@ class PaymentCollection extends Component
                         ->format('Y-m-d');
                 }
             } elseif ($this->advance_paid > 0) {
-                $extra_month = floor(((int) $this->advance_paid) / (int) ($this->info_data->billing->monthly_rent == 0 || $this->info_data->billing->monthly_rent == null ? 1 : $this->info_data->billing->monthly_rent)) + 1;
+                if ($this->info_data->billing->monthly_rent == 0 || $this->info_data->billing->monthly_rent == null) {
+                    $extra_month = 1;
+                } else {
+                    $extra_month = floor(((int) $this->advance_paid) / (int) $this->info_data->billing->monthly_rent);
+                }
 
                 $this->expire_date = Carbon::parse($this->info_data->billing->auto_disable_date)->month(now()->month)->year(now()->year)
                     ->addMonths($extra_month)

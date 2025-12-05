@@ -86,7 +86,7 @@ class EditCustomer extends Component
         if (! hasAccess(['Super Admin'], ['edit-customer'])) {
             abort(403, 'Unauthorized action.');
         }
-        
+
         $this->addressFields = AddressField::all();
         $this->routers = RouterList::all();
         $this->packageLists = PackageList::all()->pluck('package');
@@ -199,8 +199,8 @@ class EditCustomer extends Component
                     'bandwidth' => $customer->pppUser->bandwidth ?? '',
                 ] : [],
                     [
-                        'auto_disable_date' => ($customer->billing->auto_disable_date != null) ? Carbon::parse($customer->billing->auto_disable_date)->format('d M Y') : '',
-                        'auto_disable_month' => $customer->billing->auto_disable_month.' Month' ?? '',
+                        'auto_disable_date' => $customer->billing?->auto_disable_date ? Carbon::parse($customer->billing->auto_disable_date)->format('d M Y') : '',
+                        'auto_disable_month' => $customer->billing?->auto_disable_month ? $customer->billing->auto_disable_month . ' Month' : '',
                         'auto_disable' => $customer->billing->auto_disable ?? '',
                     ]
                 ),
@@ -218,7 +218,7 @@ class EditCustomer extends Component
                     'continue_bill' => $customer->official->continue_bill ?? '',
                     'description' => $customer->official->description ?? '',
                     'note' => $customer->official->note ?? '',
-                    'connected_by' => $this->userLists->where('id', $customer->official->connected_by)->first()->name ?? '',
+                    'connected_by' => $customer->official?->connected_by ? ($this->userLists->where('id', $customer->official->connected_by)->first()->name ?? '') : '',
                     'status' => $customer->status ?? '',
                     // Add more pppUser-related fields
                 ],

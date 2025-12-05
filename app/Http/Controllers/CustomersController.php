@@ -20,99 +20,6 @@ class CustomersController extends Controller
         }
     }
 
-    /**
-     * Display a listing of the resource.
-     */
-    // public function index(Request $request)
-    // {
-    //     if ($request->ajax()) {
-    //         $data = CustomersInfo::with('billing', 'pppUser');
-    //         // Apply additional filtering based on the `filter` parameter
-    //         if ($request->filter === 'without_collection') {
-    //             $data->whereHas('billing', function ($query) {
-    //                 $query->where('paid_amount', 0);
-    //             })
-    //                 ->whereNotIn('status', ['pending', 'disable', 'free', 'inactive']);
-    //         } elseif ($request->filter === 'collection') {
-    //             $data->whereHas('billing', function ($query) {
-    //                 $query->where('paid_amount', '>', 0);
-    //             })
-    //                 ->whereNotIn('status', ['pending', 'disable', 'free', 'inactive']);
-    //         } elseif ($request->filter === 'pending') {
-    //             $data->where('customers_infos.status', 'pending'); // Only show pending rows
-    //         } elseif ($request->filter === 'disable') {
-    //             $data->where('customers_infos.status', 'disable'); // Only show disable rows
-    //         } elseif ($request->filter === 'free') {
-    //             $data->where('customers_infos.status', 'free'); // Only show free rows
-    //         } elseif ($request->filter === 'inactive') {
-    //             $data->where('customers_infos.status', 'inactive'); // Only show pending rows
-    //         } else {
-    //             $data->whereNotIn('customers_infos.status', ['pending', 'disable', 'free', 'inactive']);
-    //         }
-
-    //         $data = $data->get();
-
-    //         return Datatables::of($data)
-    //             ->addIndexColumn()
-    //             ->addColumn('customers_address', function ($row) {
-    //                 $addresses = CustomersAddress::select('input_type_text', 'input_type_dropdown', 'input_type_textarea')
-    //                     ->where('customer_address_unique_id', $row->customer_unique_id)
-    //                     ->get(); // Fetch all addresses
-    //                 // Initialize an array to hold the formatted addresses
-    //                 $formattedAddresses = [];
-
-    //                 // Loop through each address record
-    //                 foreach ($addresses as $address) {
-    //                     $addressParts = [];
-    //                     // Add parts of the address if they exist
-    //                     if ($address->input_type_text) {
-    //                         $addressParts[] = $address->input_type_text;
-    //                     }
-    //                     if ($address->input_type_dropdown) {
-    //                         $addressParts[] = $address->input_type_dropdown;
-    //                     }
-    //                     if ($address->input_type_textarea) {
-    //                         $addressParts[] = $address->input_type_textarea;
-    //                     }
-    //                     // Join the parts and add to the formatted addresses array
-    //                     $formattedAddresses[] = implode(', ', $addressParts);
-    //                 }
-
-    //                 // Join all formatted addresses into a single string
-    //                 return implode(', ', $formattedAddresses); // Use a semicolon or any separator you prefer
-    //             })
-    //             ->addColumn('action', function ($row) {
-    //                 $btn = '';
-    //                 $enable_btn = '<button id="enable-customer" data-id="'.encrypt($row->customer_unique_id).'" class="btn btn-success btn-sm"><i class="bi bi-power"></i></button>';
-
-    //                 $delete_btn = '<button id="delete-customer" data-id="'.encrypt($row->customer_unique_id).'" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></button>';
-
-    //                 $customers_edit_btn = '<a href="'.route('customers.edit', encrypt($row->customer_unique_id)).'" id="edit-'.encrypt($row->customer_unique_id).'" class="edit btn btn-primary btn-sm" target="_blank"><i class="bi bi-pencil-square"></i></a>';
-
-    //                 $bill_edit_btn = '<button id="edit-bill" data-id="'.encrypt($row->customer_unique_id).'" data-bs-toggle="modal" data-bs-target="#edit-bill-modal" class="bill btn btn-info btn-sm"><i class="bi bi-journal-arrow-up"></i></button>';
-
-    //                 if ($row->status === 'pending') {
-    //                     if ($row->ppp_user_id == null) {
-    //                         $btn = $btn.$customers_edit_btn;
-    //                     }
-
-    //                     return $btn.$enable_btn.$delete_btn;
-    //                 } elseif ($row->status === 'disable') {
-    //                     return $btn.$customers_edit_btn.$enable_btn.$delete_btn;
-    //                 } elseif ($row->status === 'inactive') {
-    //                     return $btn.$customers_edit_btn.$delete_btn;
-    //                 } else {
-    //                     return $btn.$customers_edit_btn.$bill_edit_btn;
-    //                 }
-    //             })
-    //             ->rawColumns(['customers_address', 'action'])
-    //             ->make(true);
-    //     }
-
-    //     return view('customers');
-    // }
-
-
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -169,11 +76,10 @@ class CustomersController extends Controller
                     $bill_edit_btn = '<button id="edit-bill" data-id="' . encrypt($row->customer_unique_id) . '" data-bs-toggle="modal" data-bs-target="#edit-bill-modal" class="bill btn btn-info btn-sm"><i class="bi bi-journal-arrow-up"></i></button>';
 
                     if ($row->status === 'pending') {
-                        if ($row->ppp_user_id == null) {
-                            $btn .= $customers_edit_btn;
-                        }
-                        if (hasAccess(['Super Admin'], ['enable-pending-customer','delete-customer'])) {
-                            return $btn . $enable_btn . $delete_btn;
+                        if (hasAccess(['Super Admin'], ['edit-customer','enable-pending-customer','delete-customer'])) {
+                            return $btn . $customers_edit_btn . $enable_btn . $delete_btn;
+                        }else if (hasAccess(['Super Admin'], ['edit-customer'])) {
+                            return $btn . $customers_edit_btn;
                         }else if (hasAccess(['Super Admin'], ['enable-pending-customer'])) {
                             return $btn . $enable_btn;
                         }else if (hasAccess(['Super Admin'], ['delete-customer'])) {
@@ -208,7 +114,7 @@ class CustomersController extends Controller
                     }
                 })
                 ->addColumn('disable_details', function ($row) {
-                    return 'Disable Time:' . $row->disable_count . '<br> Auto Disable:' . $row->billing->auto_disable .' <br> Extra Month:' . $row->billing->auto_disable_month;
+                    return 'Disable Time:' . $row->disable_count . '<br> Auto Disable:' . ($row->billing->auto_disable ?? '') .' <br> Extra Month:' . ($row->billing->auto_disable_month ?? '');
                 })
                 ->rawColumns(['customers_address', 'action', 'disable_details'])
                 ->make(true);
