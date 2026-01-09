@@ -7,12 +7,16 @@
  * Time: 03.01 PM
  */
 
- use App\Models\SiteSetting;
- 
- if (!function_exists('siteUrlSettings')) {
+use App\Models\SiteSetting;
+use Illuminate\Support\Facades\Cache;
+
+if (!function_exists('siteUrlSettings')) {
     function siteUrlSettings($key)
     {
-        $settings = SiteSetting::first(); // Always fetch latest from DB
+        $settings = Cache::remember('site_settings', 3600, function () {
+            return SiteSetting::first();
+        });
+
         return $settings->{$key} ?? null;
     }
 }

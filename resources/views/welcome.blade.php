@@ -27,6 +27,13 @@
                         >
                             Dashboard
                         </a>
+
+                        <form method="POST" action="{{ route('logout') }}" x-data>
+                            @csrf
+                            <a class="dropdown-item" href="{{ route('logout') }}" @click.prevent="$root.submit();">
+                                {{ __('Log Out') }}
+                            </a>
+                        </form>
                     @else
                         <a
                             href="{{ route('login') }}"
