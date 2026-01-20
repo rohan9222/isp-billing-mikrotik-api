@@ -4,7 +4,7 @@ use App\Http\Controllers\CollectionReportController;
 use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportController;
-use App\Http\Controllers\MikrotikController;
+use App\Http\Controllers\MainSiteController;
 use App\Livewire\AddressSetup;
 use App\Livewire\Admin\ManageRole;
 use App\Livewire\Admin\ManageUser;
@@ -25,13 +25,7 @@ use Illuminate\Support\Facades\Route;
 
 // Main domain
 Route::domain(config('app.url'))->group(function () {
-    Route::get('/', function () {
-        return view('welcome');
-    });
-
-    Route::get('/dashboard', function () {
-        dd('pricing');
-    });
+    Route::get('/', [MainSiteController::class, 'index'])->name('welcome');
 
     Route::get('/php-artisan-optimize', function () {
         $commands = [
@@ -64,7 +58,7 @@ Route::middleware([
     'verified',
 ])->group(function () {
     Route::domain('billing.' . config('app.url'))->group(function () {
-        Route::redirect('/', '/login');
+        Route::redirect('/', '/dashboard');
 
         Route::post('customers/enable/{id}', [CustomersController::class, 'customerEnable'])->name('customers.enable');
 
@@ -80,7 +74,6 @@ Route::middleware([
         Route::get('/mikrotik', MikrotikSync::class)->name('mikrotik-sync');
         Route::get('/address', AddressSetup::class)->name('address-setup');
         Route::get('/packages', PackageListSetup::class)->name('package-list-setup');
-        Route::get('/sms', SMSSetup::class)->name('sms-setup');
         Route::get('/sms', SMSSetup::class)->name('sms-setup');
         Route::get('/create-customer', NewCustomer::class)->name('new-customer');
 
