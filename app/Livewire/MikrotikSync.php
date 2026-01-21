@@ -5,9 +5,12 @@ namespace App\Livewire;
 use App\Models\CustomersInfo;
 use App\Models\PPPSecrets;
 use App\Models\RouterList;
+use App\Models\BillingInfo;
+use App\Models\OfficialInfo;
 
 use App\Http\Controllers\MikrotikController;
 
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -124,11 +127,15 @@ class MikrotikSync extends Component
             if (is_array($users)) {
                 PPPSecrets::where('router_name', $index)->where('status', '!=', 'removed')->update(['status' => 'removed']);
                 foreach ($users as $user) {
-                    $lastLoggedOut = Carbon::createFromFormat('M/d/Y H:i:s', strtolower($user['last-logged-out']))->format('Y');
-                    if ($lastLoggedOut < '2000') {
+                    try {
+                        $lastLoggedOut = Carbon::createFromFormat('M/d/Y H:i:s', $user['last-logged-out'])->format('Y');
+                        if ((int) $lastLoggedOut < 2000) {
+                            $lastLoggedOut = null;
+                        }else {
+                            $lastLoggedOut = Carbon::createFromFormat('M/d/Y H:i:s', $user['last-logged-out'])->format('Y-m-d H:i:s');
+                        }
+                    } catch (\Exception $e) {
                         $lastLoggedOut = null;
-                    }else {
-                        $lastLoggedOut = Carbon::createFromFormat('M/d/Y H:i:s', strtolower($user['last-logged-out']))->format('Y-m-d H:i:s');
                     }
 
                     $existingSecret = PPPSecrets::where('router_name', $index)
@@ -161,6 +168,7 @@ class MikrotikSync extends Component
                             flash()->error($e->getMessage());
                         }
                     } else {
+                        DB::beginTransaction();
                         try {
                             PPPSecrets::create([
                                 'router_name' => $index,
@@ -179,7 +187,36 @@ class MikrotikSync extends Component
                                 'ipv6_routes' => $user['ipv6-routes'] ?? '',
                                 'status' => $user['status'] ?? 'disable',
                             ]);
+
+                            // create customers_info table record
+                            $lastCustomer = CustomersInfo::orderBy('id', 'desc')->value('customer_unique_id');
+                            if ($lastCustomer) {
+                                $lastId = (int) substr($lastCustomer, 5); // 'FCNET' + 3 digits
+                                $newId = 'FCNET'.($lastId + 1); // create new id
+                            } else {
+                                $newId = 'FCNET100'; // if no record found, start from 100
+                            }
+                            // Save customer info
+                            $customer = new CustomersInfo;
+                            $customer->customer_unique_id = $newId;
+                            $customer->ppp_user_id = PPPSecrets::latest()->first()->id;
+                            $customer->customer_name = $user['name'];
+                            $customer->status = 'pending';
+                            $customer->save();
+                            // create billing_info table record
+                            $customerBilling = new BillingInfo;
+                            $customerBilling->customer_bill_unique_id = $customer->customer_unique_id;
+                            $customerBilling->billing_type = 'prepaid';
+                            $customerBilling->auto_disable_date = Carbon::now();
+                            $customerBilling->save();
+                            // create official_info table record
+                            $customerOfficial = new OfficialInfo;
+                            $customerOfficial->customer_office_unique_id = $customer->customer_unique_id;
+                            $customerOfficial->save();
+                            // commit transaction
+                            DB::commit();
                         } catch (\Exception $e) {
+                            DB::rollBack();
                             flash()->error($e->getMessage());
                         }
                     }

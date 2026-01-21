@@ -21,7 +21,7 @@ class DisReport extends Component
     public function getData(Request $request)
     {
         if ($request->ajax()) {
-            $data = CustomersInfo::with(['billing', 'package', 'customerAddress','official'])->get();
+            $data = CustomersInfo::with(['billing', 'package', 'customerAddress','official'])->where('status', 'active')->get();
 
             return DataTables::of($data)
                 ->addIndexColumn()

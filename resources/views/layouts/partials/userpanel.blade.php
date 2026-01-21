@@ -1,6 +1,6 @@
 {{-- theme, alerts and settings --}}
 <ul class="navbar-nav navbar-nav-icons ms-auto flex-row align-items-center">
-    <li class="nav-item dropdown" wire:ignore 
+    <li class="nav-item dropdown" wire:ignore
         x-data="{
             current: new Date('{{ now()->format('Y-m-d H:i:s') }}'),
             timeString: '',

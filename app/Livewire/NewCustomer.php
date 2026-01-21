@@ -409,7 +409,7 @@ class NewCustomer extends Component
             }
 
             // create customers_info table record
-            $lastCustomer = CustomersInfo::latest('customer_unique_id')->pluck('customer_unique_id')->first();
+            $lastCustomer = CustomersInfo::orderBy('id', 'desc')->value('customer_unique_id');
             if ($lastCustomer) {
                 $lastId = (int) substr($lastCustomer, 5); // 'FCNET' + 3 digits
                 $newId = 'FCNET'.($lastId + 1); // create new id
@@ -442,7 +442,6 @@ class NewCustomer extends Component
                     $customerInputType = 'input_type_'.$inputType->input_type;
                     $customerAddress->$customerInputType = $value;
                 }
-
                 $customerAddress->save();
             }
 

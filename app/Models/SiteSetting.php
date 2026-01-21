@@ -25,6 +25,12 @@ class SiteSetting extends Model
         'disable_check_days',
     ];
 
+    protected static function booted()
+    {
+        static::saved(fn() => Cache::forget('site_settings'));
+        static::updated(fn() => Cache::forget('site_settings'));
+    }
+
     public static function getSettings()
     {
         return Cache::rememberForever('site_settings', function () {

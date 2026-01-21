@@ -146,7 +146,7 @@
                                     },
                                 }
                             },
-                            labels: ['Active', 'Pending', 'Free', 'Temporary Disable', 'Inactive', 'Recent']
+                            labels: ['Total', 'Active', 'Pending', 'Free', 'Temporary Disable', 'Inactive', 'Recent']
                         };
                         window.chart1 = new ApexCharts(customersEl, customers);
                         chart1.render();

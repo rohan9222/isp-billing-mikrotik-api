@@ -4,7 +4,7 @@ use App\Http\Controllers\CollectionReportController;
 use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportController;
-use App\Http\Controllers\MikrotikController;
+use App\Http\Controllers\MainSiteController;
 use App\Livewire\AddressSetup;
 use App\Livewire\Admin\ManageRole;
 use App\Livewire\Admin\ManageUser;
@@ -24,45 +24,32 @@ use App\Livewire\Payment\Invoice;
 use Illuminate\Support\Facades\Route;
 
 // Main domain
-// Route::get('/', function () {
-//     return "Main domain home page";
-// });
+Route::domain(config('app.url'))->group(function () {
+    Route::get('/', [MainSiteController::class, 'index'])->name('welcome');
 
-// Subdomain route (dynamic)
-// Route::domain('billing.{domain}')->group(function () {
-//     Route::get('/', function ($domain) {
-//         return "Billing subdomain for: $domain";
-//     });
-// });
+    Route::get('/php-artisan-optimize', function () {
+        $commands = [
+            'config:cache',
+            'route:cache',
+            'view:cache',
+            'cache:clear',
+            'event:cache',
+            'compiled:clear',
+            'storage:link',
+            // Add more commands as needed
+        ];
 
-
-
-Route::get('/mikrotik-test', [MikrotikController::class, 'getPPPSecrets'])->name('mikrotik.overview');
-
-Route::redirect('/', '/login');
-Route::get('/php-artisan-optimize', function () {
-    $commands = [
-        'config:cache',
-        'route:cache',
-        'view:cache',
-        'cache:clear',
-        'event:cache',
-        'compiled:clear',
-        'storage:link',
-        // Add more commands as needed
-    ];
-
-    $output = [];
-    foreach ($commands as $command) {
-        try {
-            Artisan::call($command);
-            $output[$command] = Artisan::output();
-        } catch (\Exception $e) {
-            $output[$command] = $e->getMessage();
+        $output = [];
+        foreach ($commands as $command) {
+            try {
+                Artisan::call($command);
+                $output[$command] = Artisan::output();
+            } catch (\Exception $e) {
+                $output[$command] = $e->getMessage();
+            }
         }
-    }
-
-    return response()->json($output);
+        return response()->json($output);
+    });
 });
 
 Route::middleware([
@@ -70,54 +57,63 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-    Route::post('customers/enable/{id}', [CustomersController::class, 'customerEnable'])->name('customers.enable');
+    Route::domain('billing.' . config('app.url'))->group(function () {
+        Route::redirect('/', '/dashboard');
 
-    Route::resources([
-        'dashboard' => DashboardController::class,
-        'customers' => CustomersController::class,
-        'collection-report' => CollectionReportController::class,
-    ]);
+        Route::post('customers/enable/{id}', [CustomersController::class, 'customerEnable'])->name('customers.enable');
 
-    Route::get('/admin-users', ManageUser::class)->name('admin-users');
-    Route::get('/admin-roles', ManageRole::class)->name('admin-roles');
-    Route::get('/mikrotik', MikrotikSync::class)->name('mikrotik-sync');
-    Route::get('/address', AddressSetup::class)->name('address-setup');
-    Route::get('/packages', PackageListSetup::class)->name('package-list-setup');
-    Route::get('/sms', SMSSetup::class)->name('sms-setup');
-    Route::get('/create-customer', NewCustomer::class)->name('new-customer');
+        Route::resources([
+            'dashboard' => DashboardController::class,
+            'customers' => CustomersController::class,
+            'collection-report' => CollectionReportController::class,
+        ]);
 
-    // payment routes
-    Route::get('/payment-collection', PaymentCollection::class)->name('payment-collection');
-    Route::get('/payment-collection-edit', CollectionEdit::class)->name('collection-edit');
-    Route::get('/payment-invoice', Invoice::class)->name('payment-invoice');
+        Route::get('/new/customers', CustomerList::class)->name('customers-new');
+        Route::get('/admin-users', ManageUser::class)->name('admin-users');
+        Route::get('/admin-roles', ManageRole::class)->name('admin-roles');
+        Route::get('/mikrotik', MikrotikSync::class)->name('mikrotik-sync');
+        Route::get('/address', AddressSetup::class)->name('address-setup');
+        Route::get('/packages', PackageListSetup::class)->name('package-list-setup');
+        Route::get('/sms', SMSSetup::class)->name('sms-setup');
+        Route::get('/create-customer', NewCustomer::class)->name('new-customer');
 
-    // all report
-    Route::get('/customer-summary', CustomerSummary::class)->name('customer-summary');
-    Route::get('/report/dis-report-table', [DisReport::class, 'getData'])->name('dis-report-table');
-    Route::get('/report/dis-report', DisReport::class)->name('dis-report');
+        // payment routes
+        Route::get('/payment-collection', PaymentCollection::class)->name('payment-collection');
+        Route::get('/payment-collection-edit', CollectionEdit::class)->name('collection-edit');
+        Route::get('/payment-invoice', Invoice::class)->name('payment-invoice');
 
-    // site settings
-    Route::get('/site-settings', SiteSettings::class)->name('site-settings');
+        // all report
+        Route::get('/customer-summary', CustomerSummary::class)->name('customer-summary');
+        Route::get('/report/dis-report-table', [DisReport::class, 'getData'])->name('dis-report-table');
+        Route::get('/report/dis-report', DisReport::class)->name('dis-report');
 
-    Route::get('/all-notifications', NotificationListAll::class)->name('notifications');
-    // Route::get('/edit-customer', EditCustomer::class);
-    // Route::get('/customers', CustomerList::class);
+        // site settings
+        Route::get('/site-settings', SiteSettings::class)->name('site-settings');
 
-    Route::get('import-form', [ImportController::class, 'importForm'])->name('import.form');
-    Route::post('collection-form', [ImportController::class, 'collectionForm'])->name('collection.form');
-    Route::post('monthly-bill-form', [ImportController::class, 'monthlyBillForm'])->name('monthly.bill.form');
-    // Route::post('import-preview', [ImportController::class, 'importView'])->name('import.preview');
-    Route::post('import-store', [ImportController::class, 'import'])->name('import');
+        Route::get('/all-notifications', NotificationListAll::class)->name('notifications');
+        // Route::get('/edit-customer', EditCustomer::class);
+        // Route::get('/customers', CustomerList::class);
 
-    // Route::get('/user/profile', [UserProfileController::class, 'index'])->name('user.profile');
-    // Route::post('/user/profile/upload', [UserProfileController::class, 'uploadFile'])->name('user.profile.upload');
-    // Route::get('/user/profile/update', [UserProfileController::class, 'update'])->name('user.profile.update');
-    // Route::get('/user/password/update', [UserProfileController::class, 'updatePassword'])->name('user.password.update');
+        Route::get('import-form', [ImportController::class, 'importForm'])->name('import.form');
+        Route::post('collection-form', [ImportController::class, 'collectionForm'])->name('collection.form');
+        Route::post('monthly-bill-form', [ImportController::class, 'monthlyBillForm'])->name('monthly.bill.form');
+        // Route::post('import-preview', [ImportController::class, 'importView'])->name('import.preview');
+        Route::post('import-store', [ImportController::class, 'import'])->name('import');
+
+        // Route::get('/user/profile', [UserProfileController::class, 'index'])->name('user.profile');
+        // Route::post('/user/profile/upload', [UserProfileController::class, 'uploadFile'])->name('user.profile.upload');
+        // Route::get('/user/profile/update', [UserProfileController::class, 'update'])->name('user.profile.update');
+        // Route::get('/user/password/update', [UserProfileController::class, 'updatePassword'])->name('user.password.update');
+    });
+
+    // Route::get('/schedulesTask', [ScheduledTasksController::class, 'userDisable']);
+    // Route::get('/backup-database', [ScheduledTasksController::class, 'backupDatabase']);
+
+    // Route::get('/bkash', [BkashController::class, 'index']);
+    // Route::post('/bkash/payment', [BkashController::class, 'createPayment']);
+    // Route::post('/bkash/execute/{paymentID}', [BkashController::class, 'executePayment']);
+
+    Route::domain('portal.' . config('app.url'))->group(function () {
+        Route::redirect('/', '/login');
+    });
 });
-
-// Route::get('/schedulesTask', [ScheduledTasksController::class, 'userDisable']);
-// Route::get('/backup-database', [ScheduledTasksController::class, 'backupDatabase']);
-
-// Route::get('/bkash', [BkashController::class, 'index']);
-// Route::post('/bkash/payment', [BkashController::class, 'createPayment']);
-// Route::post('/bkash/execute/{paymentID}', [BkashController::class, 'executePayment']);
