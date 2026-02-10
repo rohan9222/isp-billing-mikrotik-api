@@ -22,6 +22,7 @@ use App\Livewire\SiteSettings;
 use App\Livewire\Report\DisReport;
 use App\Livewire\Payment\Invoice;
 use Illuminate\Support\Facades\Route;
+use App\Livewire\CommentSubmit;
 
 // Main domain
 Route::domain(config('app.url'))->group(function () {
@@ -104,6 +105,8 @@ Route::middleware([
         // Route::post('/user/profile/upload', [UserProfileController::class, 'uploadFile'])->name('user.profile.upload');
         // Route::get('/user/profile/update', [UserProfileController::class, 'update'])->name('user.profile.update');
         // Route::get('/user/password/update', [UserProfileController::class, 'updatePassword'])->name('user.password.update');
+
+        Route::get('/submit-comment', CommentSubmit::class)->name('submit.comment');
     });
 
     // Route::get('/schedulesTask', [ScheduledTasksController::class, 'userDisable']);

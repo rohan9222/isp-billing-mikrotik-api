@@ -12,24 +12,28 @@
                             <td>{{__('Your SMS Profile Name')}}</td>
                         </tr>
                         <tr>
-                            <td class="text-end"><span class="badge bg-success">{{$profile['data']['first_name'] . ' ' . $profile['data']['last_name']}}</span></td>
+                            <td class="text-end"><span class="badge bg-success">{{($profile['status'] != 'error') ? $profile['data']['first_name'] . ' ' . $profile['data']['last_name'] : 'N/A'}}</span></td>
                         </tr>
                         <tr>
                             <td>{{__('Your SMS Profile Email')}}</td>
                         </tr>
                         <tr>
-                            <td class="text-end"><span class="badge bg-success">{{$profile['data']['email']}}</span></td>
+                            <td class="text-end"><span class="badge bg-success">{{($profile['status'] != 'error') ? $profile['data']['email'] : 'N/A'}}</span></td>
                         </tr>
                         <tr>
                             <td>{{__('SMS Balance')}}</td>
                         </tr>
                         <tr>
                             <td class="text-end">
-                                @if ($balance['data']['remaining_balance'] > 0)
-                                    <span class="badge bg-success">{{$balance['data']['remaining_balance']}}</span>
-                                    <span class="ms-1 badge text-warning text-capitalize">Expired On: {{$balance['data']['expired_on']}}</span>
+                                @if($balance['status'] == 'error')
+                                    <span class="badge bg-danger">N/A</span>
                                 @else
-                                    <span class="badge bg-danger">{{$balance['data']['remaining_balance']}} </span>
+                                    @if ($balance['data']['remaining_balance'] > 0)
+                                        <span class="badge bg-success">{{$balance['data']['remaining_balance']}}</span>
+                                        <span class="ms-1 badge text-warning text-capitalize">Expired On: {{$balance['data']['expired_on']}}</span>
+                                    @else
+                                        <span class="badge bg-danger">{{$balance['data']['remaining_balance']}} </span>
+                                    @endif
                                 @endif
                             </td>
                         </tr>
