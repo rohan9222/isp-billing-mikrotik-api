@@ -22,11 +22,32 @@ use App\Livewire\SiteSettings;
 use App\Livewire\Report\DisReport;
 use App\Livewire\Payment\Invoice;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
 use App\Livewire\CommentSubmit;
+use Illuminate\Support\Str;
+
+// Extract domain host from APP_URL for consistent subdomain routing
+$baseDomain = parse_url(config('app.url'), PHP_URL_HOST) ?: config('app.url');
 
 // Main domain
-Route::domain(config('app.url'))->group(function () {
+Route::domain($baseDomain)->group(function () use ($baseDomain) {
     Route::get('/', [MainSiteController::class, 'index'])->name('welcome');
+
+    Route::get('/portal', function () {
+        $host = request()->getHost();
+        if (Str::startsWith($host, 'portal.')) {
+            return redirect('/');
+        }
+        return redirect()->away('https://portal.' . $host);
+    });
+
+    Route::get('/billing', function () {
+        $host = request()->getHost();
+        if (Str::startsWith($host, 'billing.')) {
+            return redirect('/');
+        }
+        return redirect()->away('https://billing.' . $host);
+    });
 
     Route::get('/php-artisan-optimize', function () {
         $commands = [
@@ -57,8 +78,8 @@ Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
-])->group(function () {
-    Route::domain('billing.' . config('app.url'))->group(function () {
+])->group(function () use ($baseDomain) {
+    Route::domain('billing.' . $baseDomain)->group(function () {
         Route::redirect('/', '/dashboard');
 
         Route::post('customers/enable/{id}', [CustomersController::class, 'customerEnable'])->name('customers.enable');
@@ -116,7 +137,7 @@ Route::middleware([
     // Route::post('/bkash/payment', [BkashController::class, 'createPayment']);
     // Route::post('/bkash/execute/{paymentID}', [BkashController::class, 'executePayment']);
 
-    Route::domain('portal.' . config('app.url'))->group(function () {
-        Route::redirect('/', '/login');
+    Route::domain('portal.' . $baseDomain)->group(function () {
+        
     });
 });
