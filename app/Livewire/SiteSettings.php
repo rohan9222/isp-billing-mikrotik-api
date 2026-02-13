@@ -9,6 +9,7 @@ use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 use Livewire\Component;
 
@@ -69,6 +70,7 @@ class SiteSettings extends Component
                 }
             }
             SiteSetting::where('id', 1)->update(['site_logo' => null]);
+            Cache::forget('site_settings');
             $this->preview_site_logo = null;
             flash()->warning('Logo image removed successfully!');
         } elseif ($img === 'icon') {
@@ -82,6 +84,7 @@ class SiteSettings extends Component
                 }
             }
             SiteSetting::where('id', 1)->update(['site_icon' => null]);
+            Cache::forget('site_settings');
             $this->preview_site_icon = null;
             flash()->warning('Icon image removed successfully!');
         } elseif ($img === 'favicon') {
@@ -95,6 +98,7 @@ class SiteSettings extends Component
                 }
             }
             SiteSetting::where('id', 1)->update(['site_favicon' => null]);
+            Cache::forget('site_settings');
             $this->preview_site_favicon = null;
             flash()->warning('Favicon image removed successfully!');
         } else {
@@ -170,6 +174,7 @@ class SiteSettings extends Component
             $site_settings->site_favicon = $path;
         }
         $site_settings->save();
+        Cache::forget('site_settings');
         flash()->success('Site settings updated successfully!');
     }
 }

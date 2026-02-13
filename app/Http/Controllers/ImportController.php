@@ -32,24 +32,6 @@ class ImportController extends Controller
         return view('mikrotik.import');
     }
 
-    // public function importView(Request $request)
-    // {
-    //     $data = null;
-    //     if ($request->isMethod('post') && $request->file('file')) {
-    //         $file = $request->file('file');
-
-    //         try {
-    //             // Read data from the Excel file
-    //             $importData = Excel::toArray(new ProductsImport, $file);
-    //             // Store the first sheet's data
-    //             $data = $importData[0] ?? [];
-    //             // dd($data);
-    //         } catch (\Exception $e) {
-    //             // Handle exceptions or invalid file format
-    //             return redirect()->back()->withErrors('Error processing file: ' . $e->getMessage());
-    //         }
-    //     }
-    // }
 
     public function import(Request $request)
     {

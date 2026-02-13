@@ -15,10 +15,10 @@ class BkashController extends Controller
     // Token Generation ফাংশন
     public function generateToken()
     {
-        $response = Http::withBasicAuth(env('BKASH_USERNAME'), env('BKASH_PASSWORD'))
-            ->post(env('BKASH_BASE_URL').'/tokenized/checkout/token/grant', [
-                'app_key' => env('BKASH_APP_KEY'),
-                'app_secret' => env('BKASH_APP_SECRET'),
+        $response = Http::withBasicAuth(config('services.bkash.username'), config('services.bkash.password'))
+            ->post(config('services.bkash.base_url').'/tokenized/checkout/token/grant', [
+                'app_key' => config('services.bkash.app_key'),
+                'app_secret' => config('services.bkash.app_secret'),
             ]);
 
         $responseBody = $response->json();
@@ -36,7 +36,7 @@ class BkashController extends Controller
         $token = $this->generateToken(); // টোকেন জেনারেট
 
         $payment = Http::withToken($token['id_token'])
-            ->post(env('BKASH_BASE_URL').'/tokenized/checkout/create', [
+            ->post(config('services.bkash.base_url').'/tokenized/checkout/create', [
                 'amount' => $request->amount,
                 'merchantInvoiceNumber' => uniqid(),
                 'payerReference' => 'YourReference',
@@ -53,7 +53,7 @@ class BkashController extends Controller
         $token = $this->generateToken();
 
         $execution = Http::withToken($token['id_token'])
-            ->post(env('BKASH_BASE_URL').'/tokenized/checkout/execute', [
+            ->post(config('services.bkash.base_url').'/tokenized/checkout/execute', [
                 'paymentID' => $paymentID,
             ]);
 

@@ -59,9 +59,7 @@ class ScheduledTasksController extends Controller
 
     public function createMonthlyBill()
     {
-        $billings = BillingInfo::all();
-
-        foreach ($billings as $billing) {
+        BillingInfo::query()->cursor()->each(function ($billing) {
             $customer = CustomersInfo::where('customer_unique_id', $billing->customer_bill_unique_id)->first();
 
             $nextMonthStart = Carbon::now()->addMonthNoOverflow()->startOfMonth();
@@ -138,14 +136,16 @@ class ScheduledTasksController extends Controller
                 }
             }
             // }
-        }
+        });
     }
 
     public function allCustomersMonthlyBillSMS()
     {
-        $customers = CustomersInfo::where('status', 'active')->get();
-        foreach ($customers as $customer) {
-            $payment = PaymentSummary::where('customer_payment_unique_id', $customer->customer_unique_id)->first();
+        CustomersInfo::where('status', 'active')
+            ->with(['pppUser', 'billing'])
+            ->cursor()
+            ->each(function ($customer) use (&$successfulIDs, &$errorIDs) {
+                $payment = PaymentSummary::where('customer_payment_unique_id', $customer->customer_unique_id)->first();
             $lastDayOfMonth = Carbon::now()->endOfMonth()->format('d-M-Y');
             $thisMonth = Carbon::now()->format('F');
             $billMonth = Carbon::parse($customer->billing->auto_disable_date)->format('F');
@@ -176,7 +176,7 @@ class ScheduledTasksController extends Controller
             } elseif ($response['status'] == 'error') {
                 $errorIDs[] = $customer->customer_unique_id.' ('.($customer->pppUser->username ?? '').')';
             }
-        }
+            });
 
         // সফল বার্তা গুলো এবং ত্রুটি বার্তা গুলোকে লগে সংরক্ষণ করুন
         if (! empty($successfulIDs)) {

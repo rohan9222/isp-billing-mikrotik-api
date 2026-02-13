@@ -40,4 +40,12 @@ return [
         'sender_id' => env('SMS_SENDER_ID'),
         'base_url' => env('SMS_BASE_URL'),
     ],
+
+    'bkash' => [
+        'base_url' => env('BKASH_BASE_URL'),
+        'username' => env('BKASH_USERNAME'),
+        'password' => env('BKASH_PASSWORD'),
+        'app_key' => env('BKASH_APP_KEY'),
+        'app_secret' => env('BKASH_APP_SECRET'),
+    ],
 ];

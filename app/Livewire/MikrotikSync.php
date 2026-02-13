@@ -7,7 +7,7 @@ use App\Models\PPPSecrets;
 use App\Models\RouterList;
 use App\Models\BillingInfo;
 use App\Models\OfficialInfo;
-
+use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\MikrotikController;
 
 use Illuminate\Support\Facades\DB;
@@ -123,108 +123,139 @@ class MikrotikSync extends Component
 
     public function userSync($pppSecrets)
     {
-        foreach ($pppSecrets as $index => $users) {
-            if (is_array($users)) {
-                PPPSecrets::where('router_name', $index)->where('status', '!=', 'removed')->update(['status' => 'removed']);
+        foreach ($pppSecrets as $routerName => $users) {
+            if (!is_array($users)) {
+                flash()->error($users);
+                continue;
+            }
+
+            DB::beginTransaction();
+            try {
+                // 1. Mark existing users for this router as removed temporarily
+                PPPSecrets::where('router_name', $routerName)
+                    ->where('status', '!=', 'removed')
+                    ->update(['status' => 'removed']);
+
+                // 2. Pre-load all existing secrets for this router
+                $existingSecrets = PPPSecrets::where('router_name', $routerName)
+                    ->get()
+                    ->keyBy(fn($item) => strtolower($item->username));
+
+                // 3. Pre-fetch latest customer unique ID count
+                $lastCustomerUniqueId = CustomersInfo::orderBy('id', 'desc')->value('customer_unique_id');
+                $lastIdCount = $lastCustomerUniqueId ? (int) substr($lastCustomerUniqueId, 5) : 99;
+
+                $statusGroups = []; // For bulk status updates
+
                 foreach ($users as $user) {
-                    try {
-                        $lastLoggedOut = Carbon::createFromFormat('M/d/Y H:i:s', $user['last-logged-out'])->format('Y');
-                        if ((int) $lastLoggedOut < 2000) {
-                            $lastLoggedOut = null;
-                        }else {
-                            $lastLoggedOut = Carbon::createFromFormat('M/d/Y H:i:s', $user['last-logged-out'])->format('Y-m-d H:i:s');
-                        }
-                    } catch (\Exception $e) {
-                        $lastLoggedOut = null;
-                    }
+                    $username = $user['name'];
+                    $rawPassword = $user['password'] ?? '';
+                    
+                    $lowerUsername = strtolower($username);
+                    $existingSecret = $existingSecrets->get($lowerUsername);
 
-                    $existingSecret = PPPSecrets::where('router_name', $index)
-                        ->whereRaw('BINARY `username` = ?', [$user['name']])->first();
+                    // --- LAZY HASHING LOGIC ---
+                    // If no existing record: Hash new password
+                    // If existing record: 
+                    //    - If stored is plain AND Mikrotik matches: Keep plain (fast comparison)
+                    //    - If stored is plain AND Mikrotik differs: Hash new password
+                    //    - If stored is hash: Only check/update if other fields changed (to avoid slowness)
+                    $passwordToStore = $rawPassword;
 
-                    // Update existing secret or create a new one
                     if ($existingSecret) {
-                        try {
-                            $existingSecret->update([
-                                'router_name' => $index,
-                                'username' => $user['name'],
-                                'password' => $user['password'] ?? '',
-                                'service' => $user['service'] ?? '-',
-                                'profile' => $user['profile'] ?? '-',
-                                'caller_id' => $user['caller-id'] ?? '',
-                                'comment' => $user['comment'] ?? '',
-                                'ppp_remote_ip' => $user['ppp_remote_ip'] ?? '',
-                                'bandwidth' => trim(($user['limit-bytes-in'] ?? '') . '/' . ($user['limit-bytes-out'] ?? ''), '/'),
-                                'last_logged_out' => $lastLoggedOut ?? null,
-                                'last_caller_id' => $user['last-caller-id'] ?? '',
-                                'last_disconnect_reason' => $user['last-disconnect-reason'] ?? '',
-                                'routes' => $user['routes'] ?? '',
-                                'ipv6_routes' => $user['ipv6-routes'] ?? '',
-                                'status' => $user['status'] ?? 'disable',
-                            ]);
-                            CustomersInfo::where('ppp_user_id', $existingSecret->id)
-                                ->whereNotIn('status', ['free', 'pending', 'deleted'])
-                                ->update(['status' => $existingSecret->status]);
-                        } catch (\Exception $e) {
-                            flash()->error($e->getMessage());
+                        $isHashed = str_starts_with($existingSecret->password, '$2y$') || str_starts_with($existingSecret->password, '$2a$');
+                        
+                        if ($isHashed) {
+                            // If already hashed, we prioritize SPEED. 
+                            // We don't Hash::check() every sync. 
+                            // We only update password if other data changed OR it wasn't hashed yet.
+                            $passwordToStore = $existingSecret->password;
+                        } else {
+                            // It's currently plain text in DB
+                            if ($existingSecret->password === $rawPassword) {
+                                // Password unchanged on Mikrotik side, keep it plain as requested
+                                $passwordToStore = $existingSecret->password;
+                            } else {
+                                // Password changed on Mikrotik side, now we hash it
+                                $passwordToStore = Hash::make($rawPassword);
+                            }
                         }
                     } else {
-                        DB::beginTransaction();
-                        try {
-                            PPPSecrets::create([
-                                'router_name' => $index,
-                                'username' => $user['name'],
-                                'password' => $user['password'] ?? '',
-                                'service' => $user['service'] ?? '-',
-                                'profile' => $user['profile'] ?? '-',
-                                'caller_id' => $user['caller-id'] ?? '',
-                                'comment' => $user['comment'] ?? '',
-                                'ppp_remote_ip' => $user['ppp_remote_ip'] ?? '',
-                                'bandwidth' => trim(($user['limit-bytes-in'] ?? '') . '/' . ($user['limit-bytes-out'] ?? ''), '/'),
-                                'last_logged_out' => $lastLoggedOut ?? null,
-                                'last_caller_id' => $user['last-caller-id'] ?? '',
-                                'last_disconnect_reason' => $user['last-disconnect-reason'] ?? '',
-                                'routes' => $user['routes'] ?? '',
-                                'ipv6_routes' => $user['ipv6-routes'] ?? '',
-                                'status' => $user['status'] ?? 'disable',
-                            ]);
+                        // New user, hash from the start
+                        $passwordToStore = Hash::make($rawPassword);
+                    }
 
-                            // create customers_info table record
-                            $lastCustomer = CustomersInfo::orderBy('id', 'desc')->value('customer_unique_id');
-                            if ($lastCustomer) {
-                                $lastId = (int) substr($lastCustomer, 5); // 'FCNET' + 3 digits
-                                $newId = 'FCNET'.($lastId + 1); // create new id
-                            } else {
-                                $newId = 'FCNET100'; // if no record found, start from 100
+                    try {
+                        $lastLoggedOut = null;
+                        if (!empty($user['last-logged-out'])) {
+                            $dt = Carbon::createFromFormat('M/d/Y H:i:s', $user['last-logged-out']);
+                            if ($dt->year >= 2000) {
+                                $lastLoggedOut = $dt->format('Y-m-d H:i:s');
                             }
-                            // Save customer info
-                            $customer = new CustomersInfo;
-                            $customer->customer_unique_id = $newId;
-                            $customer->ppp_user_id = PPPSecrets::latest()->first()->id;
-                            $customer->customer_name = $user['name'];
-                            $customer->status = 'pending';
-                            $customer->save();
-                            // create billing_info table record
-                            $customerBilling = new BillingInfo;
-                            $customerBilling->customer_bill_unique_id = $customer->customer_unique_id;
-                            $customerBilling->billing_type = 'prepaid';
-                            $customerBilling->auto_disable_date = Carbon::now();
-                            $customerBilling->save();
-                            // create official_info table record
-                            $customerOfficial = new OfficialInfo;
-                            $customerOfficial->customer_office_unique_id = $customer->customer_unique_id;
-                            $customerOfficial->save();
-                            // commit transaction
-                            DB::commit();
-                        } catch (\Exception $e) {
-                            DB::rollBack();
-                            flash()->error($e->getMessage());
                         }
+                    } catch (\Exception $e) { $lastLoggedOut = null; }
+
+                    $secretData = [
+                        'router_name' => $routerName,
+                        'username' => $username,
+                        'password' => $passwordToStore,
+                        'service' => $user['service'] ?? '-',
+                        'profile' => $user['profile'] ?? '-',
+                        'caller_id' => $user['caller-id'] ?? '',
+                        'comment' => $user['comment'] ?? '',
+                        'ppp_remote_ip' => $user['ppp_remote_ip'] ?? '',
+                        'bandwidth' => trim(($user['limit-bytes-in'] ?? '') . '/' . ($user['limit-bytes-out'] ?? ''), '/'),
+                        'last_logged_out' => $lastLoggedOut,
+                        'last_caller_id' => $user['last-caller-id'] ?? '',
+                        'last_disconnect_reason' => $user['last-disconnect-reason'] ?? '',
+                        'routes' => $user['routes'] ?? '',
+                        'ipv6_routes' => $user['ipv6-routes'] ?? '',
+                        'status' => $user['status'] ?? 'disable',
+                    ];
+
+                    if ($existingSecret) {
+                        $existingSecret->fill($secretData);
+                        if ($existingSecret->isDirty()) {
+                            // Password only gets updated here if it transitioned to hash or changed as plain
+                            $existingSecret->save();
+                            if ($existingSecret->isDirty('status')) {
+                                $statusGroups[$existingSecret->status][] = $existingSecret->id;
+                            }
+                        }
+                    } else {
+                        $newSecret = PPPSecrets::create($secretData);
+                        $lastIdCount++;
+                        $newId = 'FCNET' . $lastIdCount;
+
+                        CustomersInfo::create([
+                            'customer_unique_id' => $newId,
+                            'ppp_user_id' => $newSecret->id,
+                            'customer_name' => $username,
+                            'status' => 'pending',
+                        ]);
+                        BillingInfo::create(['customer_bill_unique_id' => $newId, 'billing_type' => 'prepaid', 'auto_disable_date' => Carbon::now()]);
+                        OfficialInfo::create(['customer_office_unique_id' => $newId]);
                     }
                 }
-                PPPSecrets::where('router_name', $index)->where('status', 'removed')->where('updated_at', '<', Carbon::now()->subDays(7))->delete();
-                flash()->success('Router ' . $index . ' users synchronized successfully!');
-            }else {
-                flash()->error($users);
+
+                // 4. Bulk update customer statuses
+                foreach ($statusGroups as $status => $ids) {
+                    CustomersInfo::whereIn('ppp_user_id', $ids)
+                        ->whereNotIn('status', ['free', 'pending', 'deleted'])
+                        ->update(['status' => $status]);
+                }
+
+                // 5. Cleanup
+                PPPSecrets::where('router_name', $routerName)
+                    ->where('status', 'removed')
+                    ->where('updated_at', '<', Carbon::now()->subDays(7))
+                    ->delete();
+
+                DB::commit();
+                flash()->success('Router ' . $routerName . ' users synchronized successfully!');
+            } catch (\Exception $e) {
+                DB::rollBack();
+                flash()->error('Error syncing router ' . $routerName . ': ' . $e->getMessage());
             }
         }
     }

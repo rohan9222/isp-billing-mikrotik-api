@@ -11,7 +11,7 @@
                     @if ($mobileImageExists)
                         <img src="{{ asset('images/front_logo_auto_200.png') }}" alt="Mobile Picture" class="box__image">
                     @else
-                        <h2 class="box__title neon-text audiowide-bold">{{ env('APP_NAME') }}</h2>
+                        <h2 class="box__title neon-text audiowide-bold">{{ config('app.name') }}</h2>
                     @endif
                 </div>
             </div>
@@ -22,7 +22,7 @@
                     @if ($desktopImageExists)
                         <img src="{{ asset('images/front_logo_300_500.png') }}" alt="Desktop Picture" class="box__image">
                     @else
-                        <h2 class="box__title neon-text audiowide-bold">{{ env('APP_NAME') }}</h2>
+                        <h2 class="box__title neon-text audiowide-bold">{{ config('app.name') }}</h2>
                     @endif
                 </div>
             </div>

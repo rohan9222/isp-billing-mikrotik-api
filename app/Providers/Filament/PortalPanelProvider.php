@@ -29,8 +29,9 @@ class PortalPanelProvider extends PanelProvider
             ->default()
             ->id('portal')
             ->path('')
+            ->login(\App\Filament\Pages\Auth\Login::class)
+            ->authGuard('ppp')
             ->domain('portal.' . $baseDomain)
-            ->login()
             ->colors([
                 'primary' => Color::Amber,
             ])

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreign('router_name')->references('router_name')->on('router_lists')->cascadeOnUpdate();
             $table->string('username')->nullable();
             $table->string('password')->default('-');
+            $table->rememberToken();
             $table->string('service')->default('-');
             $table->string('profile')->default('-');
             $table->string('caller_id')->nullable();

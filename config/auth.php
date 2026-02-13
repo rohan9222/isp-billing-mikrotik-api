@@ -40,6 +40,11 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        'ppp' => [
+            'driver' => 'session',
+            'provider' => 'pppoe',
+        ],
     ],
 
     /*
@@ -63,6 +68,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\User::class),
+        ],
+
+        'pppoe' => [
+            'driver' => 'pppoe_provider',
+            'model' => App\Models\PPPSecrets::class,
         ],
 
         // 'users' => [
