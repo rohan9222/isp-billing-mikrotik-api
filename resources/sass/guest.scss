@@ -23,9 +23,9 @@ $text-opacity : 1;
         @warn "Breakpoint `#{$point}` is not defined in \$breakpoints map.";
     }
 }
-@import url("https://fonts.googleapis.com/css2?family=Audiowide&display=swap");
+// @import url("https://fonts.googleapis.com/css2?family=Audiowide&display=swap");
 
-@import url('https://fonts.googleapis.com/css2?family=Audiowide&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+// @import url('https://fonts.googleapis.com/css2?family=Audiowide&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
 
 * {
     margin: 0;
