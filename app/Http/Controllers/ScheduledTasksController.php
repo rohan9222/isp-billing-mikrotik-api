@@ -9,19 +9,16 @@ use App\Models\NotificationLogs;
 use App\Models\PaymentSummary;
 use App\Models\RouterList;
 use App\Services\MikrotikSSHService;
-use App\Services\SMSService;
+use Codepagol\SmsBridge\Facades\SmsBridge;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 
 class ScheduledTasksController extends Controller
 {
-    protected $smsService;
-
     protected $mikrotikSSHService;
 
-    public function __construct(SMSService $smsService, ?MikrotikSSHService $mikrotikSSHService = null)
+    public function __construct(MikrotikSSHService $mikrotikSSHService = null)
     {
-        $this->smsService = $smsService;
         $this->mikrotikSSHService = $mikrotikSSHService;
     }
 
@@ -217,7 +214,11 @@ class ScheduledTasksController extends Controller
                         $message = 'Dear '.$customer->customer_name.', Your ID '.$customer->customer_unique_id.'('.($customer->pppUser->username ?? '').') is EXPIRED on: '.Carbon::parse($expiredDate)->format('d-M-Y').', Your Due amount: '.$customer->billing->due_amount.'TK, Please Pay it before '.Carbon::parse($expiredDate)->format('d-M-Y').' to avoid Disconnection. Regards, '.siteUrlSettings('site_name').', Mobile: '.siteUrlSettings('site_phone');
                         // echo $message. "<br>";
 
-                        $response = $this->smsService->sendSMS($customer->mobile, $message); // Send SMS
+                        $response = $this->smsService->sendSMS($customer->mobile, $message);
+                        // Send SMS
+                        $response = SmsBridge::to($customer->mobile)
+                                    ->message($message)
+                                    ->send();
 
                         if ($response['status'] == 'success') {
                             $successfulIDs[] = $customer->customer_unique_id.' ('.($customer->pppUser->username ?? '').')';

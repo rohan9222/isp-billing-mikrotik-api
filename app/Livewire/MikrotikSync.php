@@ -150,13 +150,13 @@ class MikrotikSync extends Component
                 foreach ($users as $user) {
                     $username = $user['name'];
                     $rawPassword = $user['password'] ?? '';
-                    
+
                     $lowerUsername = strtolower($username);
                     $existingSecret = $existingSecrets->get($lowerUsername);
 
                     // --- LAZY HASHING LOGIC ---
                     // If no existing record: Hash new password
-                    // If existing record: 
+                    // If existing record:
                     //    - If stored is plain AND Mikrotik matches: Keep plain (fast comparison)
                     //    - If stored is plain AND Mikrotik differs: Hash new password
                     //    - If stored is hash: Only check/update if other fields changed (to avoid slowness)
@@ -164,10 +164,10 @@ class MikrotikSync extends Component
 
                     if ($existingSecret) {
                         $isHashed = str_starts_with($existingSecret->password, '$2y$') || str_starts_with($existingSecret->password, '$2a$');
-                        
+
                         if ($isHashed) {
-                            // If already hashed, we prioritize SPEED. 
-                            // We don't Hash::check() every sync. 
+                            // If already hashed, we prioritize SPEED.
+                            // We don't Hash::check() every sync.
                             // We only update password if other data changed OR it wasn't hashed yet.
                             $passwordToStore = $existingSecret->password;
                         } else {

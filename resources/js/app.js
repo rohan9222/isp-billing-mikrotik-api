@@ -52,6 +52,7 @@ import 'datatables.net-select-bs5';
 import 'datatables.net-staterestore-bs5';
 
 // Custom JS file
+import CP from './cp';
 
 document.addEventListener("DOMContentLoaded", function() {
     /* -------------------------------------------------------------------------- */
@@ -64,21 +65,7 @@ document.addEventListener("DOMContentLoaded", function() {
         return new bootstrap.Popover(popoverTriggerEl);
     });
 
-    /* -------------------------------------------------------------------------- */
-    /*                              Config                                        */
-    /* -------------------------------------------------------------------------- */
-    var CONFIG = {
-        isNavbarVerticalCollapsed: true,
-        theme: 'auto',
-        isRTL: false,
-        isFluid: true,
-        navbarStyle: 'transparent',
-        navbarPosition: 'vertical'
-    };
-
-    Object.keys(CONFIG).forEach(function(key) {
-        if (localStorage.getItem(key) === null) {
-            localStorage.setItem(key, CONFIG[key]);
-        }
-    });
+    // Initialize CP
+    CP.init();
+    window.CP = CP;
 });

@@ -1,0 +1,199 @@
+@charset "UTF-8";
+
+// Tailwind Directives moved to resources/css/tail.css
+// to avoid Sass compiler crash.
+
+// Bootstrap Core (using the SCSS source to ensure mixins/variables availability)
+// @import 'bootstrap/scss/bootstrap';
+
+// Bootstrap Icons moved to app.js
+// @import 'bootstrap-icons/font/bootstrap-icons.css';
+
+// DataTables moved to app.js
+// @import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
+// @import "datatables.net-buttons-bs5/css/buttons.bootstrap5.min.css";
+// @import 'datatables.net-select-bs5/css/select.bootstrap5.css';
+
+
+// ==========================================
+// 4. Utility Generation
+// ==========================================
+// Generating width classes from mixins
+// Generating width classes from mixins - DISABLED due to Sass crash
+// Legacy loops caused stack overflow. Use Tailwind utilities (e.g. w-[123px]) instead.
+// @include width-fractions(50);
+// @include width-numeric(1, 500);
+// @include width-percentage(5, 100);
+$body-bg: #f8fafc;
+$font-family-sans-serif: 'Nunito', sans-serif;
+$font-size-base: 0.9rem;
+$line-height-base: 1.6;
+$teal-green: #06ad73;
+$teal-green-light: #1dae7cc3;
+$teal-green-dark: #8fe7c87c;
+$text-opacity : 1;
+
+$breakpoints: ("mobile": 480px, "tablet": 770px, "desktop": 1024px, "large": 1280px);
+
+@use 'sass:map';
+@mixin breakpoint($point, $type: min) {
+    $value: map.get($breakpoints, $point);
+    @if $value != null {
+        @media (#{$type}-width: $value) { @content; }
+    }
+}
+
+// Global Styles
+[x-cloak] { display: none; }
+.fl-wrapper { z-index: 9999 !important; }
+
+// Navigation Styles
+.nav-link.active {
+    background-color: #2f95da !important;
+    color: #ffffff !important;
+    border-bottom: 3px solid #2C2C2C !important;
+}
+.nav-item a {
+    color: #2C2C2C;
+    display: block;
+    float: left;
+    font-weight: 600;
+    margin: 0 1px;
+    padding: 10px 5px;
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
+    border-bottom: 3px #2f95da solid;
+    border-radius: 5px;
+}
+.nav-item a:hover {
+    color: #ffffff !important;
+    border-bottom: 3px #2C2C2C solid;
+}
+
+// Animations
+@keyframes fadeSlideIn { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+.animated-feedin { animation: fadeSlideIn 0.3s ease-out; }
+
+// Guest Styles
+.box {
+    align-items: center;
+    background-color: white;
+    border: #75a8f5c8 1px solid;
+    box-shadow: $teal-green 0px 0px 15px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    width: 90%;
+    height: auto;
+    overflow: hidden;
+
+    @include breakpoint(tablet) {
+        flex-direction: row;
+        width: 90%;
+    }
+}
+
+@keyframes flicker {
+    0%, 3.3%, 37.3%, 40.67%, 98% { opacity: 25%; color: transparent; text-shadow: 0 0 0.3vw $teal-green; }
+    3.67%, 60%, 93.3% { color: white; text-shadow: 0 0 0.3vw #fff; }
+    10%, 100% { opacity: 75%; color: white; text-shadow: 0 0 1vw $teal-green; }
+}
+.neon-text { animation: flicker 6s linear infinite; }
+
+
+// Form Elements (Toggle, Checkbox)
+.checkbox-container { display: inline-block; position: relative; }
+.toggle-checkbox { display: none; }
+.toggle-label {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 130px; padding: 5px; background-color: #f8f9fa;
+    border-radius: 50px; cursor: pointer; border: 2px solid #ccc;
+    transition: background-color 0.3s ease; position: relative;
+    font-family: Arial, sans-serif;
+}
+.connected-text, .disconnected-text { font-size: 14px; font-weight: bold; transition: opacity 0.3s ease; }
+.disconnected-text { opacity: 0; position: absolute; left: 30px; }
+.toggle-switch {
+    position: absolute; top: 3px; left: 4px; width: 25px; height: 25px;
+    background-color: #ccc; border-radius: 50%; transition: all 0.3s ease;
+}
+.toggle-checkbox:checked + .toggle-label { background-color: #4caf50; border-color: #4caf50; }
+.toggle-checkbox:checked + .toggle-label .connected-text { opacity: 1; }
+.toggle-checkbox:checked + .toggle-label .disconnected-text { opacity: 0; }
+.toggle-checkbox:checked + .toggle-label .toggle-switch { left: 100px; background-color: #fff; }
+.toggle-checkbox + .toggle-label .connected-text { opacity: 0; }
+.toggle-checkbox + .toggle-label .disconnected-text { opacity: 1; }
+.toggle-checkbox + .toggle-label .toggle-switch { left: 4px; background-color: #ccc; }
+
+
+// PMIS / Fieldset Styles
+fieldset.scheduler-border {
+    border: 1px groove #009e5c !important;
+    padding: 0 1.4em 1.4em 1.4em !important;
+    margin: 0 0 1.5em 0 !important;
+    box-shadow: 0px 0px 0px 0px #60cc9f;
+}
+fieldset {
+    border: 1px solid #cef2ef !important;
+    margin: 0;
+    min-width: 0;
+    position: relative;
+    border-radius: 4px;
+    padding-left: 10px !important;
+}
+legend.scheduler-border {
+    font-size: 1.2em !important;
+    font-weight: bold !important;
+    text-align: left !important;
+    width: auto;
+    padding: 0 10px;
+    border: 1px solid #cef2ef;
+    border-radius: 15px;
+    background: #cef2ef;
+    color: #009e5c;
+}
+legend {
+    font-size: 16px;
+    font-weight: bold;
+    width: 35%;
+    border: 1px solid #cef2ef;
+    border-radius: 4px;
+    color: #009e5c !important;
+    background-color: #cef2ef;
+}
+
+// Invoice Styles
+.invoice { background: #fff; border-radius: 10px; padding: 50px; }
+.invoice_info_list_bg {
+  position: absolute; height: 100%; width: calc(100% + 100px);
+  top: 0; left: 0; border-radius: 20px 0 0 0px; transform: skewX(-35deg);
+}
+.accent_bg_10 {
+    background-color: #edfdf6 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+.invoice.style1 .invoice_info_list { display: flex; }
+.invoice.style1.type1 .card_note,
+.invoice.style1.type1 .invoice_info_list { position: relative; z-index: 1; }
+.invoice.style1.type3 .invoice_info_list { position: relative; padding: 10px 0 10px 40px; }
+.invoice.style1.type3 { position: relative; overflow: hidden; border-radius: 0; }
+.invoice.style1.type3 .shape_1 { position: absolute; top: -1px; left: 0; }
+.invoice.style1.type3 .shape_2 { position: absolute; bottom: 0; left: 0; display: flex; }
+.invoice.style1.type3 .logo img { max-height: 60px; }
+.invoice.style1.type3 .invoice_head.mb20 { margin-bottom: 65px; }
+
+
+// --- NEWLY ADDED: Prose Styles ---
+.prose {
+    color: var(--cp-prose-body, #374151);
+    max-width: 65ch;
+    a { color: inherit; text-decoration: underline; font-weight: 500; }
+    strong { color: inherit; font-weight: 600; }
+    ol { list-style-type: decimal; padding-left: 1.625em; }
+    ul { list-style-type: disc; padding-left: 1.625em; }
+    li { margin-top: 0.5em; margin-bottom: 0.5em; }
+    blockquote { font-weight: 500; font-style: italic; border-left: 0.25rem solid #e5e7eb; padding-left: 1em; margin: 1.6em 0; }
+    h1, h2, h3, h4 { color: inherit; font-weight: bold; margin-top: 2em; margin-bottom: 1em; }
+}

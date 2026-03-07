@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PPPSecrets;
 use App\Models\RouterList;
 use App\Services\MikrotikSSHService;
 use App\Services\MikrotikApiService;

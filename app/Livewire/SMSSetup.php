@@ -3,13 +3,11 @@
 namespace App\Livewire;
 
 use App\Models\SmsTemplate;
-use App\Services\SMSService;
 use Livewire\Component;
+use Codepagol\SmsBridge\Facades\SmsBridge;
 
 class SMSSetup extends Component
 {
-    protected $smsService;
-
     public $smsTemps;
 
     public $smsTempList = [];
@@ -19,15 +17,14 @@ class SMSSetup extends Component
     public $balance;
 
     // Load SMS templates initially
-    public function mount(SMSService $smsService)
+    public function mount()
     {
         if (! hasAccess(['Super Admin'], ['sms-setup'])) {
             abort(403, 'Unauthorized action.');
         }
 
-        $this->smsService = $smsService;
-        $this->profile = $this->smsService->profile('me');
-        $this->balance = $this->smsService->profile('balance');
+        $this->profile = SmsBridge::profile();
+        $this->balance = SmsBridge::balance();
         $this->smsTemps = SmsTemplate::all();
         // Map SMS template content for Livewire binding
         $this->smsTempList = SmsTemplate::pluck('template', 'id')->toArray();
