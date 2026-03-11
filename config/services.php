@@ -35,12 +35,6 @@ return [
         ],
     ],
 
-    'smsservice' => [
-        'api_key' => env('SMS_API_KEY'),
-        'sender_id' => env('SMS_SENDER_ID'),
-        'base_url' => env('SMS_BASE_URL'),
-    ],
-
     'bkash' => [
         'base_url' => env('BKASH_BASE_URL'),
         'username' => env('BKASH_USERNAME'),

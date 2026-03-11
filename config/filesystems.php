@@ -46,6 +46,13 @@ return [
             'throw' => false,
             'report' => false,
         ],
+        
+        'direct_public' => [
+            'driver' => 'local',
+            'root' => public_path(),
+            'url' => env('APP_URL'),
+            'visibility' => 'public',
+        ],
 
         's3' => [
             'driver' => 's3',

@@ -212,9 +212,7 @@ class ScheduledTasksController extends Controller
 
                     if ($customer_bill * ($customer->billing->auto_disable_month) < $due_amount) {
                         $message = 'Dear '.$customer->customer_name.', Your ID '.$customer->customer_unique_id.'('.($customer->pppUser->username ?? '').') is EXPIRED on: '.Carbon::parse($expiredDate)->format('d-M-Y').', Your Due amount: '.$customer->billing->due_amount.'TK, Please Pay it before '.Carbon::parse($expiredDate)->format('d-M-Y').' to avoid Disconnection. Regards, '.siteUrlSettings('site_name').', Mobile: '.siteUrlSettings('site_phone');
-                        // echo $message. "<br>";
 
-                        $response = $this->smsService->sendSMS($customer->mobile, $message);
                         // Send SMS
                         $response = SmsBridge::to($customer->mobile)
                                     ->message($message)
@@ -229,7 +227,7 @@ class ScheduledTasksController extends Controller
                 }
             });
 
-        // সফল বার্তা গুলো এবং ত্রুটি বার্তা গুলোকে লগে সংরক্ষণ করুন
+        // store logs for successful and error messages
         if (! empty($successfulIDs)) {
             NotificationLogs::create([
                 'title' => 'Disconnection Alert Success',
@@ -327,7 +325,10 @@ class ScheduledTasksController extends Controller
 
                                 $message = 'Dear '.$customer->customer_name.', Your ID '.$customer->customer_unique_id.'('.($customer->pppUser->username ?? '').') is temporarily disconnected, Your Due amount: '.$due.'TK. Regards, '.siteUrlSettings('site_name').', Mobile: '.siteUrlSettings('site_phone');
 
-                                $responseSms = $this->smsService->sendSMS($customer->mobile, $message); // Send SMS
+                                // Send SMS
+                                $responseSms = SmsBridge::to($customer->mobile)
+                                    ->message($message)
+                                    ->send();
 
                                 if ($responseSms['status'] == 'success') {
                                     $successfulSMS = '->{sms sent}';

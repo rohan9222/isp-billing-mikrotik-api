@@ -22,7 +22,7 @@ class SMSSetup extends Component
         if (! hasAccess(['Super Admin'], ['sms-setup'])) {
             abort(403, 'Unauthorized action.');
         }
-
+        
         $this->profile = SmsBridge::profile();
         $this->balance = SmsBridge::balance();
         $this->smsTemps = SmsTemplate::all();

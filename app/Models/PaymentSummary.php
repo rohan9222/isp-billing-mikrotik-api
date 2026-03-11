@@ -18,6 +18,14 @@ class PaymentSummary extends Model
         'previous_due',
     ];
 
+    public function customer(){
+        return $this->belongsTo(CustomersInfo::class, 'customer_payment_unique_id', 'customer_unique_id');
+    }
+
+    public function collection(){
+        return $this->belongsTo(CollectionSummary::class, 'customer_payment_unique_id', 'customer_collection_unique_id');
+    }
+
     // protected static function booted(){
     //     static::created(function ($product) {
     //         BillingInfo::create([

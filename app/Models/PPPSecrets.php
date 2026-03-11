@@ -31,6 +31,11 @@ class PPPSecrets extends Authenticatable implements FilamentUser
         'status',
         'package_name',
     ];
+    
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
 
     public function customer()
     {

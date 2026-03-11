@@ -7,6 +7,7 @@ use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages\Dashboard;
+use App\Filament\Pages\Auth\EditProfile;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -27,13 +28,18 @@ class PortalPanelProvider extends PanelProvider
 
         return $panel
             ->default()
+            ->spa(hasPrefetching: true)
             ->id('portal')
             ->path('')
+            ->domain('portal.' . $baseDomain)
+            ->favicon(siteUrlSettings('site_favicon') ?? asset('images/favicon.png'))
+            ->brandLogo(fn() => view('filament.application-logo'))
+            ->brandLogoHeight('3.5rem')
             ->login(\App\Filament\Pages\Auth\Login::class)
             ->authGuard('ppp')
-            ->domain('portal.' . $baseDomain)
+            ->profile(EditProfile::class)
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Green,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')

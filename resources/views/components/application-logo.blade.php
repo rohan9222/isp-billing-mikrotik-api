@@ -1,4 +1,3 @@
-<!-- <img {{ $attributes }} class="w-100" src="{{ asset('img/logo.png') }}" alt=""> -->
 @if (siteUrlSettings('site_logo'))
     @if (file_exists(public_path(siteUrlSettings('site_logo'))))
         <img class="me-2" style="width: 190px; height: 53px;" src="{{ asset(siteUrlSettings('site_logo')) }}" alt="logo"/>

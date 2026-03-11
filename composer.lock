@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2af8329d8e08f2c84ff7a7d26ee8e965",
+    "content-hash": "a61275a9d98918cc4bcc470a3ac5d32d",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -623,15 +623,24 @@
         },
         {
             "name": "codepagol/sms-bridge",
-            "version": "dev-main",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/CodePagol/sms-bridge.git",
+                "reference": "733047b733e152a2afadef385226c8287ee5ac3f"
+            },
             "dist": {
-                "type": "path",
-                "url": "f:/laragon/www/SmsBridge",
-                "reference": "6e4b7f90aaf2b9245ad53f22f04bac555ddc7773"
+                "type": "zip",
+                "url": "https://api.github.com/repos/CodePagol/sms-bridge/zipball/733047b733e152a2afadef385226c8287ee5ac3f",
+                "reference": "733047b733e152a2afadef385226c8287ee5ac3f",
+                "shasum": ""
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.2",
-                "php": "^8.0"
+                "illuminate/database": ">=8.0",
+                "illuminate/routing": ">=8.0",
+                "illuminate/support": ">=8.0",
+                "php": ">=8.0"
             },
             "require-dev": {
                 "orchestra/testbench": "^7.0|^8.0|^9.0",
@@ -640,12 +649,12 @@
             "type": "library",
             "extra": {
                 "laravel": {
-                    "providers": [
-                        "Codepagol\\SmsBridge\\Providers\\SmsBridgeServiceProvider"
-                    ],
                     "aliases": {
                         "SmsBridge": "Codepagol\\SmsBridge\\Facades\\SmsBridge"
-                    }
+                    },
+                    "providers": [
+                        "Codepagol\\SmsBridge\\Providers\\SmsBridgeServiceProvider"
+                    ]
                 }
             },
             "autoload": {
@@ -653,19 +662,23 @@
                     "Codepagol\\SmsBridge\\": "src/"
                 }
             },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
             "authors": [
                 {
                     "name": "rohan",
-                    "email": "rohan9222@gmail.com"
+                    "email": "rohan9222@gmail.com",
+                    "role": "Developer"
                 }
             ],
-            "description": "A unified Laravel SMS package for multiple Bangladeshi gateways.",
-            "transport-options": {
-                "relative": false
-            }
+            "description": "A simple and extensible SMS gateway bridge for Laravel supporting multiple providers.",
+            "support": {
+                "issues": "https://github.com/CodePagol/sms-bridge/issues",
+                "source": "https://github.com/CodePagol/sms-bridge/tree/v1.0.0"
+            },
+            "time": "2026-03-07T11:29:28+00:00"
         },
         {
             "name": "composer/pcre",
@@ -6199,16 +6212,16 @@
         },
         {
             "name": "php-flasher/flasher",
-            "version": "v2.4.0",
+            "version": "v2.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-flasher/flasher.git",
-                "reference": "2c3231585af9303d7bc1d0603296ed56676d0675"
+                "reference": "b08b7a7d04be27151c737578d6985eadc7e8f952"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-flasher/flasher/zipball/2c3231585af9303d7bc1d0603296ed56676d0675",
-                "reference": "2c3231585af9303d7bc1d0603296ed56676d0675",
+                "url": "https://api.github.com/repos/php-flasher/flasher/zipball/b08b7a7d04be27151c737578d6985eadc7e8f952",
+                "reference": "b08b7a7d04be27151c737578d6985eadc7e8f952",
                 "shasum": ""
             },
             "require": {
@@ -6257,26 +6270,26 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-12-31T10:43:34+00:00"
+            "time": "2026-03-07T18:31:05+00:00"
         },
         {
             "name": "php-flasher/flasher-laravel",
-            "version": "v2.4.0",
+            "version": "v2.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-flasher/flasher-laravel.git",
-                "reference": "fe3acb75c0fe66a0e958d75d45b9a4b237bb5126"
+                "reference": "bccad464c82f79b66553e357bfbf1b119c91a7a8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-flasher/flasher-laravel/zipball/fe3acb75c0fe66a0e958d75d45b9a4b237bb5126",
-                "reference": "fe3acb75c0fe66a0e958d75d45b9a4b237bb5126",
+                "url": "https://api.github.com/repos/php-flasher/flasher-laravel/zipball/bccad464c82f79b66553e357bfbf1b119c91a7a8",
+                "reference": "bccad464c82f79b66553e357bfbf1b119c91a7a8",
                 "shasum": ""
             },
             "require": {
-                "illuminate/support": "^11.0|^12.0",
+                "illuminate/support": "^11.0|^12.0|^13.0",
                 "php": ">=8.2",
-                "php-flasher/flasher": "^2.4.0"
+                "php-flasher/flasher": "^2.5.0"
             },
             "type": "library",
             "extra": {
@@ -6331,25 +6344,25 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-12-31T10:43:34+00:00"
+            "time": "2026-03-07T18:31:05+00:00"
         },
         {
             "name": "php-flasher/flasher-sweetalert",
-            "version": "v2.4.0",
+            "version": "v2.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-flasher/flasher-sweetalert.git",
-                "reference": "df23596a61d784f1e71eb85910044b9cef715f30"
+                "reference": "0949de9e0f9a297273f28ecb9e8343bbcd4799ab"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-flasher/flasher-sweetalert/zipball/df23596a61d784f1e71eb85910044b9cef715f30",
-                "reference": "df23596a61d784f1e71eb85910044b9cef715f30",
+                "url": "https://api.github.com/repos/php-flasher/flasher-sweetalert/zipball/0949de9e0f9a297273f28ecb9e8343bbcd4799ab",
+                "reference": "0949de9e0f9a297273f28ecb9e8343bbcd4799ab",
                 "shasum": ""
             },
             "require": {
                 "php": ">=8.2",
-                "php-flasher/flasher": "^2.4.0"
+                "php-flasher/flasher": "^2.5.0"
             },
             "type": "library",
             "autoload": {
@@ -6398,26 +6411,26 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-12-31T10:43:34+00:00"
+            "time": "2026-03-07T18:31:05+00:00"
         },
         {
             "name": "php-flasher/flasher-sweetalert-laravel",
-            "version": "v2.4.0",
+            "version": "v2.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-flasher/flasher-sweetalert-laravel.git",
-                "reference": "62d43948adc6e7a192c0384cb25c20d421b81dc9"
+                "reference": "555459d41506755b0edbda8964ebc474ccd8f335"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-flasher/flasher-sweetalert-laravel/zipball/62d43948adc6e7a192c0384cb25c20d421b81dc9",
-                "reference": "62d43948adc6e7a192c0384cb25c20d421b81dc9",
+                "url": "https://api.github.com/repos/php-flasher/flasher-sweetalert-laravel/zipball/555459d41506755b0edbda8964ebc474ccd8f335",
+                "reference": "555459d41506755b0edbda8964ebc474ccd8f335",
                 "shasum": ""
             },
             "require": {
                 "php": ">=8.2",
-                "php-flasher/flasher-laravel": "^2.4.0",
-                "php-flasher/flasher-sweetalert": "^2.4.0"
+                "php-flasher/flasher-laravel": "^2.5.0",
+                "php-flasher/flasher-sweetalert": "^2.5.0"
             },
             "type": "library",
             "extra": {
@@ -6469,7 +6482,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-12-31T10:43:34+00:00"
+            "time": "2026-03-07T18:31:05+00:00"
         },
         {
             "name": "phpoffice/phpspreadsheet",
@@ -7298,16 +7311,16 @@
         },
         {
             "name": "psy/psysh",
-            "version": "v0.12.20",
+            "version": "v0.12.21",
             "source": {
                 "type": "git",
                 "url": "https://github.com/bobthecow/psysh.git",
-                "reference": "19678eb6b952a03b8a1d96ecee9edba518bb0373"
+                "reference": "4821fab5b7cd8c49a673a9fd5754dc9162bb9e97"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/bobthecow/psysh/zipball/19678eb6b952a03b8a1d96ecee9edba518bb0373",
-                "reference": "19678eb6b952a03b8a1d96ecee9edba518bb0373",
+                "url": "https://api.github.com/repos/bobthecow/psysh/zipball/4821fab5b7cd8c49a673a9fd5754dc9162bb9e97",
+                "reference": "4821fab5b7cd8c49a673a9fd5754dc9162bb9e97",
                 "shasum": ""
             },
             "require": {
@@ -7371,9 +7384,9 @@
             ],
             "support": {
                 "issues": "https://github.com/bobthecow/psysh/issues",
-                "source": "https://github.com/bobthecow/psysh/tree/v0.12.20"
+                "source": "https://github.com/bobthecow/psysh/tree/v0.12.21"
             },
-            "time": "2026-02-11T15:05:28+00:00"
+            "time": "2026-03-06T21:21:28+00:00"
         },
         {
             "name": "ralouphie/getallheaders",
@@ -15831,9 +15844,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "codepagol/sms-bridge": 20
-    },
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

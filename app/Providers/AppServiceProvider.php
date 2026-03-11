@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Services\SMSService;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -19,16 +18,15 @@ class AppServiceProvider extends ServiceProvider
         if (isset($_SERVER['HTTP_HOST']) && str_contains($_SERVER['HTTP_HOST'], 'portal.')) {
             config(['session.cookie' => 'portal_session']);
         }
-
-        $this->app->singleton(SMSService::class, function ($app) {
-            return new SMSService;
-        });
     }
 
     public function boot(): void
     {
         Gate::before(function ($user, $ability) {
-            return $user->hasRole('Super Admin') ? true : null;
+            if (method_exists($user, 'hasRole')) {
+                return $user->hasRole('Super Admin') ? true : null;
+            }
+            return null;
         });
 
         // Optimize Livewire components in the specified directory

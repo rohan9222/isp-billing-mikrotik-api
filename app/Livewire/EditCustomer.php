@@ -560,7 +560,7 @@ class EditCustomer extends Component
     {
         // Generate a unique filename and define the path
         $filename = uniqid().'.jpg';
-        $path = 'img/customer-images/'.$filename;
+        $path = 'customer-images/'.$filename;
 
         if ($this->photo_url) {
             $image_file = $this->photo_url->getRealPath();

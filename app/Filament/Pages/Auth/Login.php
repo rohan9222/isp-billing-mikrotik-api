@@ -22,7 +22,7 @@ class Login extends BaseLogin
     protected function getLoginFormComponent(): Component
     {
         return TextInput::make('username')
-            ->label('Username')
+            ->label('Username (Your PPOE Username)')
             ->required()
             ->autocomplete()
             ->autofocus()

@@ -36,8 +36,8 @@ if (! function_exists('hasAccess')) {
         $user = auth()->user();
 
         return $user && (
-            $user->hasAnyRole($roles) ||
-            $user->hasAnyPermission($permissions)
+            (method_exists($user, 'hasAnyRole') && $user->hasAnyRole($roles)) ||
+            (method_exists($user, 'hasAnyPermission') && $user->hasAnyPermission($permissions))
         );
     }
 }
