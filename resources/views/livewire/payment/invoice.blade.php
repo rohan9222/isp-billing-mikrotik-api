@@ -25,7 +25,7 @@
                                         {{ $address->input_type_dropdown }},
                                         {{ $address->input_type_textarea }}
                                     @endforeach
-                                    , {{ $customer->mobile }}, {{ $customer->username }}
+                                    , +{{ $customer->mobile }}, {{ $customer->username }}
                                 </li>
                             @endforeach
                         </ul>
@@ -67,7 +67,7 @@
                                                     <img class="img-fluid w-100" src="images/arrow_bg.svg" alt="">
                                                 </div>
                                                 <div class="col-7 invoice_info_list">
-                                                    <p class="m-0 z-1">Invoice No:
+                                                    <p class="m-0 z-1 pe-3">Invoice No:
                                                         <b class="text-dark fw-bold">
                                                             @foreach ($collectionSummary as $summary)
                                                                 #{{ siteUrlSettings('site_invoice_prefix') }}{{ $summary->id }},
@@ -99,7 +99,7 @@
                                                         {{ siteUrlSettings('site_address') }} <br>
                                                         {{ siteUrlSettings('site_phone') }} <br>
                                                         {{ siteUrlSettings('site_email') }} <br>
-                                                        {{ url('') }} <br>
+                                                        {{ config('app.url') }} <br>
                                                     </div>
                                                 </div>
                                             </div>
@@ -249,7 +249,7 @@
                             </div>
                         </div>
                         <div class="col-md-12">
-                            <button class="btn btn-sm btn-primary" wire:click="printPage"">Print Invoice</button>
+                            <button class="btn btn-sm btn-primary" wire:click="printPage">Print Invoice</button>
                         </div>
                     </x-slot>
                 </x-mikrotik.section-form>

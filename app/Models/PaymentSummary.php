@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\CollectionSummary;
+use App\Models\CustomersInfo;
 use Illuminate\Database\Eloquent\Model;
 
 class PaymentSummary extends Model
@@ -18,12 +20,45 @@ class PaymentSummary extends Model
         'previous_due',
     ];
 
+    protected $casts = [
+        'summary_date' => 'date',
+    ];
+
     public function customer(){
         return $this->belongsTo(CustomersInfo::class, 'customer_payment_unique_id', 'customer_unique_id');
     }
 
-    public function collection(){
-        return $this->belongsTo(CollectionSummary::class, 'customer_payment_unique_id', 'customer_collection_unique_id');
+    public function collections(){
+        return $this->hasMany(CollectionSummary::class, 'customer_collection_unique_id', 'customer_payment_unique_id');
+    }
+
+    public function monthlyCollections()
+    {
+        return $this->collections()
+            ->whereMonth('collection_date', $this->summary_date->month)
+            ->whereYear('collection_date', $this->summary_date->year);
+    }
+    
+    public function getPaidAmountAttribute(): float
+    {
+        return $this->collections()
+            ->whereMonth('collection_date', $this->summary_date->month)
+            ->whereYear('collection_date', $this->summary_date->year)
+            ->sum('collection_amount');
+    }
+
+    public function getTotalAttribute(): float
+    {
+        return ($this->monthly_rent
+            + $this->additional_charge
+            + $this->vat
+            + $this->previous_due)
+            - ($this->discount + $this->advance);
+    }
+
+    public function getDueAmountAttribute(): float
+    {
+        return $this->total - $this->paid_amount;
     }
 
     // protected static function booted(){

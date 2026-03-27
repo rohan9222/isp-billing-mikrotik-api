@@ -14,12 +14,15 @@ class PaymentSummariesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultSort('summary_date', 'desc')
             ->columns([
                 TextColumn::make('customer_payment_unique_id')
                     ->label('Customer ID')
+                    ->sortable()
                     ->searchable(),
                 TextColumn::make('id')
                     ->label('Invoice ID')
+                    ->sortable()
                     ->searchable(),
                 TextColumn::make('summary_date')
                     ->label('Date')
@@ -27,32 +30,38 @@ class PaymentSummariesTable
                     ->sortable(),
                 TextColumn::make('monthly_rent')
                     ->label('Monthly Rent')
-                    ->money('BDT'),
+                    ->formatStateUsing(fn ($state) => number_format($state, 2) . ' ' . siteUrlSettings('site_currency'))
+                    ->sortable(),
                 TextColumn::make('additional_charge')
                     ->label('Extra')
-                    ->money('BDT'),
+                    ->sortable()
+                    ->formatStateUsing(fn ($state) => number_format($state, 2) . ' ' . siteUrlSettings('site_currency')),
                 TextColumn::make('discount')
                     ->label('Discount')
-                    ->money('BDT'),
+                    ->sortable()
+                    ->formatStateUsing(fn ($state) => number_format($state, 2) . ' ' . siteUrlSettings('site_currency')),
                 TextColumn::make('advance')
                     ->label('Advance')
-                    ->money('BDT'),
+                    ->sortable()
+                    ->formatStateUsing(fn ($state) => number_format($state, 2) . ' ' . siteUrlSettings('site_currency')),
                 TextColumn::make('vat')
                     ->label('VAT')
-                    ->money('BDT'),
+                    ->sortable()
+                    ->formatStateUsing(fn ($state) => number_format($state, 2) . ' ' . siteUrlSettings('site_currency')),
                 TextColumn::make('previous_due')
                     ->label('Prev. Due')
-                    ->money('BDT'),
-                // TextColumn::make('total')
-                //     ->label('Total')
-                //     ->sum('monthly_rent', 'additional_charge', 'discount', 'advance', 'vat', 'previous_due')
-                //     ->money('BDT'),
-                // TextColumn::make('paid')
-                //     ->label('Paid')
-                //     ->money('BDT'),
-                // TextColumn::make('due')
-                //     ->label('Due')
-                //     ->money('BDT'),
+                    ->sortable()
+                    ->formatStateUsing(fn ($state) => number_format($state, 2) . ' ' . siteUrlSettings('site_currency')),
+                TextColumn::make('total')
+                    ->label('Total')
+                    ->sortable()
+                    ->formatStateUsing(fn ($state) => number_format($state, 2) . ' ' . siteUrlSettings('site_currency')),
+                TextColumn::make('paid_amount')
+                    ->label('Paid')
+                    ->formatStateUsing(fn ($state) => number_format($state, 2) . ' ' . siteUrlSettings('site_currency')),
+                TextColumn::make('due_amount')
+                    ->label('Due')
+                    ->formatStateUsing(fn ($state) => number_format($state, 2) . ' ' . siteUrlSettings('site_currency')),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

@@ -34,10 +34,7 @@ class PaymentSummaryResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->where('customer_payment_unique_id', Auth::user()?->customer?->customer_unique_id)
-            ->join('customers_info', 'customers_info.customer_unique_id', '=', 'payment_summaries.customer_payment_unique_id')
-            ->join('collection_summaries', 'collection_summaries.customer_collection_unique_id', '=', 'payment_summaries.customer_payment_unique_id')
-            ->latest('summary_date');
+            ->where('customer_payment_unique_id', Auth::user()?->customer?->customer_unique_id);
     }
 
     public static function canCreate(): bool
@@ -81,9 +78,6 @@ class PaymentSummaryResource extends Resource
     {
         return [
             'index' => ListPaymentSummaries::route('/'),
-            'create' => CreatePaymentSummary::route('/create'),
-            'view' => ViewPaymentSummary::route('/{record}'),
-            'edit' => EditPaymentSummary::route('/{record}/edit'),
         ];
     }
 }
