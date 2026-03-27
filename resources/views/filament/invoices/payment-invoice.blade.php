@@ -1,6 +1,6 @@
 @vite(['resources/sass/app.scss', 'resources/css/app.css', 'resources/js/app.js'])
 
-<div id="print-section" class="col-md-12 p-0" style='height: 297mm;'>
+<div id="print-section" class="col-md-12 p-0" style='min-height: 297mm;'>
     <div class="container-fluid h-100 p-0">
         <div class="position-relative h-100">
             <div class="invoice style1 type3 p-1 h-100">
@@ -41,14 +41,14 @@
                         <div class="col">
                             <div><b class="text-dark">Invoice To:</b></div>
                             <div>
-                                {{ $record->customer->customer_name }} <br>
-                                @foreach ($record->customer->customerAddress as $address)
+                                {{ $record->customer?->customer_name }} <br>
+                                @foreach ($record->customer?->customerAddress ?? [] as $address)
                                     {{ $address->input_type_dropdown }},
                                     {{ $address->input_type_test }},
                                     {{ $address->input_type_textarea }}
                                 @endforeach <br>
-                                {{ $record->customer->mobile }} <br>
-                                {{ $record->customer->email }} <br>
+                                {{ $record->customer?->mobile }} <br>
+                                {{ $record->customer?->email }} <br>
                             </div>
                         </div>
                         <div class="col text-end">
@@ -74,19 +74,19 @@
                             <tbody>
                                 <tr>
                                     <td>
-                                        User ID: {{ $record->customer->customer_unique_id }} <br>
+                                        User ID: {{ $record->customer?->customer_unique_id }} <br>
                                         Connection Date:
-                                        {{ \Carbon\Carbon::parse($record->customer->connection_date)->format('d-M-Y') }}
+                                        {{ $record->customer?->connection_date ? \Carbon\Carbon::parse($record->customer->connection_date)->format('d-M-Y') : '' }}
                                         <br>
-                                        PPPoE Username: {{ $record->customer->pppUser->username ?? '' }}
+                                        PPPoE Username: {{ $record->customer?->pppUser?->username ?? '' }}
                                         <br>
-                                        Billing Type: {{ $record->customer->billing->billing_type ?? '' }}
+                                        Billing Type: {{ $record->customer?->billing?->billing_type ?? '' }}
                                         <br>
                                         Status : <span
-                                            class='badge rounded-pill ms-2 badge-subtle-success'>{{ $record->customer->pppUser->status ?? '' }}</span>
+                                            class='badge rounded-pill ms-2 badge-subtle-success'>{{ $record->customer?->pppUser?->status ?? '' }}</span>
                                     </td>
                                     <td>
-                                        {{ $record->summary_date->format('M Y') }}
+                                        {{ $record->summary_date ? \Carbon\Carbon::parse($record->summary_date)->format('M Y') : '' }}
                                         <br>
                                     </td>
                                     <td class="text-end">
@@ -185,7 +185,7 @@
                         </ul>
                     </div>
 
-                    <div class="row pt-5 text-center">
+                    <div class="pt-5 text-center">
                         ***This is computer generated invoice. No signature required***
 
                         Thank you for your prompt payment.
@@ -214,6 +214,7 @@
         iframe.style.position = "fixed";
         iframe.style.width = "0px";
         iframe.style.height = "0px";
+        iframe.style.visibility = "hidden";
         iframe.style.border = "none";
         iframe.style.zIndex = "-1";
         document.body.appendChild(iframe);
