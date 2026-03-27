@@ -133,6 +133,15 @@
             </div>
         </a>
         <!-- parent pages-->
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('main-site-setup') }}" role="button">
+            <div class="d-flex align-items-center">
+                <span class="nav-link-icon">
+                    <i class="bi bi-window-sidebar"></i>
+                </span>
+                <span class="nav-link-text ps-1">Main Site Setup</span>
+            </div>
+        </a>
+        <!-- parent pages-->
         <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('package-list-setup') }}" role="button">
             <div class="d-flex align-items-center">
                 <span class="nav-link-icon">

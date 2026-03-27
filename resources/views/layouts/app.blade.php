@@ -25,8 +25,9 @@
     <meta name="msapplication-TileImage" content="{{asset('/images/favicons/mstile-150x150.png')}}"> --}}
 
     @vite(['resources/sass/app.scss', 'resources/css/app.css', 'resources/js/app.js'])
-
     @stack('styles')
+    @filamentStyles
+    <link rel="stylesheet" href="{{ asset('css/filament/filament/app.css') }}">
     @livewireStyles
     <!-- ===============================================-->
     <!--    Stylesheets-->
@@ -59,7 +60,7 @@
     </script>
 </head>
 
-<body class="font-sans antialiased">
+<body class="font-sans antialiased fi-body">
     <!-- ===============================================-->
     <!--    Main Content-->
     <!-- ===============================================-->
@@ -155,7 +156,9 @@
     @include('layouts.partials.customize')
 
     @stack('modals')
+
     @livewireScripts
+    @filamentScripts
 </body>
 <script>
     function handleNavbarHover() {
@@ -181,19 +184,22 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        $.ajaxSetup({
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            }
-        });
-        // remove invalid feedback and error
-        $('input, textarea, select').on('focus', function() {
-            $(this).removeClass('is-invalid'); // remove invalid class
-            $(this).nextAll('.invalid-feedback').remove(); // remove invalid feedback
-        });
+        if (typeof $ !== 'undefined') {
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+            // remove invalid feedback and error
+            $('input, textarea, select').on('focus', function() {
+                $(this).removeClass('is-invalid'); // remove invalid class
+                $(this).nextAll('.invalid-feedback').remove(); // remove invalid feedback
+            });
+        }
 
         handleNavbarHover();
     });
+
 
     // Run on Livewire navigate
     document.addEventListener('livewire:navigated', handleNavbarHover);

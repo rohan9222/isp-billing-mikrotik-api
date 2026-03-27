@@ -67,3 +67,12 @@ if (! function_exists('warningIfNoAccess')) {
         return false;
     }
 }
+
+if (! function_exists('site_image')) {
+    function site_image($path)
+    {
+        if (!$path) return asset('img/placeholder.png');
+        if (str_starts_with($path, 'http')) return $path;
+        return asset('storage/' . $path);
+    }
+}

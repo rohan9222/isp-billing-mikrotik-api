@@ -1,5 +1,6 @@
-@extends('errors::minimal')
-
-@section('title', 'Page Not Found')
+@extends('errors.layout')
 @section('code', '404')
-@section('message',  $exception->getMessage() ?? 'The page you are looking for doesn’t exist or has been moved.')
+@section('title', 'Page Not Found')
+@section('icon', '🔍')
+@section('heading', 'Page Not Found')
+@section('message', 'Sorry, we couldn\'t find the page you\'re looking for. It may have been moved or deleted.')

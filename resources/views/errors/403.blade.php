@@ -1,5 +1,6 @@
-@extends('errors.minimal')
-
-@section('title', 'Page Not Found')
-@section('code', '404')
-@section('message', 'The page you are looking for doesn’t exist or has been moved.')
+@extends('errors.layout')
+@section('code', '403')
+@section('title', 'Forbidden')
+@section('icon', '🚫')
+@section('heading', 'Access Forbidden')
+@section('message', 'You don\'t have permission to access this page. If you think this is a mistake, please contact support.')

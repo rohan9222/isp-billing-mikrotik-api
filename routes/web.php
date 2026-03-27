@@ -24,6 +24,7 @@ use App\Livewire\Payment\Invoice;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
 use App\Livewire\CommentSubmit;
+use App\Livewire\MainSiteSetup;
 use Illuminate\Support\Str;
 
 // Extract domain host from APP_URL for consistent subdomain routing
@@ -32,6 +33,7 @@ $baseDomain = parse_url(config('app.url'), PHP_URL_HOST) ?: config('app.url');
 // Main domain
 Route::domain($baseDomain)->group(function () use ($baseDomain) {
     Route::get('/', [MainSiteController::class, 'index'])->name('welcome');
+    Route::get('/all-packages', [MainSiteController::class, 'allPackages'])->name('all-packages');
 
     Route::get('/portal', function () {
         $host = request()->getHost();
@@ -111,6 +113,11 @@ Route::middleware([
 
         // site settings
         Route::get('/site-settings', SiteSettings::class)->name('site-settings');
+
+        // main site content management
+        Route::get('/main-site-setup', MainSiteSetup::class)
+            ->middleware(\Filament\Http\Middleware\DispatchServingFilamentEvent::class)
+            ->name('main-site-setup');
 
         Route::get('/all-notifications', NotificationListAll::class)->name('notifications');
         // Route::get('/edit-customer', EditCustomer::class);
