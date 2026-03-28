@@ -114,6 +114,7 @@
                                 label="Profile"
                                 type="dropdown"
                                 name="profile"
+                                wChange="packageName('profile')"
                                 placeholder="Select Any One"
                                 required="true"
                                 :options="$profileNames"

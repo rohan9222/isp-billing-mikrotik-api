@@ -25,7 +25,7 @@ class CustomersInfo extends Model
         'disable_count',
         'ppp_user_id',
         'connection_date',
-        'package_name',
+        'package_id',
         'status',
         // 'auto_disabled',
         // 'expired_date',
@@ -53,7 +53,7 @@ class CustomersInfo extends Model
 
     public function package()
     {
-        return $this->belongsTo(PackageList::class, 'package_name', 'package');
+        return $this->belongsTo(PackageList::class, 'package_id', 'id');
     }
 
     public function customerAddress()

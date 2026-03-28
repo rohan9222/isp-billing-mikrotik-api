@@ -12,11 +12,19 @@ class PackageList extends Model
     protected $fillable = [
         'package', 'price', 'description', 'merchant_company',
         'plan_label', 'speed', 'features', 'is_featured', 'show_on_site', 'sort_order',
+        'mikrotik_rate_limit', 'push_to_mikrotik', 'mikrotik_local_address', 'mikrotik_remote_address',
+        'router_name',
     ];
 
     protected $casts = [
-        'features'    => 'array',
-        'is_featured' => 'boolean',
-        'show_on_site' => 'boolean',
+        'features'         => 'array',
+        'is_featured'      => 'boolean',
+        'show_on_site'     => 'boolean',
+        'push_to_mikrotik' => 'boolean',
     ];
+
+    public function router()
+    {
+        return $this->belongsTo(RouterList::class, 'router_name', 'router_name');
+    }
 }

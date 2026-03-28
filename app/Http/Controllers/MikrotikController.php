@@ -61,13 +61,19 @@ class MikrotikController extends Controller
         return 'No API or SSH port provided';
     }
 
-    public function routerList($router_name = null, $api_command = null, $ssh_command = null)
+    public function routerList($routerIdentifier = null, $api_command = null, $ssh_command = null)
     {
-        if ($router_name) {
-            $routers = RouterList::where('action', 'connected')->where('router_name', $router_name)->get();
-        }else {
-            $routers = RouterList::where('action', 'connected')->get();
+        $query = RouterList::where('action', 'connected');
+
+        if ($routerIdentifier) {
+            if (is_numeric($routerIdentifier)) {
+                $query->where('id', $routerIdentifier);
+            } else {
+                $query->where('router_name', $routerIdentifier);
+            }
         }
+
+        $routers = $query->get();
         $results = [];
         foreach ($routers as $router) {
             try {
@@ -217,6 +223,114 @@ class MikrotikController extends Controller
         } else {
             return 'Router is not connected or not found';
         }
+    }
+
+    /**
+     * Push (create or update) a PPP profile on connected routers (all or specified).
+     */
+    public function pushProfileToRouters(string $name, string $rateLimit, ?string $localAddress = null, ?string $remoteAddress = null, ?int $routerId = null): array
+    {
+        $routers = RouterList::where('action', 'connected')->when($routerId, fn($q) => $q->where('id', $routerId))->get();
+        $results = [];
+
+        foreach ($routers as $router) {
+            try {
+                $ssh = new MikrotikSSHService(
+                    $router->ip_address, $router->ssh_port,
+                    $router->username, $router->password
+                );
+
+                // Build optional arguments
+                $options = 'rate-limit="' . $rateLimit . '"';
+                if (!empty($localAddress)) {
+                    $options .= ' local-address="' . $localAddress . '"';
+                }
+                if (!empty($remoteAddress)) {
+                    $options .= ' remote-address="' . $remoteAddress . '"';
+                }
+
+                // Check if profile already exists
+                $check = $ssh->executeCommand('/ppp profile print count-only where name="' . $name . '"');
+                $exists = intval(trim($check)) > 0;
+
+                if ($exists) {
+                    $cmd = '/ppp profile set ' . $options . ' [find name="' . $name . '"]';
+                } else {
+                    $cmd = '/ppp profile add name="' . $name . '" ' . $options;
+                }
+
+                $ssh->executeCommand($cmd);
+                $results[$router->router_name] = 'OK';
+            } catch (\Exception $e) {
+                $results[$router->router_name] = 'Error: ' . $e->getMessage();
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Update a PPP profile's name or configurations on connected routers (all or specified).
+     */
+    public function updateProfileOnRouters(string $oldName, string $newName, string $rateLimit, ?string $localAddress = null, ?string $remoteAddress = null, ?int $routerId = null): array
+    {
+        $routers = RouterList::where('action', 'connected')->when($routerId, fn($q) => $q->where('id', $routerId))->get();
+        $results = [];
+
+        foreach ($routers as $router) {
+            try {
+                $ssh = new MikrotikSSHService(
+                    $router->ip_address, $router->ssh_port,
+                    $router->username, $router->password
+                );
+
+                // Rename if needed
+                if ($oldName !== $newName) {
+                    $ssh->executeCommand('/ppp profile set name="' . $newName . '" [find name="' . $oldName . '"]');
+                }
+
+                // Build option updates
+                $options = 'rate-limit="' . $rateLimit . '"';
+                if (!empty($localAddress)) {
+                    $options .= ' local-address="' . $localAddress . '"';
+                }
+                if (!empty($remoteAddress)) {
+                    $options .= ' remote-address="' . $remoteAddress . '"';
+                }
+
+                $ssh->executeCommand('/ppp profile set ' . $options . ' [find name="' . $newName . '"]');
+                $results[$router->router_name] = 'OK';
+            } catch (\Exception $e) {
+                $results[$router->router_name] = 'Error: ' . $e->getMessage();
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Delete a PPP profile from connected routers (all or specified).
+     */
+    public function deleteProfileFromRouters(string $name, ?int $routerId = null): array
+    {
+        $routers = RouterList::where('action', 'connected')->when($routerId, fn($q) => $q->where('id', $routerId))->get();
+        $results = [];
+
+        foreach ($routers as $router) {
+            try {
+                $ssh = new MikrotikSSHService(
+                    $router->ip_address, $router->ssh_port,
+                    $router->username, $router->password
+                );
+
+                $ssh->executeCommand('/ppp profile remove [find name="' . $name . '"]');
+                $results[$router->router_name] = 'OK';
+            } catch (\Exception $e) {
+                $results[$router->router_name] = 'Error: ' . $e->getMessage();
+            }
+        }
+
+        return $results;
     }
 
 }

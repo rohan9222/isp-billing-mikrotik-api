@@ -23,73 +23,7 @@ class NewCustomer extends Component
 {
     use WithFileUploads;
 
-    public $customer_name;
-
-    public $email;
-
-    public $identification_no;
-
-    public $mobile;
-
-    public $alternative_mobile;
-
-    public $profession;
-
-    public $connection_date;
-
-    public $service;
-
-    public $profile;
-
-    public $ip_address;
-
-    public $ppp_remote_ip;
-
-    public $username;
-
-    public $password;
-
-    public $queue_name;
-
-    public $caller_id;
-
-    public $comment;
-
-    public $interface;
-
-    public $bandwidth;
-
-    public $package_name;
-
-    public $monthly_rent;
-
-    public $due_amount;
-
-    public $additional_charge;
-
-    public $discount;
-
-    public $advance;
-
-    public $vat;
-
-    public $total_amount;
-
-    public $client_type;
-
-    public $distribution_location;
-
-    public $description;
-
-    public $note;
-
-    public $connected_by;
-
-    public $security_deposit;
-
-    public $auto_disable;
-
-    public $auto_disable_date;
+    public $customer_name, $email, $identification_no, $mobile, $alternative_mobile, $profession, $connection_date, $service, $profile, $ip_address, $ppp_remote_ip, $username, $password, $queue_name, $caller_id, $comment, $interface, $bandwidth, $package_name, $monthly_rent, $due_amount, $additional_charge, $discount, $advance, $vat, $total_amount, $client_type, $distribution_location, $description, $note, $connected_by, $security_deposit, $auto_disable, $auto_disable_date;
 
     public $router_name = '';
 
@@ -173,16 +107,20 @@ class NewCustomer extends Component
         $this->validateOnly($propertyName);
     }
 
+    public function packageName($value)
+    {
+        $this->package_name = $this->profile;
+        $this->calculateTotal('package_name');
+    }
+
     public function calculateTotal($value)
     {
         // If package name is set, get the package price
         if ($this->package_name) {
-            $package = PackageList::where('package', $this->package_name)->first();
-            if ($package) {
-                $this->monthly_rent = $package->price;
-            } else {
-                $this->monthly_rent = '';
-            }
+            $package = PackageList::where('package', $this->package_name)
+                ->where('router_name', $this->router_name)
+                ->first();
+            $this->monthly_rent = $package?->price ?? '';
         }
 
         // Prevent modifying 'monthly_rent' if 'package_name' is set and warn the user
@@ -427,7 +365,18 @@ class NewCustomer extends Component
             $customer->profession = $this->profession;
             $customer->ppp_user_id = $pppUser->id ?? null;
             $customer->connection_date = $this->connection_date;
-            $customer->package_name = $this->package_name;
+            
+            // Get package_id based on selected package name and router
+            $assignedPackageId = null;
+            if ($this->package_name) {
+                $pkg = PackageList::where('package', $this->package_name);
+                if ($this->router_name) {
+                    $pkg = $pkg->where('router_name', $this->router_name);
+                }
+                $assignedPackageId = $pkg->first()?->id;
+            }
+            $customer->package_id = $assignedPackageId;
+            
             $customer->save();
 
             foreach ($this->address as $key => $value) {
@@ -510,7 +459,9 @@ class NewCustomer extends Component
     {
         $this->addressFields = AddressField::orderBy('order', 'asc')->get();
         $this->routers = RouterList::select('router_name')->where('action', 'connected')->get();
-        $this->packages = PackageList::select('price', 'package')->get();
+        $this->packages = PackageList::select('price', 'package')
+            ->when($this->router_name, fn($q) => $q->where('router_name', $this->router_name))
+            ->get();
         // $users = User::permission('create-user')->get();
         $this->users = User::all();
 
