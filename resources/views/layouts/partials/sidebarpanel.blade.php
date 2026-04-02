@@ -34,6 +34,45 @@
                 <span class="nav-link-text ps-1">Mikrotik Sync</span>
             </div>
         </a>
+
+        <!-- Mikrotik Setup Dropdown -->
+        <a class="nav-link dropdown-indicator collapsed" href="#mikrotikSetup" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="mikrotikSetup">
+            <div class="d-flex align-items-center">
+                <span class="nav-link-icon">
+                    <i class="bi bi-tools"></i>
+                </span>
+                <span class="nav-link-text ps-1">Mikrotik Setup</span>
+            </div>
+        </a>
+        <ul class="nav collapse" id="mikrotikSetup" style="">
+            <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-ip-setup') }}">
+                <div class="d-flex align-items-center"><span class="nav-link-text ps-1">IP & Pool</span></div>
+            </a></li>
+            <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-pppoe-setup') }}">
+                <div class="d-flex align-items-center"><span class="nav-link-text ps-1">PPPoE Server</span></div>
+            </a></li>
+            <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-hotspot-setup') }}">
+                <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Hotspot</span></div>
+            </a></li>
+            <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-radius-setup') }}">
+                <div class="d-flex align-items-center"><span class="nav-link-text ps-1">RADIUS</span></div>
+            </a></li>
+            <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-firewall-setup') }}">
+                <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Firewall</span></div>
+            </a></li>
+            <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-queue-setup') }}">
+                <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Queues</span></div>
+            </a></li>
+            <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-vpn-setup') }}">
+                <div class="d-flex align-items-center"><span class="nav-link-text ps-1">VPN Server</span></div>
+            </a></li>
+            <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-interface-setup') }}">
+                <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Interfaces & VLAN</span></div>
+            </a></li>
+            <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-traffic-monitor') }}">
+                <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Live Traffic</span><span class="badge rounded-pill ms-2 badge-subtle-success">New</span></div>
+            </a></li>
+        </ul>
     </li>
     <li class="nav-item">
         <!-- label-->

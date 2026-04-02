@@ -20,6 +20,9 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Filament\Support\Assets\Css;
+use Filament\Support\Assets\Js;
+use Illuminate\Support\Facades\Vite;
 
 class PortalPanelProvider extends PanelProvider
 {
@@ -44,6 +47,10 @@ class PortalPanelProvider extends PanelProvider
                 'primary' => Color::Green,
             ])
             ->sidebarCollapsibleOnDesktop()
+            ->assets([
+                Css::make('portal-custom-styles', Vite::asset('resources/css/filament.css')),
+                Js::make('portal-custom-js', Vite::asset('resources/js/app.js'))->module(),
+            ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([

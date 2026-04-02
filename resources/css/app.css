@@ -1,9 +1,9 @@
 @import 'theme.min.css';
 /* @import 'theme-rtl.min.css'; */
 @import 'pmis.css';
-/* @tailwind base;
+@tailwind base;
 @tailwind components;
-@tailwind utilities; */
+@tailwind utilities;
 
 
 [x-cloak] {

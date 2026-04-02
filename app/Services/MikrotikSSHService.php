@@ -4,6 +4,7 @@ namespace App\Services;
 
 use phpseclib3\Exception\RuntimeException;
 use phpseclib3\Net\SSH2;
+use App\Models\RouterList;
 use Exception;
 
 class MikrotikSSHService
@@ -61,7 +62,6 @@ class MikrotikSSHService
             $secrets = [];
 
             foreach ($lines as $line) {
-                // Adjust the regex to handle optional fields and variable spacing
                 // Adjust the regex to handle optional fields and capture the comment correctly
                 if (preg_match('/(?:comment=([^=]+?)\s+)?name=(\S+)(?:\s+service=(\S*))?(?:\s+caller-id=(\S*))?(?:\s+password=(\S+))?(?:\s+profile=(\S*))?/', $line, $matches)) {
                     $secrets[] = [
@@ -75,10 +75,9 @@ class MikrotikSSHService
                     ];
                 } else {
                     // Debug: Check if the regex is failing
-                    dd('No match for: ' . $line); // Uncomment this to debug failing lines
+                    // dd('No match for: ' . $line); // Uncomment this to debug failing lines
                 }
             }
-            dd($secrets);
             return $secrets;
         } catch (\Exception $e) {
             return ['error' => $e->getMessage()];
@@ -124,12 +123,10 @@ class MikrotikSSHService
         return preg_match('/^[\s\-a-zA-Z0-9]+:\s*.+$/m', $output);
     }
 
-    /**
-     * Detect terse format (e.g. id name key=value key=value ...)
-     */
     protected function isTerseFormat($output)
     {
-        return preg_match('/^\s*\d+\s+.*=.*$/m', $output);
+        // Detect terse format if any line contains a key=value pair (excluding command echoes)
+        return preg_match('/^.*[^\s]=[^\s].*$/m', $output);
     }
 
     /**

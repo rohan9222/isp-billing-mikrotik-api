@@ -96,6 +96,20 @@ Route::middleware([
         Route::get('/admin-users', ManageUser::class)->name('admin-users');
         Route::get('/admin-roles', ManageRole::class)->name('admin-roles');
         Route::get('/mikrotik', MikrotikSync::class)->name('mikrotik-sync');
+        
+        // Mikrotik Setup Routes
+        Route::prefix('mikrotik-setup')->group(function () {
+            Route::get('/ip', \App\Livewire\Mikrotik\IpSetup::class)->name('mikrotik-ip-setup');
+            Route::get('/pppoe', \App\Livewire\Mikrotik\PppoeSetup::class)->name('mikrotik-pppoe-setup');
+            Route::get('/queue', \App\Livewire\Mikrotik\QueueSetup::class)->name('mikrotik-queue-setup');
+            Route::get('/firewall', \App\Livewire\Mikrotik\FirewallSetup::class)->name('mikrotik-firewall-setup');
+            Route::get('/hotspot', \App\Livewire\Mikrotik\HotspotSetup::class)->name('mikrotik-hotspot-setup');
+            Route::get('/radius', \App\Livewire\Mikrotik\RadiusSetup::class)->name('mikrotik-radius-setup');
+            Route::get('/vpn', \App\Livewire\Mikrotik\VpnSetup::class)->name('mikrotik-vpn-setup');
+            Route::get('/interface', \App\Livewire\Mikrotik\InterfaceSetup::class)->name('mikrotik-interface-setup');
+            Route::get('/traffic', \App\Livewire\Mikrotik\TrafficMonitor::class)->name('mikrotik-traffic-monitor');
+        });
+
         Route::get('/address', AddressSetup::class)->name('address-setup');
         Route::get('/packages', PackageListSetup::class)->name('package-list-setup');
         Route::get('/sms', SMSSetup::class)->name('sms-setup');

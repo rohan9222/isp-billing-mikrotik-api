@@ -96,41 +96,41 @@
                     </div>
                 @endif
                 <script>
-                    var navbarPosition = localStorage.getItem('navbarPosition');
-                    var navbarVertical = document.querySelector('.navbar-vertical');
-                    var navbarTopVertical = document.querySelector('.content .navbar-top');
-                    var navbarTop = document.querySelector('[data-layout] .navbar-top:not([data-double-top-nav');
-                    var navbarDoubleTop = document.querySelector('[data-double-top-nav]');
-                    var navbarTopCombo = document.querySelector('.content [data-navbar-top="combo"]');
+                    var storedNavbarPosition = localStorage.getItem('navbarPosition');
+                    var navVerticalEl = document.querySelector('.navbar-vertical');
+                    var navTopVerticalEl = document.querySelector('.content .navbar-top');
+                    var navTopEl = document.querySelector('[data-layout] .navbar-top:not([data-double-top-nav])');
+                    var navDoubleTopEl = document.querySelector('[data-double-top-nav]');
+                    var navTopComboEl = document.querySelector('.content [data-navbar-top="combo"]');
 
                     if (localStorage.getItem('navbarPosition') === 'double-top') {
                         document.documentElement.classList.toggle('double-top-nav-layout');
                     }
 
-                    if (navbarPosition === 'top') {
-                        navbarTop.removeAttribute('style');
-                        navbarTopVertical.remove(navbarTopVertical);
-                        navbarVertical.remove(navbarVertical);
-                        navbarTopCombo.remove(navbarTopCombo);
-                        navbarDoubleTop.remove(navbarDoubleTop);
-                    } else if (navbarPosition === 'combo') {
-                        navbarVertical.removeAttribute('style');
-                        navbarTopCombo.removeAttribute('style');
-                        navbarTop.remove(navbarTop);
-                        navbarTopVertical.remove(navbarTopVertical);
-                        navbarDoubleTop.remove(navbarDoubleTop);
-                    } else if (navbarPosition === 'double-top') {
-                        navbarDoubleTop.removeAttribute('style');
-                        navbarTopVertical.remove(navbarTopVertical);
-                        navbarVertical.remove(navbarVertical);
-                        navbarTop.remove(navbarTop);
-                        navbarTopCombo.remove(navbarTopCombo);
+                    if (storedNavbarPosition === 'top') {
+                        if (navTopEl) navTopEl.removeAttribute('style');
+                        if (navTopVerticalEl) navTopVerticalEl.remove();
+                        if (navVerticalEl) navVerticalEl.remove();
+                        if (navTopComboEl) navTopComboEl.remove();
+                        if (navDoubleTopEl) navDoubleTopEl.remove();
+                    } else if (storedNavbarPosition === 'combo') {
+                        if (navVerticalEl) navVerticalEl.removeAttribute('style');
+                        if (navTopComboEl) navTopComboEl.removeAttribute('style');
+                        if (navTopEl) navTopEl.remove();
+                        if (navTopVerticalEl) navTopVerticalEl.remove();
+                        if (navDoubleTopEl) navDoubleTopEl.remove();
+                    } else if (storedNavbarPosition === 'double-top') {
+                        if (navDoubleTopEl) navDoubleTopEl.removeAttribute('style');
+                        if (navTopVerticalEl) navTopVerticalEl.remove();
+                        if (navVerticalEl) navVerticalEl.remove();
+                        if (navTopEl) navTopEl.remove();
+                        if (navTopComboEl) navTopComboEl.remove();
                     } else {
-                        navbarVertical.removeAttribute('style');
-                        navbarTopVertical.removeAttribute('style');
-                        navbarTop.remove(navbarTop);
-                        navbarDoubleTop.remove(navbarDoubleTop);
-                        navbarTopCombo.remove(navbarTopCombo);
+                        if (navVerticalEl) navVerticalEl.removeAttribute('style');
+                        if (navTopVerticalEl) navTopVerticalEl.removeAttribute('style');
+                        if (navTopEl) navTopEl.remove();
+                        if (navDoubleTopEl) navDoubleTopEl.remove();
+                        if (navTopComboEl) navTopComboEl.remove();
                     }
                 </script>
                 {{ $slot }}
@@ -374,6 +374,73 @@
             }
         }
     }
+
+    /* -------------------------------------------------------------------------- */
+    /*                         Auto-Dynamic DataTables                            */
+    /* -------------------------------------------------------------------------- */
+    var dataTablesInitTimeout = null;
+    function initDynamicDataTables() {
+        if (typeof $ === 'undefined' || typeof $.fn.DataTable === 'undefined') return;
+        
+        // Debounce to prevent multiple rapid initializations during morphing
+        if (dataTablesInitTimeout) clearTimeout(dataTablesInitTimeout);
+        
+        dataTablesInitTimeout = setTimeout(() => {
+            $('table.data-table').each(function() {
+                const $table = $(this);
+                
+                // Skip if the table is no longer in the document
+                if (!document.body.contains(this)) return;
+
+                const rowCount = $table.find('tbody tr').length;
+
+                // Always ensure it's destroyed before re-thinking (morph.updating usually handles this, but safety first)
+                if ($.fn.DataTable.isDataTable(this)) {
+                    $table.DataTable().destroy();
+                }
+
+                if (rowCount > 20) {
+                    $table.DataTable({
+                        responsive: true,
+                        pageLength: 20,
+                        lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, "All"]],
+                        dom: '<"d-flex justify-content-between align-items-center mb-2"Bf>rt<"d-flex justify-content-between align-items-center mt-2"ip>',
+                        buttons: ['copy', 'excel', 'pdf', 'print'],
+                        destroy: true
+                    });
+                }
+            });
+        }, 150); // 150ms debounce for stability
+    }
+
+    document.addEventListener('DOMContentLoaded', initDynamicDataTables);
+    document.addEventListener('livewire:navigated', initDynamicDataTables);
+    window.addEventListener('reinit-datatables', initDynamicDataTables);
+    
+    // Livewire 3 hooks for robust 3rd party integration (e.g., DataTables)
+    document.addEventListener('livewire:init', () => {
+        // 1. Destroy ALL DataTables on the page BEFORE any component morph starts.
+        // Broad destruction is safer in Livewire 3 to prevent parent-child node conflicts.
+        Livewire.hook('commit.prepare', ({ component }) => {
+            $('table.data-table').each(function() {
+                if ($.fn.DataTable.isDataTable(this)) {
+                    $(this).DataTable().destroy();
+                }
+            });
+        });
+
+       // 2. Re-initialize AFTER the ENTIRE morph cycle is finished
+       // commit.respond fires after the response is received and the DOM has been fully patched.
+       Livewire.hook('commit.respond', ({ component }) => {
+           // Wait a bit longer to be absolutely sure the DOM has settled across all browsers
+           setTimeout(() => {
+               // Only re-init if the component is still present in the DOM
+               if (component.el && document.body.contains(component.el)) {
+                   initDynamicDataTables();
+               }
+           }, 300); 
+       });
+    });
 </script>
 
 @stack('scripts')
