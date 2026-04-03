@@ -46,7 +46,7 @@ return [
             'throw' => false,
             'report' => false,
         ],
-        
+
         'direct_public' => [
             'driver' => 'local',
             'root' => public_path(),

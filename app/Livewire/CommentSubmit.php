@@ -3,16 +3,20 @@
 namespace App\Livewire;
 
 use App\Models\CommentList;
-
 use Livewire\Component;
 
 class CommentSubmit extends Component
 {
     public $name;
+
     public $mobile;
+
     public $email;
+
     public $comment;
+
     public $allComments;
+
     public function render()
     {
         return view('livewire.comment-submit')->layout('layouts.app');

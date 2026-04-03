@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\CollectionSummary;
-use App\Models\CustomersInfo;
 use Illuminate\Database\Eloquent\Model;
 
 class PaymentSummary extends Model
@@ -24,11 +22,13 @@ class PaymentSummary extends Model
         'summary_date' => 'date',
     ];
 
-    public function customer(){
+    public function customer()
+    {
         return $this->belongsTo(CustomersInfo::class, 'customer_payment_unique_id', 'customer_unique_id');
     }
 
-    public function collections(){
+    public function collections()
+    {
         return $this->hasMany(CollectionSummary::class, 'customer_collection_unique_id', 'customer_payment_unique_id');
     }
 
@@ -38,7 +38,7 @@ class PaymentSummary extends Model
             ->whereMonth('collection_date', $this->summary_date->month)
             ->whereYear('collection_date', $this->summary_date->year);
     }
-    
+
     public function getPaidAmountAttribute(): float
     {
         return $this->collections()

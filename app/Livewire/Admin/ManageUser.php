@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Models\User;
+use Illuminate\Contracts\View\View;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithoutUrlPagination;
@@ -158,7 +159,7 @@ class ManageUser extends Component
 
         $this->validate($rules);
 
-        user::updateOrCreate(
+        User::updateOrCreate(
             ['id' => $this->userId],
             [
                 'name' => $this->name,
@@ -195,7 +196,7 @@ class ManageUser extends Component
     /**
      * Render the component.
      *
-     * @return \Illuminate\Contracts\View\View
+     * @return View
      */
     public function render()
     {

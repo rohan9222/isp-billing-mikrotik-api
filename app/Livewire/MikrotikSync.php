@@ -2,16 +2,15 @@
 
 namespace App\Livewire;
 
+use App\Http\Controllers\MikrotikController;
+use App\Models\BillingInfo;
 use App\Models\CustomersInfo;
+use App\Models\OfficialInfo;
 use App\Models\PPPSecrets;
 use App\Models\RouterList;
-use App\Models\BillingInfo;
-use App\Models\OfficialInfo;
-use Illuminate\Support\Facades\Hash;
-use App\Http\Controllers\MikrotikController;
-
-use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -39,12 +38,14 @@ class MikrotikSync extends Component
             abort(403, 'Unauthorized action.');
         }
     }
+
     public function render()
     {
         // Pagination of routers
         $routers = RouterList::paginate(10);
         $routers->map(function ($router) {
             $router->user_list_count = PPPSecrets::where('router_name', $router->router_name)->where('status', '!=', 'removed')->count();
+
             return $router;
         });
 
@@ -54,18 +55,19 @@ class MikrotikSync extends Component
     public function rules()
     {
         return [
-            'router_name' => ['required','string','max:255','unique:router_lists,router_name,' . $this->RouterListId,],
-            'ip_address' => ['required','ip',
+            'router_name' => ['required', 'string', 'max:255', 'unique:router_lists,router_name,'.$this->RouterListId],
+            'ip_address' => ['required', 'ip',
                 function ($attribute, $value, $fail) {
                     $exists = RouterList::where('ip_address', $value)
                         ->where(function ($query) {
                             $query->where('ssh_port', $this->ssh_port)
                                 ->orWhere('api_port', $this->api_port);
                         })
-                        ->when($this->RouterListId, fn($q) => $q->where('id', '!=', $this->RouterListId))
+                        ->when($this->RouterListId, fn ($q) => $q->where('id', '!=', $this->RouterListId))
                         ->exists();
                     if ($exists) {
                         $fail('This IP address is already used with the same SSH or API port.');
+
                         return;
                     }
                 },
@@ -124,8 +126,9 @@ class MikrotikSync extends Component
     public function userSync($pppSecrets)
     {
         foreach ($pppSecrets as $routerName => $users) {
-            if (!is_array($users)) {
+            if (! is_array($users)) {
                 flash()->error($users);
+
                 continue;
             }
 
@@ -139,7 +142,7 @@ class MikrotikSync extends Component
                 // 2. Pre-load all existing secrets for this router
                 $existingSecrets = PPPSecrets::where('router_name', $routerName)
                     ->get()
-                    ->keyBy(fn($item) => strtolower($item->username));
+                    ->keyBy(fn ($item) => strtolower($item->username));
 
                 // 3. Pre-fetch latest customer unique ID count
                 $lastCustomerUniqueId = CustomersInfo::orderBy('id', 'desc')->value('customer_unique_id');
@@ -187,13 +190,15 @@ class MikrotikSync extends Component
 
                     try {
                         $lastLoggedOut = null;
-                        if (!empty($user['last-logged-out'])) {
+                        if (! empty($user['last-logged-out'])) {
                             $dt = Carbon::createFromFormat('M/d/Y H:i:s', $user['last-logged-out']);
                             if ($dt->year >= 2000) {
                                 $lastLoggedOut = $dt->format('Y-m-d H:i:s');
                             }
                         }
-                    } catch (\Exception $e) { $lastLoggedOut = null; }
+                    } catch (\Exception $e) {
+                        $lastLoggedOut = null;
+                    }
 
                     $secretData = [
                         'router_name' => $routerName,
@@ -204,7 +209,7 @@ class MikrotikSync extends Component
                         'caller_id' => $user['caller-id'] ?? '',
                         'comment' => $user['comment'] ?? '',
                         'ppp_remote_ip' => $user['ppp_remote_ip'] ?? '',
-                        'bandwidth' => trim(($user['limit-bytes-in'] ?? '') . '/' . ($user['limit-bytes-out'] ?? ''), '/'),
+                        'bandwidth' => trim(($user['limit-bytes-in'] ?? '').'/'.($user['limit-bytes-out'] ?? ''), '/'),
                         'last_logged_out' => $lastLoggedOut,
                         'last_caller_id' => $user['last-caller-id'] ?? '',
                         'last_disconnect_reason' => $user['last-disconnect-reason'] ?? '',
@@ -225,7 +230,7 @@ class MikrotikSync extends Component
                     } else {
                         $newSecret = PPPSecrets::create($secretData);
                         $lastIdCount++;
-                        $newId = 'FCNET' . $lastIdCount;
+                        $newId = 'FCNET'.$lastIdCount;
 
                         CustomersInfo::create([
                             'customer_unique_id' => $newId,
@@ -252,10 +257,10 @@ class MikrotikSync extends Component
                     ->delete();
 
                 DB::commit();
-                flash()->success('Router ' . $routerName . ' users synchronized successfully!');
+                flash()->success('Router '.$routerName.' users synchronized successfully!');
             } catch (\Exception $e) {
                 DB::rollBack();
-                flash()->error('Error syncing router ' . $routerName . ': ' . $e->getMessage());
+                flash()->error('Error syncing router '.$routerName.': '.$e->getMessage());
             }
         }
     }

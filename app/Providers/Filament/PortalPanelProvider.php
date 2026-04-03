@@ -2,14 +2,17 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\EditProfile;
+use App\Filament\Pages\Auth\Login;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages\Dashboard;
-use App\Filament\Pages\Auth\EditProfile;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Support\Assets\Css;
+use Filament\Support\Assets\Js;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Width;
 use Filament\Widgets\AccountWidget;
@@ -19,10 +22,8 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
-use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Filament\Support\Assets\Css;
-use Filament\Support\Assets\Js;
 use Illuminate\Support\Facades\Vite;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class PortalPanelProvider extends PanelProvider
 {
@@ -35,11 +36,11 @@ class PortalPanelProvider extends PanelProvider
             ->spa(hasPrefetching: true)
             ->id('portal')
             ->path('')
-            ->domain('portal.' . $baseDomain)
+            ->domain('portal.'.$baseDomain)
             ->favicon(siteUrlSettings('site_favicon') ?? asset('images/favicon.png'))
-            ->brandLogo(fn() => view('filament.application-logo'))
+            ->brandLogo(fn () => view('filament.application-logo'))
             ->brandLogoHeight('3.5rem')
-            ->login(\App\Filament\Pages\Auth\Login::class)
+            ->login(Login::class)
             ->authGuard('ppp')
             ->profile(EditProfile::class)
             ->maxContentWidth(Width::Full)

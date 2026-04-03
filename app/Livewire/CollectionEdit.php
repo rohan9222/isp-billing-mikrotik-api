@@ -140,7 +140,7 @@ class CollectionEdit extends Component
                 flash($response['message'])->success();
             } elseif ($response['status'] == 'error') {
                 flash($response['message'])->error();
-            }else {
+            } else {
                 flash('SMS sending failed.')->error();
             }
             $this->reset();
@@ -208,7 +208,7 @@ class CollectionEdit extends Component
                     flash()->success($response['message']);
                 } elseif ($response['status'] == 'error') {
                     flash()->error($response['message']);
-                }else {
+                } else {
                     flash()->error('SMS sending failed.');
                 }
                 $this->info_data = [];

@@ -1,11 +1,10 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schedule;
 use App\Http\Controllers\ScheduledTasksController;
 use App\Livewire\MikrotikSync;
+use Illuminate\Foundation\Inspiring;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
 Schedule::call(function () {
     app(ScheduledTasksController::class)->createMonthlyBill();

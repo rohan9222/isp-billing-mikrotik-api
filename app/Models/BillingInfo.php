@@ -4,9 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class BillingInfo extends Model
 {
@@ -34,25 +33,30 @@ class BillingInfo extends Model
     ];
 
     // In Billing model
-    public function scopeAutoDisable($query) {
+    public function scopeAutoDisable($query)
+    {
         return $query->where('auto_disable', true);
     }
-    public function scopeAutoDisableDate($query, $date) {
+
+    public function scopeAutoDisableDate($query, $date)
+    {
         return $query->where('auto_disable_date', '<=', $date->copy()->endOfDay());
     }
 
-    public function scopeUnpaid($query) {
+    public function scopeUnpaid($query)
+    {
         return $query->where('paid_amount', 0.00);
     }
 
-    public function scopePaid($query) {
+    public function scopePaid($query)
+    {
         return $query->where('paid_amount', '>', 0.00);
     }
 
-        public function getActivitylogOptions(): LogOptions
+    public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-        ->useLogName('system');
+            ->useLogName('system');
     }
 
     protected static function booted()

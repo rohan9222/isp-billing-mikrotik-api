@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Services\MikrotikSSHService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
 use Livewire\Component;
@@ -23,7 +24,73 @@ class NewCustomer extends Component
 {
     use WithFileUploads;
 
-    public $customer_name, $email, $identification_no, $mobile, $alternative_mobile, $profession, $connection_date, $service, $profile, $ip_address, $ppp_remote_ip, $username, $password, $queue_name, $caller_id, $comment, $interface, $bandwidth, $package_name, $monthly_rent, $due_amount, $additional_charge, $discount, $advance, $vat, $total_amount, $client_type, $distribution_location, $description, $note, $connected_by, $security_deposit, $auto_disable, $auto_disable_date;
+    public $customer_name;
+
+    public $email;
+
+    public $identification_no;
+
+    public $mobile;
+
+    public $alternative_mobile;
+
+    public $profession;
+
+    public $connection_date;
+
+    public $service;
+
+    public $profile;
+
+    public $ip_address;
+
+    public $ppp_remote_ip;
+
+    public $username;
+
+    public $password;
+
+    public $queue_name;
+
+    public $caller_id;
+
+    public $comment;
+
+    public $interface;
+
+    public $bandwidth;
+
+    public $package_name;
+
+    public $monthly_rent;
+
+    public $due_amount;
+
+    public $additional_charge;
+
+    public $discount;
+
+    public $advance;
+
+    public $vat;
+
+    public $total_amount;
+
+    public $client_type;
+
+    public $distribution_location;
+
+    public $description;
+
+    public $note;
+
+    public $connected_by;
+
+    public $security_deposit;
+
+    public $auto_disable;
+
+    public $auto_disable_date;
 
     public $router_name = '';
 
@@ -56,9 +123,10 @@ class NewCustomer extends Component
 
     public function mount()
     {
-        if  (!auth()->user()->can('create-customer')) {
+        if (! auth()->user()->can('create-customer')) {
             abort(403, 'Unauthorized action.');
         }
+
         return true;
     }
 
@@ -280,7 +348,7 @@ class NewCustomer extends Component
             } else {
                 $this->createUser();
             }
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             // Validation failed, extract error messages
             $errors = $e->validator->errors()->all();
 
@@ -365,7 +433,7 @@ class NewCustomer extends Component
             $customer->profession = $this->profession;
             $customer->ppp_user_id = $pppUser->id ?? null;
             $customer->connection_date = $this->connection_date;
-            
+
             // Get package_id based on selected package name and router
             $assignedPackageId = null;
             if ($this->package_name) {
@@ -376,7 +444,7 @@ class NewCustomer extends Component
                 $assignedPackageId = $pkg->first()?->id;
             }
             $customer->package_id = $assignedPackageId;
-            
+
             $customer->save();
 
             foreach ($this->address as $key => $value) {
@@ -460,7 +528,7 @@ class NewCustomer extends Component
         $this->addressFields = AddressField::orderBy('order', 'asc')->get();
         $this->routers = RouterList::select('router_name')->where('action', 'connected')->get();
         $this->packages = PackageList::select('price', 'package')
-            ->when($this->router_name, fn($q) => $q->where('router_name', $this->router_name))
+            ->when($this->router_name, fn ($q) => $q->where('router_name', $this->router_name))
             ->get();
         // $users = User::permission('create-user')->get();
         $this->users = User::all();

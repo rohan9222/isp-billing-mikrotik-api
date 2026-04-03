@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\PaymentSummaries\Pages;
 
 use App\Filament\Resources\PaymentSummaries\PaymentSummaryResource;
-use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewPaymentSummary extends ViewRecord
@@ -13,7 +12,7 @@ class ViewPaymentSummary extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            
+
         ];
     }
 }

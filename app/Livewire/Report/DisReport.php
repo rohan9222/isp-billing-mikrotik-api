@@ -1,17 +1,17 @@
 <?php
 
 namespace App\Livewire\Report;
-use App\Models\CustomersInfo;
-use Yajra\DataTables\DataTables;
-use Illuminate\Http\Request;
 
+use App\Models\CustomersInfo;
+use Illuminate\Http\Request;
 use Livewire\Component;
+use Yajra\DataTables\DataTables;
 
 class DisReport extends Component
 {
     public function mount()
     {
-        if (! hasAccess(['Super Admin'], ['all-customer']))  {
+        if (! hasAccess(['Super Admin'], ['all-customer'])) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -21,7 +21,7 @@ class DisReport extends Component
     public function getData(Request $request)
     {
         if ($request->ajax()) {
-            $data = CustomersInfo::with(['billing', 'package', 'customerAddress','official'])->where('status', 'active')->get();
+            $data = CustomersInfo::with(['billing', 'package', 'customerAddress', 'official'])->where('status', 'active')->get();
 
             return DataTables::of($data)
                 ->addIndexColumn()
@@ -37,7 +37,7 @@ class DisReport extends Component
                             $divisionData = implode(', ', array_filter([
                                 $address->input_type_text,
                                 $address->input_type_dropdown,
-                                $address->input_type_textarea
+                                $address->input_type_textarea,
                             ]));
                             break;
                         }
@@ -53,7 +53,7 @@ class DisReport extends Component
                             $districtData = implode(', ', array_filter([
                                 $address->input_type_text,
                                 $address->input_type_dropdown,
-                                $address->input_type_textarea
+                                $address->input_type_textarea,
                             ]));
                             break;
                         }
@@ -69,7 +69,7 @@ class DisReport extends Component
                             $thanaData = implode(', ', array_filter([
                                 $address->input_type_text,
                                 $address->input_type_dropdown,
-                                $address->input_type_textarea
+                                $address->input_type_textarea,
                             ]));
                             break;
                         }
@@ -85,7 +85,7 @@ class DisReport extends Component
                             $areaData = implode(', ', array_filter([
                                 $address->input_type_text,
                                 $address->input_type_dropdown,
-                                $address->input_type_textarea
+                                $address->input_type_textarea,
                             ]));
                             break;
                         }

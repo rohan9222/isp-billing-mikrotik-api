@@ -17,9 +17,9 @@ class PackageList extends Model
     ];
 
     protected $casts = [
-        'features'         => 'array',
-        'is_featured'      => 'boolean',
-        'show_on_site'     => 'boolean',
+        'features' => 'array',
+        'is_featured' => 'boolean',
+        'show_on_site' => 'boolean',
         'push_to_mikrotik' => 'boolean',
     ];
 

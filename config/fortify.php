@@ -87,7 +87,7 @@ return [
     */
 
     'prefix' => '',
-    'domain' => 'billing' . env('SESSION_DOMAIN'),
+    'domain' => 'billing'.env('SESSION_DOMAIN'),
 
     /*
     |--------------------------------------------------------------------------

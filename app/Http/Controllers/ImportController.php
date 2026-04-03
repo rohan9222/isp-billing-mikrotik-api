@@ -32,7 +32,6 @@ class ImportController extends Controller
         return view('mikrotik.import');
     }
 
-
     public function import(Request $request)
     {
         $request->validate([

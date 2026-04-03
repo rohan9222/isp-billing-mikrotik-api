@@ -33,11 +33,10 @@ class ManageRole extends Component
 
     public function mount()
     {
-        if (! hasAccess(['Super Admin'], ['create-user-role', 'edit-user-role', 'view-user-role','delete-user-role'])) {
+        if (! hasAccess(['Super Admin'], ['create-user-role', 'edit-user-role', 'view-user-role', 'delete-user-role'])) {
             abort(403, 'Unauthorized Access.');
         }
     }
-
 
     public function newRole()
     {
@@ -123,6 +122,7 @@ class ManageRole extends Component
         try {
             if (! $this->roleId) {
                 session()->flash('error', 'No role selected for deletion.');
+
                 return;
             }
 
@@ -131,6 +131,7 @@ class ManageRole extends Component
             if (! $role) {
                 session()->flash('error', 'Role not found.');
                 $this->roleId = null;
+
                 return;
             }
 

@@ -11,7 +11,7 @@ class DataUsageWidget extends BaseWidget
     protected function getStats(): array
     {
         $user = Auth::user();
-        if (!$user) {
+        if (! $user) {
             return [];
         }
 

@@ -34,15 +34,18 @@ class CustomersInfo extends Model
     ];
 
     // In CustomersInfo model
-    public function scopeActive($query) {
+    public function scopeActive($query)
+    {
         return $query->where('status', 'active');
     }
 
-    public function scopeUnderDisableLimit($query, $limit) {
+    public function scopeUnderDisableLimit($query, $limit)
+    {
         return $query->where('disable_count', '<', $limit);
     }
 
-    public function scopeHasPPPUser($query) {
+    public function scopeHasPPPUser($query)
+    {
         return $query->whereNotNull('ppp_user_id');
     }
 

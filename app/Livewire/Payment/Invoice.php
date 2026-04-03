@@ -2,13 +2,9 @@
 
 namespace App\Livewire\Payment;
 
-use App\Http\Controllers\CustomersController;
-use App\Http\Controllers\SMSController;
-use App\Models\BillingInfo;
 use App\Models\CollectionSummary;
 use App\Models\CustomersInfo;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -39,7 +35,6 @@ class Invoice extends Component
     public $expire_date = '';
 
     public $advance_paid = 0;
-
 
     public function mount()
     {
@@ -121,7 +116,6 @@ class Invoice extends Component
         $this->total_amount = $this->info_data->billing->due_amount;
         $this->due_amount = (int) $this->total_amount - (int) $this->paid_amount;
     }
-
 
     public function render()
     {

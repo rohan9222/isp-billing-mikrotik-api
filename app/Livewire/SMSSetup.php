@@ -3,8 +3,8 @@
 namespace App\Livewire;
 
 use App\Models\SmsTemplate;
-use Livewire\Component;
 use Codepagol\SmsBridge\Facades\SmsBridge;
+use Livewire\Component;
 
 class SMSSetup extends Component
 {
@@ -22,7 +22,7 @@ class SMSSetup extends Component
         if (! hasAccess(['Super Admin'], ['sms-setup'])) {
             abort(403, 'Unauthorized action.');
         }
-        
+
         $this->profile = SmsBridge::profile();
         $this->balance = SmsBridge::balance();
         $this->smsTemps = SmsTemplate::all();

@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -21,8 +21,8 @@ return new class extends Migration
         $customers = DB::table('customers_infos')->get();
         foreach ($customers as $customer) {
             if ($customer->package_name) {
-                // To accurately find the package, we should ideally know the router. 
-                // But since previously packages were globally unique by name, 
+                // To accurately find the package, we should ideally know the router.
+                // But since previously packages were globally unique by name,
                 // any package with this name is technically the same or we can just pick the first.
                 // Ideally, if the customer has a ppp_user_id, we can check the router name.
                 $routerName = null;

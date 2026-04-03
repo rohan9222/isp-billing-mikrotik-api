@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\PaymentSummaries\Schemas;
 
-use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
 use Filament\Schemas\Schema;
 

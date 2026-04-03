@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class CollectionSummary extends Model
 {
     use LogsActivity;
+
     protected static $recordEvents = ['deleted', 'updated'];
 
     protected $fillable = [
@@ -20,7 +21,7 @@ class CollectionSummary extends Model
         'payment_method',
         'transaction_id',
         'payment_status',
-        'bill_month'
+        'bill_month',
     ];
 
     public function customer()

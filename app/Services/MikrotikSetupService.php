@@ -34,7 +34,7 @@ class MikrotikSetupService
     protected function read(string $routerName, string $apiCmd, string $sshCmd): array
     {
         $results = $this->ctrl->routerList($routerName, $apiCmd, $sshCmd);
-        $data    = $results[$routerName] ?? [];
+        $data = $results[$routerName] ?? [];
 
         if (is_string($data)) {
             throw new Exception($data);
@@ -82,7 +82,10 @@ class MikrotikSetupService
     public function addIpAddress(string $routerName, string $address, string $interface, ?string $comment = null): string
     {
         $cmd = "/ip address add address=\"{$address}\" interface=\"{$interface}\"";
-        if ($comment) $cmd .= " comment=\"" . addslashes($comment) . "\"";
+        if ($comment) {
+            $cmd .= ' comment="'.addslashes($comment).'"';
+        }
+
         return $this->write($routerName, $cmd);
     }
 
@@ -104,16 +107,23 @@ class MikrotikSetupService
     public function addIpPool(string $routerName, string $name, string $ranges, ?string $nextPool = null): string
     {
         $cmd = "/ip pool add name=\"{$name}\" ranges=\"{$ranges}\"";
-        if ($nextPool) $cmd .= " next-pool=\"{$nextPool}\"";
+        if ($nextPool) {
+            $cmd .= " next-pool=\"{$nextPool}\"";
+        }
+
         return $this->write($routerName, $cmd);
     }
 
     public function editIpPool(string $routerName, string $name, string $ranges, ?string $nextPool = null): string
     {
         $cmd = "/ip pool set ranges=\"{$ranges}\"";
-        if ($nextPool) $cmd .= " next-pool=\"{$nextPool}\"";
-        else           $cmd .= " next-pool=none";
+        if ($nextPool) {
+            $cmd .= " next-pool=\"{$nextPool}\"";
+        } else {
+            $cmd .= ' next-pool=none';
+        }
         $cmd .= " [find name=\"{$name}\"]";
+
         return $this->write($routerName, $cmd);
     }
 
@@ -153,6 +163,7 @@ class MikrotikSetupService
     public function toggleInterface(string $routerName, string $name, bool $enable): string
     {
         $action = $enable ? 'enable' : 'disable';
+
         return $this->write($routerName, "/interface {$action} [find name=\"{$name}\"]");
     }
 
@@ -169,7 +180,10 @@ class MikrotikSetupService
     public function addVlan(string $routerName, string $name, int $vlanId, string $interface, ?string $comment = null): string
     {
         $cmd = "/interface vlan add name=\"{$name}\" vlan-id={$vlanId} interface=\"{$interface}\"";
-        if ($comment) $cmd .= " comment=\"" . addslashes($comment) . "\"";
+        if ($comment) {
+            $cmd .= ' comment="'.addslashes($comment).'"';
+        }
+
         return $this->write($routerName, $cmd);
     }
 
@@ -199,7 +213,10 @@ class MikrotikSetupService
     public function addBridge(string $routerName, string $name, ?string $comment = null): string
     {
         $cmd = "/interface bridge add name=\"{$name}\"";
-        if ($comment) $cmd .= " comment=\"" . addslashes($comment) . "\"";
+        if ($comment) {
+            $cmd .= ' comment="'.addslashes($comment).'"';
+        }
+
         return $this->write($routerName, $cmd);
     }
 
@@ -220,16 +237,16 @@ class MikrotikSetupService
 
     public function addPppoeServer(string $routerName, array $p): string
     {
-        $iface   = $p['interface']      ?? 'ether1';
-        $svcName = $p['service_name']   ?? 'pppoe-server';
-        $name    = $p['name']           ?? $svcName;
-        $mtu     = $p['max_mtu']        ?? 1480;
-        $mru     = $p['max_mru']        ?? 1480;
-        $ka      = $p['keepalive']      ?? 10;
-        $auth    = $p['authentication'] ?? 'mschap2';
+        $iface = $p['interface'] ?? 'ether1';
+        $svcName = $p['service_name'] ?? 'pppoe-server';
+        $name = $p['name'] ?? $svcName;
+        $mtu = $p['max_mtu'] ?? 1480;
+        $mru = $p['max_mru'] ?? 1480;
+        $ka = $p['keepalive'] ?? 10;
+        $auth = $p['authentication'] ?? 'mschap2';
 
         return $this->write($routerName,
-            "/interface pppoe-server server add interface=\"{$iface}\" service-name=\"{$svcName}\" name=\"{$name}\" " .
+            "/interface pppoe-server server add interface=\"{$iface}\" service-name=\"{$svcName}\" name=\"{$name}\" ".
             "max-mtu={$mtu} max-mru={$mru} keepalive-timeout={$ka} authentication={$auth}"
         );
     }
@@ -259,14 +276,17 @@ class MikrotikSetupService
 
     public function addPppSecret(string $routerName, array $p): string
     {
-        $name    = addslashes($p['name']    ?? '');
-        $pass    = addslashes($p['password'] ?? '');
+        $name = addslashes($p['name'] ?? '');
+        $pass = addslashes($p['password'] ?? '');
         $profile = addslashes($p['profile'] ?? 'default');
-        $service = $p['service']            ?? 'pppoe';
+        $service = $p['service'] ?? 'pppoe';
         $comment = addslashes($p['comment'] ?? '');
 
         $cmd = "/ppp secret add name=\"{$name}\" password=\"{$pass}\" profile=\"{$profile}\" service={$service}";
-        if ($comment) $cmd .= " comment=\"{$comment}\"";
+        if ($comment) {
+            $cmd .= " comment=\"{$comment}\"";
+        }
+
         return $this->write($routerName, $cmd);
     }
 
@@ -327,13 +347,16 @@ class MikrotikSetupService
 
     public function addHotspotUser(string $routerName, array $p): string
     {
-        $name    = addslashes($p['name']    ?? '');
-        $pass    = addslashes($p['password'] ?? '');
+        $name = addslashes($p['name'] ?? '');
+        $pass = addslashes($p['password'] ?? '');
         $profile = addslashes($p['profile'] ?? 'default');
         $comment = addslashes($p['comment'] ?? '');
 
         $cmd = "/ip hotspot user add name=\"{$name}\" password=\"{$pass}\" profile=\"{$profile}\"";
-        if ($comment) $cmd .= " comment=\"{$comment}\"";
+        if ($comment) {
+            $cmd .= " comment=\"{$comment}\"";
+        }
+
         return $this->write($routerName, $cmd);
     }
 
@@ -344,14 +367,19 @@ class MikrotikSetupService
 
     public function addHotspotUserProfile(string $routerName, array $p): string
     {
-        $name        = addslashes($p['name']            ?? '');
-        $rateLimit   = $p['rate_limit']                ?? '';
-        $sharedUsers = $p['shared_users']              ?? 1;
-        $sessionTime = $p['session_timeout']           ?? '';
+        $name = addslashes($p['name'] ?? '');
+        $rateLimit = $p['rate_limit'] ?? '';
+        $sharedUsers = $p['shared_users'] ?? 1;
+        $sessionTime = $p['session_timeout'] ?? '';
 
         $cmd = "/ip hotspot user profile add name=\"{$name}\" shared-users={$sharedUsers}";
-        if ($rateLimit)   $cmd .= " rate-limit=\"{$rateLimit}\"";
-        if ($sessionTime) $cmd .= " session-timeout={$sessionTime}";
+        if ($rateLimit) {
+            $cmd .= " rate-limit=\"{$rateLimit}\"";
+        }
+        if ($sessionTime) {
+            $cmd .= " session-timeout={$sessionTime}";
+        }
+
         return $this->write($routerName, $cmd);
     }
 
@@ -372,17 +400,20 @@ class MikrotikSetupService
 
     public function addRadiusServer(string $routerName, array $p): string
     {
-        $address  = $p['address']   ?? '';
-        $secret   = addslashes($p['secret']  ?? '');
-        $service  = $p['service']   ?? 'ppp';
+        $address = $p['address'] ?? '';
+        $secret = addslashes($p['secret'] ?? '');
+        $service = $p['service'] ?? 'ppp';
         $authPort = $p['auth_port'] ?? 1812;
         $acctPort = $p['acct_port'] ?? 1813;
-        $timeout  = $p['timeout']   ?? 3000;
-        $comment  = addslashes($p['comment'] ?? '');
+        $timeout = $p['timeout'] ?? 3000;
+        $comment = addslashes($p['comment'] ?? '');
 
-        $cmd = "/radius add address={$address} secret=\"{$secret}\" service={$service} " .
+        $cmd = "/radius add address={$address} secret=\"{$secret}\" service={$service} ".
                "authentication-port={$authPort} accounting-port={$acctPort} timeout={$timeout}";
-        if ($comment) $cmd .= " comment=\"{$comment}\"";
+        if ($comment) {
+            $cmd .= " comment=\"{$comment}\"";
+        }
+
         return $this->write($routerName, $cmd);
     }
 
@@ -394,6 +425,7 @@ class MikrotikSetupService
     public function toggleRadiusServer(string $routerName, string $address, bool $enable): string
     {
         $action = $enable ? 'enable' : 'disable';
+
         return $this->write($routerName, "/radius {$action} [find address={$address}]");
     }
 
@@ -433,33 +465,49 @@ class MikrotikSetupService
 
     public function addFirewallFilter(string $routerName, array $p): string
     {
-        $chain    = $p['chain']       ?? 'forward';
-        $action   = $p['action']      ?? 'accept';
-        $protocol = $p['protocol']    ?? '';
-        $src      = $p['src_address'] ?? '';
-        $dst      = $p['dst_address'] ?? '';
-        $comment  = addslashes($p['comment'] ?? '');
+        $chain = $p['chain'] ?? 'forward';
+        $action = $p['action'] ?? 'accept';
+        $protocol = $p['protocol'] ?? '';
+        $src = $p['src_address'] ?? '';
+        $dst = $p['dst_address'] ?? '';
+        $comment = addslashes($p['comment'] ?? '');
 
         $cmd = "/ip firewall filter add chain={$chain} action={$action}";
-        if ($protocol) $cmd .= " protocol={$protocol}";
-        if ($src)      $cmd .= " src-address={$src}";
-        if ($dst)      $cmd .= " dst-address={$dst}";
-        if ($comment)  $cmd .= " comment=\"{$comment}\"";
+        if ($protocol) {
+            $cmd .= " protocol={$protocol}";
+        }
+        if ($src) {
+            $cmd .= " src-address={$src}";
+        }
+        if ($dst) {
+            $cmd .= " dst-address={$dst}";
+        }
+        if ($comment) {
+            $cmd .= " comment=\"{$comment}\"";
+        }
+
         return $this->write($routerName, $cmd);
     }
 
     public function addFirewallNat(string $routerName, array $p): string
     {
-        $chain    = $p['chain']         ?? 'srcnat';
-        $action   = $p['action']        ?? 'masquerade';
+        $chain = $p['chain'] ?? 'srcnat';
+        $action = $p['action'] ?? 'masquerade';
         $outIface = $p['out_interface'] ?? '';
-        $src      = $p['src_address']   ?? '';
-        $comment  = addslashes($p['comment'] ?? '');
+        $src = $p['src_address'] ?? '';
+        $comment = addslashes($p['comment'] ?? '');
 
         $cmd = "/ip firewall nat add chain={$chain} action={$action}";
-        if ($outIface) $cmd .= " out-interface=\"{$outIface}\"";
-        if ($src)      $cmd .= " src-address={$src}";
-        if ($comment)  $cmd .= " comment=\"{$comment}\"";
+        if ($outIface) {
+            $cmd .= " out-interface=\"{$outIface}\"";
+        }
+        if ($src) {
+            $cmd .= " src-address={$src}";
+        }
+        if ($comment) {
+            $cmd .= " comment=\"{$comment}\"";
+        }
+
         return $this->write($routerName, $cmd);
     }
 
@@ -471,13 +519,17 @@ class MikrotikSetupService
     public function toggleFirewallRule(string $routerName, string $table, int $index, bool $enable): string
     {
         $action = $enable ? 'enable' : 'disable';
+
         return $this->write($routerName, "/ip firewall {$table} {$action} {$index}");
     }
 
     public function addAddressList(string $routerName, string $list, string $address, ?string $comment = null): string
     {
         $cmd = "/ip firewall address-list add list=\"{$list}\" address={$address}";
-        if ($comment) $cmd .= " comment=\"" . addslashes($comment) . "\"";
+        if ($comment) {
+            $cmd .= ' comment="'.addslashes($comment).'"';
+        }
+
         return $this->write($routerName, $cmd);
     }
 
@@ -500,13 +552,16 @@ class MikrotikSetupService
 
     public function addSimpleQueue(string $routerName, array $p): string
     {
-        $name     = addslashes($p['name']      ?? '');
-        $target   = $p['target']               ?? '';
-        $maxLimit = $p['max_limit']            ?? '10M/10M';
-        $comment  = addslashes($p['comment']   ?? '');
+        $name = addslashes($p['name'] ?? '');
+        $target = $p['target'] ?? '';
+        $maxLimit = $p['max_limit'] ?? '10M/10M';
+        $comment = addslashes($p['comment'] ?? '');
 
         $cmd = "/queue simple add name=\"{$name}\" target={$target} max-limit={$maxLimit}";
-        if ($comment) $cmd .= " comment=\"{$comment}\"";
+        if ($comment) {
+            $cmd .= " comment=\"{$comment}\"";
+        }
+
         return $this->write($routerName, $cmd);
     }
 
@@ -518,6 +573,7 @@ class MikrotikSetupService
     public function toggleSimpleQueue(string $routerName, string $name, bool $enable): string
     {
         $action = $enable ? 'enable' : 'disable';
+
         return $this->write($routerName, "/queue simple {$action} [find name=\"{$name}\"]");
     }
 
@@ -531,16 +587,21 @@ class MikrotikSetupService
 
     public function addQueueTree(string $routerName, array $p): string
     {
-        $name     = addslashes($p['name']      ?? '');
-        $parent   = $p['parent']               ?? 'global';
-        $maxLimit = $p['max_limit']            ?? '10M';
-        $limitAt  = $p['limit_at']             ?? '';
-        $priority = $p['priority']             ?? 8;
-        $comment  = addslashes($p['comment']   ?? '');
+        $name = addslashes($p['name'] ?? '');
+        $parent = $p['parent'] ?? 'global';
+        $maxLimit = $p['max_limit'] ?? '10M';
+        $limitAt = $p['limit_at'] ?? '';
+        $priority = $p['priority'] ?? 8;
+        $comment = addslashes($p['comment'] ?? '');
 
         $cmd = "/queue tree add name=\"{$name}\" parent={$parent} max-limit={$maxLimit} priority={$priority}";
-        if ($limitAt) $cmd .= " limit-at={$limitAt}";
-        if ($comment) $cmd .= " comment=\"{$comment}\"";
+        if ($limitAt) {
+            $cmd .= " limit-at={$limitAt}";
+        }
+        if ($comment) {
+            $cmd .= " comment=\"{$comment}\"";
+        }
+
         return $this->write($routerName, $cmd);
     }
 
@@ -571,7 +632,10 @@ class MikrotikSetupService
     {
         $e = $enabled ? 'yes' : 'no';
         $cmd = "/interface l2tp-server server set enabled={$e} default-profile=\"{$profile}\" authentication={$auth}";
-        if ($ipsecSecret) $cmd .= " ipsec-secret=\"" . addslashes($ipsecSecret) . "\" use-ipsec=yes";
+        if ($ipsecSecret) {
+            $cmd .= ' ipsec-secret="'.addslashes($ipsecSecret).'" use-ipsec=yes';
+        }
+
         return $this->write($routerName, $cmd);
     }
 
@@ -586,6 +650,7 @@ class MikrotikSetupService
     public function setPptpServer(string $routerName, bool $enabled, string $profile = 'default', string $auth = 'mschap2'): string
     {
         $e = $enabled ? 'yes' : 'no';
+
         return $this->write($routerName,
             "/interface pptp-server server set enabled={$e} default-profile=\"{$profile}\" authentication={$auth}"
         );
@@ -602,6 +667,7 @@ class MikrotikSetupService
     public function setSstpServer(string $routerName, bool $enabled, string $profile = 'default', int $port = 443): string
     {
         $e = $enabled ? 'yes' : 'no';
+
         return $this->write($routerName,
             "/interface sstp-server server set enabled={$e} default-profile=\"{$profile}\" port={$port}"
         );

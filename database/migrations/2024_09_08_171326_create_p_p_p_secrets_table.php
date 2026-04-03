@@ -36,9 +36,6 @@ return new class extends Migration
             // $table->foreign('package_name')->references('package_name')->on('package_lists')->cascadeOnUpdate()->nullOnDelete();
             $table->timestamps();
 
-
-
-
         });
     }
 

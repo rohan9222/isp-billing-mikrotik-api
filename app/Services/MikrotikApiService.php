@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
+use Exception;
 use RouterOS\Client;
 use RouterOS\Config;
 use RouterOS\Query;
-use Exception;
 
 class MikrotikApiService
 {
@@ -25,15 +25,15 @@ class MikrotikApiService
 
             $this->client = new Client($config);
         } catch (Exception $e) {
-            throw new Exception('Failed to connect to MikroTik: ' . $e->getMessage());
+            throw new Exception('Failed to connect to MikroTik: '.$e->getMessage());
         }
     }
 
     /**
      * Execute a MikroTik API command
      *
-     * @param string $command  The RouterOS command (e.g., '/system/resource/print')
-     * @param array  $params   Optional command parameters
+     * @param  string  $command  The RouterOS command (e.g., '/system/resource/print')
+     * @param  array  $params  Optional command parameters
      * @return array|string
      */
     public function executeCommand(string $command, array $params = [])
@@ -50,7 +50,7 @@ class MikrotikApiService
 
             return $response;
         } catch (Exception $e) {
-            return 'Error: ' . $e->getMessage();
+            return 'Error: '.$e->getMessage();
         }
     }
 }

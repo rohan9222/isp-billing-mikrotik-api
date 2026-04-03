@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use Illuminate\Auth\EloquentUserProvider;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Auth;
 use Livewire\Blaze\Blaze;
 
 class AppServiceProvider extends ServiceProvider
@@ -26,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
             if (method_exists($user, 'hasRole')) {
                 return $user->hasRole('Super Admin') ? true : null;
             }
+
             return null;
         });
 
@@ -35,8 +38,9 @@ class AppServiceProvider extends ServiceProvider
         Paginator::useBootstrapFive();
 
         Auth::provider('pppoe_provider', function ($app, array $config) {
-            return new class($app['hash'], $config['model']) extends \Illuminate\Auth\EloquentUserProvider {
-                public function validateCredentials(\Illuminate\Contracts\Auth\Authenticatable $user, array $credentials)
+            return new class($app['hash'], $config['model']) extends EloquentUserProvider
+            {
+                public function validateCredentials(Authenticatable $user, array $credentials)
                 {
                     $plain = $credentials['password'];
                     $auth_password = $user->getAuthPassword();

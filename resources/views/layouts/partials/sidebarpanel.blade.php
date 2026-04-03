@@ -72,6 +72,9 @@
             <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-traffic-monitor') }}">
                 <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Live Traffic</span><span class="badge rounded-pill ms-2 badge-subtle-success">New</span></div>
             </a></li>
+            <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-log-viewer') }}">
+                <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Router Logs</span><span class="badge rounded-pill ms-2 badge-subtle-warning">Log</span></div>
+            </a></li>
         </ul>
     </li>
     <li class="nav-item">
@@ -172,12 +175,12 @@
             </div>
         </a>
         <!-- parent pages-->
-        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('main-site-setup') }}" role="button">
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('site-settings') }}" role="button">
             <div class="d-flex align-items-center">
                 <span class="nav-link-icon">
-                    <i class="bi bi-window-sidebar"></i>
+                    <i class="bi bi-gear-fill"></i>
                 </span>
-                <span class="nav-link-text ps-1">Main Site Setup</span>
+                <span class="nav-link-text ps-1">Master Setup</span>
             </div>
         </a>
         <!-- parent pages-->

@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class PPPSecrets extends Authenticatable implements FilamentUser
 {
@@ -31,7 +31,7 @@ class PPPSecrets extends Authenticatable implements FilamentUser
         'status',
         'package_name',
     ];
-    
+
     protected $hidden = [
         'password',
         'remember_token',

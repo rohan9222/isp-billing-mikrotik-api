@@ -4,14 +4,15 @@ namespace App\Livewire;
 
 use App\Models\NotificationLogs;
 use Carbon\Carbon;
-use Livewire\WithoutUrlPagination;
-use Livewire\WithPagination;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
+use Livewire\WithoutUrlPagination;
+use Livewire\WithPagination;
 
 class NotificationListAll extends Component
 {
     use WithoutUrlPagination, WithPagination;
+
     public $notificationCount = 0;
 
     public function markAsRead($id)
@@ -30,7 +31,7 @@ class NotificationListAll extends Component
 
     public function render()
     {
-       $notifications = NotificationLogs::latest()->paginate(10); // same as orderBy('created_at', 'desc')
+        $notifications = NotificationLogs::latest()->paginate(10); // same as orderBy('created_at', 'desc')
 
         return view('livewire.notification-list-all', ['notifications' => $notifications])->layout('layouts.app');
     }

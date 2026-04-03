@@ -9,29 +9,39 @@ use App\Livewire\AddressSetup;
 use App\Livewire\Admin\ManageRole;
 use App\Livewire\Admin\ManageUser;
 use App\Livewire\CollectionEdit;
+use App\Livewire\CommentSubmit;
 use App\Livewire\CustomerList;
 use App\Livewire\CustomerSummary;
 use App\Livewire\EditCustomer;
+use App\Livewire\MainSiteSetup;
+use App\Livewire\Mikrotik\FirewallSetup;
+use App\Livewire\Mikrotik\HotspotSetup;
+use App\Livewire\Mikrotik\InterfaceSetup;
+use App\Livewire\Mikrotik\IpSetup;
+use App\Livewire\Mikrotik\PppoeSetup;
+use App\Livewire\Mikrotik\QueueSetup;
+use App\Livewire\Mikrotik\RadiusSetup;
+use App\Livewire\Mikrotik\RouterLogViewer;
+use App\Livewire\Mikrotik\TrafficMonitor;
+use App\Livewire\Mikrotik\VpnSetup;
 use App\Livewire\MikrotikSync;
 use App\Livewire\NewCustomer;
 use App\Livewire\NotificationListAll;
 use App\Livewire\PackageListSetup;
-use App\Livewire\PaymentCollection;
-use App\Livewire\SMSSetup;
-use App\Livewire\SiteSettings;
-use App\Livewire\Report\DisReport;
 use App\Livewire\Payment\Invoice;
-use Illuminate\Support\Facades\Route;
+use App\Livewire\PaymentCollection;
+use App\Livewire\Report\DisReport;
+use App\Livewire\SMSSetup;
+use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Illuminate\Support\Facades\Artisan;
-use App\Livewire\CommentSubmit;
-use App\Livewire\MainSiteSetup;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
 // Extract domain host from APP_URL for consistent subdomain routing
 $baseDomain = parse_url(config('app.url'), PHP_URL_HOST) ?: config('app.url');
 
 // Main domain
-Route::domain($baseDomain)->group(function () use ($baseDomain) {
+Route::domain($baseDomain)->group(function () {
     Route::get('/', [MainSiteController::class, 'index'])->name('welcome');
     Route::get('/all-packages', [MainSiteController::class, 'allPackages'])->name('all-packages');
 
@@ -40,7 +50,8 @@ Route::domain($baseDomain)->group(function () use ($baseDomain) {
         if (Str::startsWith($host, 'portal.')) {
             return redirect('/');
         }
-        return redirect()->away('https://portal.' . $host);
+
+        return redirect()->away('https://portal.'.$host);
     });
 
     Route::get('/billing', function () {
@@ -48,7 +59,8 @@ Route::domain($baseDomain)->group(function () use ($baseDomain) {
         if (Str::startsWith($host, 'billing.')) {
             return redirect('/');
         }
-        return redirect()->away('https://billing.' . $host);
+
+        return redirect()->away('https://billing.'.$host);
     });
 
     Route::get('/php-artisan-optimize', function () {
@@ -68,10 +80,11 @@ Route::domain($baseDomain)->group(function () use ($baseDomain) {
             try {
                 Artisan::call($command);
                 $output[$command] = Artisan::output();
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $output[$command] = $e->getMessage();
             }
         }
+
         return response()->json($output);
     });
 });
@@ -81,7 +94,7 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () use ($baseDomain) {
-    Route::domain('billing.' . $baseDomain)->group(function () {
+    Route::domain('billing.'.$baseDomain)->group(function () {
         Route::redirect('/', '/dashboard');
 
         Route::post('customers/enable/{id}', [CustomersController::class, 'customerEnable'])->name('customers.enable');
@@ -96,18 +109,19 @@ Route::middleware([
         Route::get('/admin-users', ManageUser::class)->name('admin-users');
         Route::get('/admin-roles', ManageRole::class)->name('admin-roles');
         Route::get('/mikrotik', MikrotikSync::class)->name('mikrotik-sync');
-        
+
         // Mikrotik Setup Routes
         Route::prefix('mikrotik-setup')->group(function () {
-            Route::get('/ip', \App\Livewire\Mikrotik\IpSetup::class)->name('mikrotik-ip-setup');
-            Route::get('/pppoe', \App\Livewire\Mikrotik\PppoeSetup::class)->name('mikrotik-pppoe-setup');
-            Route::get('/queue', \App\Livewire\Mikrotik\QueueSetup::class)->name('mikrotik-queue-setup');
-            Route::get('/firewall', \App\Livewire\Mikrotik\FirewallSetup::class)->name('mikrotik-firewall-setup');
-            Route::get('/hotspot', \App\Livewire\Mikrotik\HotspotSetup::class)->name('mikrotik-hotspot-setup');
-            Route::get('/radius', \App\Livewire\Mikrotik\RadiusSetup::class)->name('mikrotik-radius-setup');
-            Route::get('/vpn', \App\Livewire\Mikrotik\VpnSetup::class)->name('mikrotik-vpn-setup');
-            Route::get('/interface', \App\Livewire\Mikrotik\InterfaceSetup::class)->name('mikrotik-interface-setup');
-            Route::get('/traffic', \App\Livewire\Mikrotik\TrafficMonitor::class)->name('mikrotik-traffic-monitor');
+            Route::get('/ip', IpSetup::class)->name('mikrotik-ip-setup');
+            Route::get('/pppoe', PppoeSetup::class)->name('mikrotik-pppoe-setup');
+            Route::get('/queue', QueueSetup::class)->name('mikrotik-queue-setup');
+            Route::get('/firewall', FirewallSetup::class)->name('mikrotik-firewall-setup');
+            Route::get('/hotspot', HotspotSetup::class)->name('mikrotik-hotspot-setup');
+            Route::get('/radius', RadiusSetup::class)->name('mikrotik-radius-setup');
+            Route::get('/vpn', VpnSetup::class)->name('mikrotik-vpn-setup');
+            Route::get('/interface', InterfaceSetup::class)->name('mikrotik-interface-setup');
+            Route::get('/traffic', TrafficMonitor::class)->name('mikrotik-traffic-monitor');
+            Route::get('/logs', RouterLogViewer::class)->name('mikrotik-log-viewer');
         });
 
         Route::get('/address', AddressSetup::class)->name('address-setup');
@@ -125,13 +139,15 @@ Route::middleware([
         Route::get('/report/dis-report-table', [DisReport::class, 'getData'])->name('dis-report-table');
         Route::get('/report/dis-report', DisReport::class)->name('dis-report');
 
-        // site settings
-        Route::get('/site-settings', SiteSettings::class)->name('site-settings');
+        // site settings (consolidated)
+        Route::get('/site-settings', MainSiteSetup::class)
+            ->middleware(DispatchServingFilamentEvent::class)
+            ->name('site-settings');
 
-        // main site content management
-        Route::get('/main-site-setup', MainSiteSetup::class)
-            ->middleware(\Filament\Http\Middleware\DispatchServingFilamentEvent::class)
-            ->name('main-site-setup');
+        // main site content management (deprecate name but keeps route if needed or redirection)
+        Route::get('/main-site-setup', function () {
+            return redirect()->route('site-settings');
+        });
 
         Route::get('/all-notifications', NotificationListAll::class)->name('notifications');
         // Route::get('/edit-customer', EditCustomer::class);
@@ -158,7 +174,5 @@ Route::middleware([
     // Route::post('/bkash/payment', [BkashController::class, 'createPayment']);
     // Route::post('/bkash/execute/{paymentID}', [BkashController::class, 'executePayment']);
 
-    Route::domain('portal.' . $baseDomain)->group(function () {
-        
-    });
+    Route::domain('portal.'.$baseDomain)->group(function () {});
 });

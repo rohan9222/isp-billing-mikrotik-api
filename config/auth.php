@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\PPPSecrets;
+use App\Models\User;
+
 return [
 
     /*
@@ -67,12 +70,12 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\User::class),
+            'model' => env('AUTH_MODEL', User::class),
         ],
 
         'pppoe' => [
             'driver' => 'pppoe_provider',
-            'model' => App\Models\PPPSecrets::class,
+            'model' => PPPSecrets::class,
         ],
 
         // 'users' => [

@@ -17,7 +17,7 @@ class NotificationList extends Component
     {
         $this->notificationCount = NotificationLogs::whereNull('read_by')->count();
     }
-    
+
     public function loadNotifications()
     {
         $this->notifications = NotificationLogs::latest()->take(5)->get();
@@ -52,7 +52,6 @@ class NotificationList extends Component
         // Optionally, you can use a flash message to notify the user
         flash()->success('All notifications marked as read');
     }
-    
 
     public function render()
     {

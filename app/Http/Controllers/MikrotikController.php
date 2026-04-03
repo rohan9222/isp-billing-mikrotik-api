@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\RouterList;
+use App\Models\MikrotikLog;
 use App\Models\NotificationLogs;
-use App\Services\MikrotikSSHService;
+use App\Models\RouterList;
 use App\Services\MikrotikApiService;
+use App\Services\MikrotikSSHService;
 
 class MikrotikController extends Controller
 {
-    protected $mikrotikSSHService;
     protected $mikrotikApiService;
+    protected $mikrotikSSHService;
 
-    public function __construct(?MikrotikSSHService $mikrotikSSHService = null, ?MikrotikApiService $mikrotikApiService = null)
+    public function __construct(?MikrotikApiService $mikrotikApiService = null, ?MikrotikSSHService $mikrotikSSHService = null)
     {
-        $this->mikrotikSSHService = $mikrotikSSHService;
         $this->mikrotikApiService = $mikrotikApiService;
+        $this->mikrotikSSHService = $mikrotikSSHService;
     }
 
     // =========================================================================
@@ -35,26 +36,30 @@ class MikrotikController extends Controller
                 if (is_string($response) && str_starts_with($response, 'Error:')) {
                     throw new \Exception($response);
                 }
+
                 return $response;
             } catch (\Exception $e) {
                 if ($ssh_port) {
                     try {
                         $mikrotikSSHService = new MikrotikSSHService($ip_address, $ssh_port, $username, $password);
+
                         return $mikrotikSSHService->executeCommandParsable($ssh_command);
                     } catch (\Exception $sshEx) {
-                        return 'Both API and SSH failed: ' . $sshEx->getMessage();
+                        return 'Both API and SSH failed: '.$sshEx->getMessage();
                     }
                 }
-                return 'API failed and no SSH port provided: ' . $e->getMessage();
+
+                return 'API failed and no SSH port provided: '.$e->getMessage();
             }
         }
 
         if ($ssh_port) {
             try {
                 $mikrotikSSHService = new MikrotikSSHService($ip_address, $ssh_port, $username, $password);
+
                 return $mikrotikSSHService->executeCommandParsable($ssh_command);
             } catch (\Exception $sshEx) {
-                return 'SSH failed: ' . $sshEx->getMessage();
+                return 'SSH failed: '.$sshEx->getMessage();
             }
         }
 
@@ -65,19 +70,9 @@ class MikrotikController extends Controller
      * Run a READ command on one or all connected routers.
      * Returns ['router_name' => array|string, ...]
      */
-    public function routerList($routerIdentifier = null, $api_command = null, $ssh_command = null)
+    public function routerList($routerName = null, $api_command = null, $ssh_command = null)
     {
-        $query = RouterList::where('action', 'connected');
-
-        if ($routerIdentifier) {
-            if (is_numeric($routerIdentifier)) {
-                $query->where('id', $routerIdentifier);
-            } else {
-                $query->where('router_name', $routerIdentifier);
-            }
-        }
-
-        $routers = $query->get();
+        $routers = RouterList::where('action', 'connected')->where('router_name', $routerName)->get();
         $results = [];
         foreach ($routers as $router) {
             try {
@@ -91,28 +86,32 @@ class MikrotikController extends Controller
                     $ssh_command
                 );
             } catch (\Exception $e) {
-                $results[$router->router_name] = 'Error: ' . $e->getMessage();
+                $results[$router->router_name] = 'Error: '.$e->getMessage();
             }
         }
+
         return $results;
     }
 
     /**
      * Run a READ on a SINGLE router by name. Returns flat array of items.
+     *
      * @throws \Exception on connection error
      */
     protected function singleRead(string $routerName, string $apiCmd, string $sshCmd): array
     {
         $results = $this->routerList($routerName, $apiCmd, $sshCmd);
-        $data    = $results[$routerName] ?? [];
+        $data = $results[$routerName] ?? [];
         if (is_string($data)) {
             throw new \Exception($data);
         }
+
         return is_array($data) ? $data : [];
     }
 
     /**
      * Run a WRITE command on a single router via SSH (add/set/remove).
+     *
      * @throws \Exception if router not found or SSH fails
      */
     protected function singleWrite(string $routerName, string $command): string
@@ -149,6 +148,7 @@ class MikrotikController extends Controller
         if ($destinationId) {
             $cmd .= " destination={$destinationId}";
         }
+
         return $this->singleWrite($routerName, $cmd);
     }
 
@@ -167,9 +167,10 @@ class MikrotikController extends Controller
         if ($router) {
             try {
                 $mikrotikSSHService = new MikrotikSSHService($router->ip_address, $router->ssh_port, $router->username, $router->password);
-                return $mikrotikSSHService->executeCommand('/ppp secret enable ' . $PPPSecretPPPSecret);
+
+                return $mikrotikSSHService->executeCommand('/ppp secret enable '.$PPPSecretPPPSecret);
             } catch (\Exception $e) {
-                NotificationLogs::create(['title' => 'Enable User', 'message' => $customerID . ' (' . $PPPSecretPPPSecret . ')' . $e->getMessage(), 'status' => 'Error on Mikrotik Command', 'type' => 'Mikrotik Command']);
+                NotificationLogs::create(['title' => 'Enable User', 'message' => $customerID.' ('.$PPPSecretPPPSecret.')'.$e->getMessage(), 'status' => 'Error on Mikrotik Command', 'type' => 'Mikrotik Command']);
             }
         } else {
             return 'Router not found';
@@ -182,9 +183,10 @@ class MikrotikController extends Controller
         if ($router) {
             try {
                 $mikrotikSSHService = new MikrotikSSHService($router->ip_address, $router->ssh_port, $router->username, $router->password);
-                return $mikrotikSSHService->executeCommand('/ppp secret disable ' . $PPPSecretPPPSecret);
+
+                return $mikrotikSSHService->executeCommand('/ppp secret disable '.$PPPSecretPPPSecret);
             } catch (\Exception $e) {
-                NotificationLogs::create(['title' => 'Disable User', 'message' => $customerID . ' (' . $PPPSecretPPPSecret . ')' . $e->getMessage(), 'status' => 'Error on Mikrotik Command', 'type' => 'Mikrotik Command']);
+                NotificationLogs::create(['title' => 'Disable User', 'message' => $customerID.' ('.$PPPSecretPPPSecret.')'.$e->getMessage(), 'status' => 'Error on Mikrotik Command', 'type' => 'Mikrotik Command']);
             }
         } else {
             return 'Router not found';
@@ -197,9 +199,10 @@ class MikrotikController extends Controller
         if ($router) {
             try {
                 $mikrotikSSHService = new MikrotikSSHService($router->ip_address, $router->ssh_port, $router->username, $router->password);
-                return $mikrotikSSHService->executeCommand('/ppp secret remove ' . $PPPSecretPPPSecret);
+
+                return $mikrotikSSHService->executeCommand('/ppp secret remove '.$PPPSecretPPPSecret);
             } catch (\Exception $e) {
-                NotificationLogs::create(['title' => 'Remove User', 'message' => $customerID . ' (' . $PPPSecretPPPSecret . ')' . $e->getMessage(), 'status' => 'Error on Mikrotik Command', 'type' => 'Mikrotik Command']);
+                NotificationLogs::create(['title' => 'Remove User', 'message' => $customerID.' ('.$PPPSecretPPPSecret.')'.$e->getMessage(), 'status' => 'Error on Mikrotik Command', 'type' => 'Mikrotik Command']);
             }
         } else {
             return 'Router not found';
@@ -208,18 +211,19 @@ class MikrotikController extends Controller
 
     public function updatePPPSecret($router_name, $PPPSecretusername, $PPPSecretField, $PPPSecretData)
     {
-        $PPPSecretData     = str_replace('"', '\"', $PPPSecretData);
+        $PPPSecretData = str_replace('"', '\"', $PPPSecretData);
         $PPPSecretusername = str_replace('"', '\"', $PPPSecretusername);
 
         $router = RouterList::where('router_name', $router_name)->first();
         if ($router && $router->action === 'connected') {
             try {
                 $mikrotikSSHService = new MikrotikSSHService($router->ip_address, $router->ssh_port, $router->username, $router->password);
+
                 return $mikrotikSSHService->executeCommand(
-                    '/ppp secret set ' . $PPPSecretField . '="' . $PPPSecretData . '" [find name="' . $PPPSecretusername . '"]'
+                    '/ppp secret set '.$PPPSecretField.'="'.$PPPSecretData.'" [find name="'.$PPPSecretusername.'"]'
                 );
             } catch (\Exception $e) {
-                return 'Error: ' . $e->getMessage();
+                return 'Error: '.$e->getMessage();
             }
         } else {
             return 'Router is not connected or not found';
@@ -233,28 +237,34 @@ class MikrotikController extends Controller
     public function pushProfileToRouters(string $name, string $rateLimit, ?string $localAddress = null, ?string $remoteAddress = null, ?string $routerName = null): array
     {
         $query = RouterList::where('action', 'connected');
-        if ($routerName) $query->where('router_name', $routerName);
+        if ($routerName) {
+            $query->where('router_name', $routerName);
+        }
         $routers = $query->get();
         $results = [];
 
         foreach ($routers as $router) {
             try {
-                $ssh     = new MikrotikSSHService($router->ip_address, $router->ssh_port, $router->username, $router->password);
-                $options = 'rate-limit="' . $rateLimit . '"';
-                if (!empty($localAddress))  $options .= ' local-address="' . $localAddress . '"';
-                if (!empty($remoteAddress)) $options .= ' remote-address="' . $remoteAddress . '"';
+                $ssh = new MikrotikSSHService($router->ip_address, $router->ssh_port, $router->username, $router->password);
+                $options = 'rate-limit="'.$rateLimit.'"';
+                if (! empty($localAddress)) {
+                    $options .= ' local-address="'.$localAddress.'"';
+                }
+                if (! empty($remoteAddress)) {
+                    $options .= ' remote-address="'.$remoteAddress.'"';
+                }
 
-                $check  = $ssh->executeCommand('/ppp profile print count-only where name="' . $name . '"');
+                $check = $ssh->executeCommand('/ppp profile print count-only where name="'.$name.'"');
                 $exists = intval(trim($check)) > 0;
 
                 $cmd = $exists
-                    ? '/ppp profile set ' . $options . ' [find name="' . $name . '"]'
-                    : '/ppp profile add name="' . $name . '" ' . $options;
+                    ? '/ppp profile set '.$options.' [find name="'.$name.'"]'
+                    : '/ppp profile add name="'.$name.'" '.$options;
 
                 $ssh->executeCommand($cmd);
                 $results[$router->router_name] = 'OK';
             } catch (\Exception $e) {
-                $results[$router->router_name] = 'Error: ' . $e->getMessage();
+                $results[$router->router_name] = 'Error: '.$e->getMessage();
             }
         }
 
@@ -264,23 +274,29 @@ class MikrotikController extends Controller
     public function updateProfileOnRouters(string $oldName, string $newName, string $rateLimit, ?string $localAddress = null, ?string $remoteAddress = null, ?string $routerName = null): array
     {
         $query = RouterList::where('action', 'connected');
-        if ($routerName) $query->where('router_name', $routerName);
+        if ($routerName) {
+            $query->where('router_name', $routerName);
+        }
         $routers = $query->get();
         $results = [];
 
         foreach ($routers as $router) {
             try {
-                $ssh     = new MikrotikSSHService($router->ip_address, $router->ssh_port, $router->username, $router->password);
+                $ssh = new MikrotikSSHService($router->ip_address, $router->ssh_port, $router->username, $router->password);
                 if ($oldName !== $newName) {
-                    $ssh->executeCommand('/ppp profile set name="' . $newName . '" [find name="' . $oldName . '"]');
+                    $ssh->executeCommand('/ppp profile set name="'.$newName.'" [find name="'.$oldName.'"]');
                 }
-                $options = 'rate-limit="' . $rateLimit . '"';
-                if (!empty($localAddress))  $options .= ' local-address="' . $localAddress . '"';
-                if (!empty($remoteAddress)) $options .= ' remote-address="' . $remoteAddress . '"';
-                $ssh->executeCommand('/ppp profile set ' . $options . ' [find name="' . $newName . '"]');
+                $options = 'rate-limit="'.$rateLimit.'"';
+                if (! empty($localAddress)) {
+                    $options .= ' local-address="'.$localAddress.'"';
+                }
+                if (! empty($remoteAddress)) {
+                    $options .= ' remote-address="'.$remoteAddress.'"';
+                }
+                $ssh->executeCommand('/ppp profile set '.$options.' [find name="'.$newName.'"]');
                 $results[$router->router_name] = 'OK';
             } catch (\Exception $e) {
-                $results[$router->router_name] = 'Error: ' . $e->getMessage();
+                $results[$router->router_name] = 'Error: '.$e->getMessage();
             }
         }
 
@@ -290,17 +306,19 @@ class MikrotikController extends Controller
     public function deleteProfileFromRouters(string $name, ?string $routerName = null): array
     {
         $query = RouterList::where('action', 'connected');
-        if ($routerName) $query->where('router_name', $routerName);
+        if ($routerName) {
+            $query->where('router_name', $routerName);
+        }
         $routers = $query->get();
         $results = [];
 
         foreach ($routers as $router) {
             try {
                 $ssh = new MikrotikSSHService($router->ip_address, $router->ssh_port, $router->username, $router->password);
-                $ssh->executeCommand('/ppp profile remove [find name="' . $name . '"]');
+                $ssh->executeCommand('/ppp profile remove [find name="'.$name.'"]');
                 $results[$router->router_name] = 'OK';
             } catch (\Exception $e) {
-                $results[$router->router_name] = 'Error: ' . $e->getMessage();
+                $results[$router->router_name] = 'Error: '.$e->getMessage();
             }
         }
 
@@ -321,7 +339,10 @@ class MikrotikController extends Controller
         $cmd = $editId
             ? "/ip address set numbers={$editId} address=\"{$address}\" interface=\"{$interface}\""
             : "/ip address add address=\"{$address}\" interface=\"{$interface}\"";
-        if ($comment) $cmd .= ' comment="' . addslashes($comment) . '"';
+        if ($comment) {
+            $cmd .= ' comment="'.addslashes($comment).'"';
+        }
+
         return $this->singleWrite($routerName, $cmd);
     }
 
@@ -344,7 +365,10 @@ class MikrotikController extends Controller
         $cmd = $editId
             ? "/ip pool set numbers={$editId} name=\"{$name}\" ranges=\"{$ranges}\""
             : "/ip pool add name=\"{$name}\" ranges=\"{$ranges}\"";
-        if ($nextPool) $cmd .= " next-pool=\"{$nextPool}\"";
+        if ($nextPool) {
+            $cmd .= " next-pool=\"{$nextPool}\"";
+        }
+
         return $this->singleWrite($routerName, $cmd);
     }
 
@@ -369,16 +393,19 @@ class MikrotikController extends Controller
 
     public function addDhcpServer(string $routerName, array $p, ?string $editId = null): string
     {
-        $name    = addslashes($p['name']      ?? '');
-        $iface   = $p['interface']           ?? '';
-        $pool    = $p['address_pool']        ?? 'static-only';
-        $lease   = $p['lease_time']          ?? '00:10:00';
-        $comment = addslashes($p['comment']   ?? '');
+        $name = addslashes($p['name'] ?? '');
+        $iface = $p['interface'] ?? '';
+        $pool = $p['address_pool'] ?? 'static-only';
+        $lease = $p['lease_time'] ?? '00:10:00';
+        $comment = addslashes($p['comment'] ?? '');
 
         $cmd = $editId
             ? "/ip dhcp-server set numbers={$editId} name=\"{$name}\" interface=\"{$iface}\" address-pool=\"{$pool}\" lease-time={$lease}"
             : "/ip dhcp-server add name=\"{$name}\" interface=\"{$iface}\" address-pool=\"{$pool}\" lease-time={$lease}";
-        if ($comment) $cmd .= " comment=\"{$comment}\"";
+        if ($comment) {
+            $cmd .= " comment=\"{$comment}\"";
+        }
+
         return $this->singleWrite($routerName, $cmd);
     }
 
@@ -390,20 +417,24 @@ class MikrotikController extends Controller
     public function toggleDhcpServer(string $routerName, string $name, bool $enable): string
     {
         $action = $enable ? 'enable' : 'disable';
+
         return $this->singleWrite($routerName, "/ip dhcp-server {$action} [find name=\"{$name}\"]");
     }
 
     public function addDhcpNetwork(string $routerName, array $p, ?string $editId = null): string
     {
-        $address = $p['address']    ?? '';
-        $gateway = $p['gateway']    ?? '';
-        $dns     = $p['dns_server'] ?? '';
+        $address = $p['address'] ?? '';
+        $gateway = $p['gateway'] ?? '';
+        $dns = $p['dns_server'] ?? '';
         $comment = addslashes($p['comment'] ?? '');
 
         $cmd = $editId
             ? "/ip dhcp-server network set numbers={$editId} address=\"{$address}\" gateway=\"{$gateway}\" dns-server=\"{$dns}\""
             : "/ip dhcp-server network add address=\"{$address}\" gateway=\"{$gateway}\" dns-server=\"{$dns}\"";
-        if ($comment) $cmd .= " comment=\"{$comment}\"";
+        if ($comment) {
+            $cmd .= " comment=\"{$comment}\"";
+        }
+
         return $this->singleWrite($routerName, $cmd);
     }
 
@@ -424,6 +455,7 @@ class MikrotikController extends Controller
     public function toggleInterface(string $routerName, string $name, bool $enable): string
     {
         $action = $enable ? 'enable' : 'disable';
+
         return $this->singleWrite($routerName, "/interface {$action} [find name=\"{$name}\"]");
     }
 
@@ -441,7 +473,10 @@ class MikrotikController extends Controller
         $cmd = $editId
             ? "/interface vlan set numbers={$editId} name=\"{$name}\" vlan-id={$vlanId} interface=\"{$interface}\""
             : "/interface vlan add name=\"{$name}\" vlan-id={$vlanId} interface=\"{$interface}\"";
-        if ($comment) $cmd .= ' comment="' . addslashes($comment) . '"';
+        if ($comment) {
+            $cmd .= ' comment="'.addslashes($comment).'"';
+        }
+
         return $this->singleWrite($routerName, $cmd);
     }
 
@@ -467,7 +502,10 @@ class MikrotikController extends Controller
     public function addBridge(string $routerName, string $name, ?string $comment = null): string
     {
         $cmd = "/interface bridge add name=\"{$name}\"";
-        if ($comment) $cmd .= ' comment="' . addslashes($comment) . '"';
+        if ($comment) {
+            $cmd .= ' comment="'.addslashes($comment).'"';
+        }
+
         return $this->singleWrite($routerName, $cmd);
     }
 
@@ -487,18 +525,18 @@ class MikrotikController extends Controller
 
     public function addPppoeServer(string $routerName, array $p, ?string $editId = null): string
     {
-        $iface   = $p['interface']      ?? 'ether1';
-        $svcName = $p['service_name']   ?? 'pppoe-server';
-        $name    = $p['name']           ?? $svcName;
-        $mtu     = $p['max_mtu']        ?? 1480;
-        $mru     = $p['max_mru']        ?? 1480;
-        $ka      = $p['keepalive']      ?? 10;
-        $auth    = $p['authentication'] ?? 'mschap2';
+        $iface = $p['interface'] ?? 'ether1';
+        $svcName = $p['service_name'] ?? 'pppoe-server';
+        $name = $p['name'] ?? $svcName;
+        $mtu = $p['max_mtu'] ?? 1480;
+        $mru = $p['max_mru'] ?? 1480;
+        $ka = $p['keepalive'] ?? 10;
+        $auth = $p['authentication'] ?? 'mschap2';
 
         $cmd = $editId
-            ? "/interface pppoe-server server set numbers={$editId} interface=\"{$iface}\" service-name=\"{$svcName}\" " .
+            ? "/interface pppoe-server server set numbers={$editId} interface=\"{$iface}\" service-name=\"{$svcName}\" ".
               "name=\"{$name}\" max-mtu={$mtu} max-mru={$mru} keepalive-timeout={$ka} authentication={$auth}"
-            : "/interface pppoe-server server add interface=\"{$iface}\" service-name=\"{$svcName}\" " .
+            : "/interface pppoe-server server add interface=\"{$iface}\" service-name=\"{$svcName}\" ".
               "name=\"{$name}\" max-mtu={$mtu} max-mru={$mru} keepalive-timeout={$ka} authentication={$auth}";
 
         return $this->singleWrite($routerName, $cmd);
@@ -525,16 +563,19 @@ class MikrotikController extends Controller
 
     public function addPppSecret(string $routerName, array $p, ?string $editId = null): string
     {
-        $name    = addslashes($p['name']     ?? '');
-        $pass    = addslashes($p['password'] ?? '');
-        $profile = addslashes($p['profile']  ?? 'default');
-        $service = $p['service']             ?? 'pppoe';
-        $comment = addslashes($p['comment']  ?? '');
+        $name = addslashes($p['name'] ?? '');
+        $pass = addslashes($p['password'] ?? '');
+        $profile = addslashes($p['profile'] ?? 'default');
+        $service = $p['service'] ?? 'pppoe';
+        $comment = addslashes($p['comment'] ?? '');
 
         $cmd = $editId
             ? "/ppp secret set numbers={$editId} name=\"{$name}\" password=\"{$pass}\" profile=\"{$profile}\" service={$service}"
             : "/ppp secret add name=\"{$name}\" password=\"{$pass}\" profile=\"{$profile}\" service={$service}";
-        if ($comment) $cmd .= " comment=\"{$comment}\"";
+        if ($comment) {
+            $cmd .= " comment=\"{$comment}\"";
+        }
+
         return $this->singleWrite($routerName, $cmd);
     }
 
@@ -579,15 +620,18 @@ class MikrotikController extends Controller
 
     public function addHotspotUser(string $routerName, array $p, ?string $editId = null): string
     {
-        $name    = addslashes($p['name']     ?? '');
-        $pass    = addslashes($p['password'] ?? '');
-        $profile = addslashes($p['profile']  ?? 'default');
-        $comment = addslashes($p['comment']  ?? '');
+        $name = addslashes($p['name'] ?? '');
+        $pass = addslashes($p['password'] ?? '');
+        $profile = addslashes($p['profile'] ?? 'default');
+        $comment = addslashes($p['comment'] ?? '');
 
         $cmd = $editId
             ? "/ip hotspot user set numbers={$editId} name=\"{$name}\" password=\"{$pass}\" profile=\"{$profile}\""
             : "/ip hotspot user add name=\"{$name}\" password=\"{$pass}\" profile=\"{$profile}\"";
-        if ($comment) $cmd .= " comment=\"{$comment}\"";
+        if ($comment) {
+            $cmd .= " comment=\"{$comment}\"";
+        }
+
         return $this->singleWrite($routerName, $cmd);
     }
 
@@ -598,16 +642,21 @@ class MikrotikController extends Controller
 
     public function addHotspotUserProfile(string $routerName, array $p, ?string $editId = null): string
     {
-        $name        = addslashes($p['name']            ?? '');
-        $rateLimit   = $p['rate_limit']                 ?? '';
-        $sharedUsers = $p['shared_users']               ?? 1;
-        $sessionTime = $p['session_timeout']            ?? '';
+        $name = addslashes($p['name'] ?? '');
+        $rateLimit = $p['rate_limit'] ?? '';
+        $sharedUsers = $p['shared_users'] ?? 1;
+        $sessionTime = $p['session_timeout'] ?? '';
 
         $cmd = $editId
             ? "/ip hotspot user profile set numbers={$editId} name=\"{$name}\" shared-users={$sharedUsers}"
             : "/ip hotspot user profile add name=\"{$name}\" shared-users={$sharedUsers}";
-        if ($rateLimit)   $cmd .= " rate-limit=\"{$rateLimit}\"";
-        if ($sessionTime) $cmd .= " session-timeout={$sessionTime}";
+        if ($rateLimit) {
+            $cmd .= " rate-limit=\"{$rateLimit}\"";
+        }
+        if ($sessionTime) {
+            $cmd .= " session-timeout={$sessionTime}";
+        }
+
         return $this->singleWrite($routerName, $cmd);
     }
 
@@ -627,18 +676,21 @@ class MikrotikController extends Controller
 
     public function addRadiusServer(string $routerName, array $p, ?string $editId = null): string
     {
-        $address  = $p['address']   ?? '';
-        $secret   = addslashes($p['secret']  ?? '');
-        $service  = $p['service']   ?? 'ppp';
+        $address = $p['address'] ?? '';
+        $secret = addslashes($p['secret'] ?? '');
+        $service = $p['service'] ?? 'ppp';
         $authPort = $p['auth_port'] ?? 1812;
         $acctPort = $p['acct_port'] ?? 1813;
-        $timeout  = $p['timeout']   ?? 3000;
-        $comment  = addslashes($p['comment'] ?? '');
+        $timeout = $p['timeout'] ?? 3000;
+        $comment = addslashes($p['comment'] ?? '');
 
         $cmd = $editId
             ? "/radius set numbers={$editId} address={$address} secret=\"{$secret}\" service={$service} authentication-port={$authPort} accounting-port={$acctPort} timeout={$timeout}"
             : "/radius add address={$address} secret=\"{$secret}\" service={$service} authentication-port={$authPort} accounting-port={$acctPort} timeout={$timeout}";
-        if ($comment) $cmd .= " comment=\"{$comment}\"";
+        if ($comment) {
+            $cmd .= " comment=\"{$comment}\"";
+        }
+
         return $this->singleWrite($routerName, $cmd);
     }
 
@@ -650,6 +702,7 @@ class MikrotikController extends Controller
     public function toggleRadiusServer(string $routerName, string $address, bool $enable): string
     {
         $action = $enable ? 'enable' : 'disable';
+
         return $this->singleWrite($routerName, "/radius {$action} [find address={$address}]");
     }
 
@@ -664,27 +717,37 @@ class MikrotikController extends Controller
 
     public function addFirewallFilter(string $routerName, array $p, ?string $editId = null): string
     {
-        $chain    = $p['chain']       ?? 'forward';
-        $action   = $p['action']      ?? 'accept';
-        $protocol = $p['protocol']    ?? '';
-        $src      = $p['src_address'] ?? '';
-        $dst      = $p['dst_address'] ?? '';
-        $comment  = addslashes($p['comment'] ?? '');
+        $chain = $p['chain'] ?? 'forward';
+        $action = $p['action'] ?? 'accept';
+        $protocol = $p['protocol'] ?? '';
+        $src = $p['src_address'] ?? '';
+        $dst = $p['dst_address'] ?? '';
+        $comment = addslashes($p['comment'] ?? '');
 
-        $cmd = $editId 
+        $cmd = $editId
             ? "/ip firewall filter set numbers={$editId} chain={$chain} action={$action}"
             : "/ip firewall filter add chain={$chain} action={$action}";
 
-        if ($protocol) $cmd .= " protocol={$protocol}";
-        if ($src)      $cmd .= " src-address={$src}";
-        if ($dst)      $cmd .= " dst-address={$dst}";
-        if ($comment)  $cmd .= " comment=\"{$comment}\"";
+        if ($protocol) {
+            $cmd .= " protocol={$protocol}";
+        }
+        if ($src) {
+            $cmd .= " src-address={$src}";
+        }
+        if ($dst) {
+            $cmd .= " dst-address={$dst}";
+        }
+        if ($comment) {
+            $cmd .= " comment=\"{$comment}\"";
+        }
+
         return $this->singleWrite($routerName, $cmd);
     }
 
     public function toggleFirewallFilter(string $routerName, int $index, bool $enable): string
     {
         $action = $enable ? 'enable' : 'disable';
+
         return $this->singleWrite($routerName, "/ip firewall filter {$action} {$index}");
     }
 
@@ -704,25 +767,33 @@ class MikrotikController extends Controller
 
     public function addFirewallNat(string $routerName, array $p, ?string $editId = null): string
     {
-        $chain    = $p['chain']         ?? 'srcnat';
-        $action   = $p['action']        ?? 'masquerade';
+        $chain = $p['chain'] ?? 'srcnat';
+        $action = $p['action'] ?? 'masquerade';
         $outIface = $p['out_interface'] ?? '';
-        $src      = $p['src_address']   ?? '';
-        $comment  = addslashes($p['comment'] ?? '');
+        $src = $p['src_address'] ?? '';
+        $comment = addslashes($p['comment'] ?? '');
 
         $cmd = $editId
             ? "/ip firewall nat set numbers={$editId} chain={$chain} action={$action}"
             : "/ip firewall nat add chain={$chain} action={$action}";
 
-        if ($outIface) $cmd .= " out-interface=\"{$outIface}\"";
-        if ($src)      $cmd .= " src-address={$src}";
-        if ($comment)  $cmd .= " comment=\"{$comment}\"";
+        if ($outIface) {
+            $cmd .= " out-interface=\"{$outIface}\"";
+        }
+        if ($src) {
+            $cmd .= " src-address={$src}";
+        }
+        if ($comment) {
+            $cmd .= " comment=\"{$comment}\"";
+        }
+
         return $this->singleWrite($routerName, $cmd);
     }
 
     public function toggleFirewallNat(string $routerName, int $index, bool $enable): string
     {
         $action = $enable ? 'enable' : 'disable';
+
         return $this->singleWrite($routerName, "/ip firewall nat {$action} {$index}");
     }
 
@@ -743,6 +814,7 @@ class MikrotikController extends Controller
     public function toggleFirewallMangle(string $routerName, int $index, bool $enable): string
     {
         $action = $enable ? 'enable' : 'disable';
+
         return $this->singleWrite($routerName, "/ip firewall mangle {$action} {$index}");
     }
 
@@ -765,7 +837,10 @@ class MikrotikController extends Controller
         $cmd = $editId
             ? "/ip firewall address-list set numbers={$editId} list=\"{$list}\" address={$address}"
             : "/ip firewall address-list add list=\"{$list}\" address={$address}";
-        if ($comment) $cmd .= ' comment="' . addslashes($comment) . '"';
+        if ($comment) {
+            $cmd .= ' comment="'.addslashes($comment).'"';
+        }
+
         return $this->singleWrite($routerName, $cmd);
     }
 
@@ -785,15 +860,18 @@ class MikrotikController extends Controller
 
     public function addSimpleQueue(string $routerName, array $p, ?string $editId = null): string
     {
-        $name     = addslashes($p['name']     ?? '');
-        $target   = $p['target']              ?? '';
-        $maxLimit = $p['max_limit']           ?? '10M/10M';
-        $comment  = addslashes($p['comment']  ?? '');
+        $name = addslashes($p['name'] ?? '');
+        $target = $p['target'] ?? '';
+        $maxLimit = $p['max_limit'] ?? '10M/10M';
+        $comment = addslashes($p['comment'] ?? '');
 
         $cmd = $editId
             ? "/queue simple set numbers={$editId} name=\"{$name}\" target={$target} max-limit={$maxLimit}"
             : "/queue simple add name=\"{$name}\" target={$target} max-limit={$maxLimit}";
-        if ($comment) $cmd .= " comment=\"{$comment}\"";
+        if ($comment) {
+            $cmd .= " comment=\"{$comment}\"";
+        }
+
         return $this->singleWrite($routerName, $cmd);
     }
 
@@ -805,6 +883,7 @@ class MikrotikController extends Controller
     public function toggleSimpleQueue(string $routerName, string $name, bool $enable): string
     {
         $action = $enable ? 'enable' : 'disable';
+
         return $this->singleWrite($routerName, "/queue simple {$action} [find name=\"{$name}\"]");
     }
 
@@ -819,18 +898,23 @@ class MikrotikController extends Controller
 
     public function addQueueTree(string $routerName, array $p, ?string $editId = null): string
     {
-        $name     = addslashes($p['name']     ?? '');
-        $parent   = $p['parent']              ?? 'global';
-        $maxLimit = $p['max_limit']           ?? '10M';
-        $limitAt  = $p['limit_at']            ?? '';
-        $priority = $p['priority']            ?? 8;
-        $comment  = addslashes($p['comment']  ?? '');
+        $name = addslashes($p['name'] ?? '');
+        $parent = $p['parent'] ?? 'global';
+        $maxLimit = $p['max_limit'] ?? '10M';
+        $limitAt = $p['limit_at'] ?? '';
+        $priority = $p['priority'] ?? 8;
+        $comment = addslashes($p['comment'] ?? '');
 
         $cmd = $editId
             ? "/queue tree set numbers={$editId} name=\"{$name}\" parent={$parent} max-limit={$maxLimit} priority={$priority}"
             : "/queue tree add name=\"{$name}\" parent={$parent} max-limit={$maxLimit} priority={$priority}";
-        if ($limitAt) $cmd .= " limit-at={$limitAt}";
-        if ($comment) $cmd .= " comment=\"{$comment}\"";
+        if ($limitAt) {
+            $cmd .= " limit-at={$limitAt}";
+        }
+        if ($comment) {
+            $cmd .= " comment=\"{$comment}\"";
+        }
+
         return $this->singleWrite($routerName, $cmd);
     }
 
@@ -855,9 +939,12 @@ class MikrotikController extends Controller
 
     public function setL2tpServer(string $routerName, bool $enabled, string $profile = 'default', string $auth = 'mschap2', ?string $ipsecSecret = null): string
     {
-        $e   = $enabled ? 'yes' : 'no';
+        $e = $enabled ? 'yes' : 'no';
         $cmd = "/interface l2tp-server server set enabled={$e} default-profile=\"{$profile}\" authentication={$auth}";
-        if ($ipsecSecret) $cmd .= ' ipsec-secret="' . addslashes($ipsecSecret) . '" use-ipsec=yes';
+        if ($ipsecSecret) {
+            $cmd .= ' ipsec-secret="'.addslashes($ipsecSecret).'" use-ipsec=yes';
+        }
+
         return $this->singleWrite($routerName, $cmd);
     }
 
@@ -869,6 +956,7 @@ class MikrotikController extends Controller
     public function setPptpServer(string $routerName, bool $enabled, string $profile = 'default', string $auth = 'mschap2'): string
     {
         $e = $enabled ? 'yes' : 'no';
+
         return $this->singleWrite($routerName, "/interface pptp-server server set enabled={$e} default-profile=\"{$profile}\" authentication={$auth}");
     }
 
@@ -880,6 +968,7 @@ class MikrotikController extends Controller
     public function setSstpServer(string $routerName, bool $enabled, string $profile = 'default', int $port = 443): string
     {
         $e = $enabled ? 'yes' : 'no';
+
         return $this->singleWrite($routerName, "/interface sstp-server server set enabled={$e} default-profile=\"{$profile}\" port={$port}");
     }
 
@@ -890,7 +979,9 @@ class MikrotikController extends Controller
     public function getLiveTraffic(string $routerName, string $interface): array
     {
         $router = RouterList::where('router_name', $routerName)->where('action', 'connected')->first();
-        if (!$router) return ['rx-bits-per-second' => 0, 'tx-bits-per-second' => 0];
+        if (! $router) {
+            return ['rx-bits-per-second' => 0, 'tx-bits-per-second' => 0];
+        }
 
         try {
             if ($router->api_port) {
@@ -927,14 +1018,16 @@ class MikrotikController extends Controller
     {
         $keys = ['rx-bits-per-second', 'tx-bits-per-second'];
         foreach ($keys as $key) {
-            if (!isset($data[$key])) {
+            if (! isset($data[$key])) {
                 $data[$key] = 0;
+
                 continue;
             }
 
-            $val = strtolower((string)$data[$key]);
+            $val = strtolower((string) $data[$key]);
             if (is_numeric($val)) {
-                $data[$key] = (int)$val;
+                $data[$key] = (int) $val;
+
                 continue;
             }
 
@@ -953,8 +1046,119 @@ class MikrotikController extends Controller
                 $val = str_replace('bps', '', $val);
             }
 
-            $data[$key] = (int)((float)trim($val) * $multiplier);
+            $data[$key] = (int) ((float) trim($val) * $multiplier);
         }
+
         return $data;
+    }
+
+    // =========================================================================
+    // LOG SERVER
+    // =========================================================================
+
+    /**
+     * Fetch the latest logs from a router via API or SSH.
+     * Returns an array of log entries, each with id, time, topics, message, buffer.
+     */
+    public function getRouterLogs(string $routerName, int $limit = 100): array
+    {
+        $router = RouterList::where('router_name', $routerName)->where('action', 'connected')->first();
+        if (! $router) {
+            return [];
+        }
+
+        try {
+            if ($router->api_port) {
+                try {
+                    $api = new MikrotikApiService($router->ip_address, $router->api_port, $router->username, $router->password);
+                    $res = $api->executeCommand('/log/print');
+                    if (is_array($res)) {
+                        return array_map(fn ($e) => [
+                            'log_id' => $e['.id'] ?? null,
+                            'time' => $e['time'] ?? null,
+                            'topics' => $e['topics'] ?? 'info',
+                            'message' => (string) ($e['message'] ?? ($e['msg'] ?? '')),
+                            'buffer' => $e['buffer'] ?? 'memory',
+                        ], array_slice(array_reverse($res), 0, $limit));
+                    } else {
+                        throw new \Exception('API returned: '.json_encode($res));
+                    }
+                } catch (\Exception $e) {
+                    // fallback to SSH
+                }
+            }
+
+            if ($router->ssh_port) {
+                $ssh = new MikrotikSSHService($router->ip_address, $router->ssh_port, $router->username, $router->password);
+                // Use 'terse' for reliable key=value parsing
+                $res = $ssh->executeCommandParsable('/log print terse without-paging');
+                if (is_array($res) && ! isset($res['raw_output'])) {
+                    return array_map(fn ($e) => [
+                        'log_id' => $e['.id'] ?? ($e['id'] ?? null),
+                        'time' => $e['time'] ?? null,
+                        'topics' => $e['topics'] ?? 'info',
+                        'message' => (string) ($e['message'] ?? ($e['msg'] ?? '')),
+                        'buffer' => $e['buffer'] ?? 'memory',
+                    ], array_slice(array_reverse($res), 0, $limit));
+                }
+            }
+        } catch (\Exception $e) {
+            // silent
+        }
+
+        return [];
+    }
+
+    /**
+     * Store fetched logs to the database, skipping duplicates by log_id.
+     */
+    public function storeRouterLogs(string $routerName, array $logs): int
+    {
+        $inserted = 0;
+        foreach ($logs as $entry) {
+            // Deduplicate by log_id per router (only if log_id exists)
+            if (! empty($entry['log_id'])) {
+                $exists = MikrotikLog::where('router_name', $routerName)
+                    ->where('log_id', $entry['log_id'])
+                    ->exists();
+                if ($exists) {
+                    continue;
+                }
+            } else {
+                // If no log_id, use a quick recent-match to avoid literal double-save in the same second
+                $exists = MikrotikLog::where('router_name', $routerName)
+                    ->where('message', $entry['message'])
+                    ->where('created_at', '>=', now()->subSeconds(2))
+                    ->exists();
+                if ($exists) {
+                    continue;
+                }
+            }
+
+            MikrotikLog::create([
+                'router_name' => $routerName,
+                'log_id' => $entry['log_id'] ?? null,
+                'time' => $entry['time'] ?? null,
+                'topics' => $entry['topics'] ?? 'info',
+                'message' => $entry['message'] ?? '',
+                'buffer' => $entry['buffer'] ?? 'memory',
+            ]);
+            $inserted++;
+        }
+
+        return $inserted;
+    }
+
+    /**
+     * Delete logs older than $days days for a router (or all routers).
+     */
+    public function pruneOldLogs(int $days = 30, ?string $routerName = null): int
+    {
+        $query = MikrotikLog::where('created_at', '<', now()->subDays($days));
+        if ($routerName) {
+            $query->where('router_name', $routerName);
+        }
+
+        return $query->delete();
     }
 }

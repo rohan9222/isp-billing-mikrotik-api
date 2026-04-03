@@ -9,15 +9,14 @@ use App\Models\NotificationLogs;
 use App\Models\PaymentSummary;
 use App\Models\RouterList;
 use App\Services\MikrotikSSHService;
-use Codepagol\SmsBridge\Facades\SmsBridge;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Storage;
+use Codepagol\SmsBridge\Facades\SmsBridge;
 
 class ScheduledTasksController extends Controller
 {
     protected $mikrotikSSHService;
 
-    public function __construct(MikrotikSSHService $mikrotikSSHService = null)
+    public function __construct(?MikrotikSSHService $mikrotikSSHService = null)
     {
         $this->mikrotikSSHService = $mikrotikSSHService;
     }
@@ -143,36 +142,36 @@ class ScheduledTasksController extends Controller
             ->cursor()
             ->each(function ($customer) use (&$successfulIDs, &$errorIDs) {
                 $payment = PaymentSummary::where('customer_payment_unique_id', $customer->customer_unique_id)->first();
-            $lastDayOfMonth = Carbon::now()->endOfMonth()->format('d-M-Y');
-            $thisMonth = Carbon::now()->format('F');
-            $billMonth = Carbon::parse($customer->billing->auto_disable_date)->format('F');
-            if($thisMonth != $billMonth){
-                $day = date('d', strtotime($customer->billing->auto_disable_date));
-                $y = date('Y');
-                $m = date('m');
+                $lastDayOfMonth = Carbon::now()->endOfMonth()->format('d-M-Y');
+                $thisMonth = Carbon::now()->format('F');
+                $billMonth = Carbon::parse($customer->billing->auto_disable_date)->format('F');
+                if ($thisMonth != $billMonth) {
+                    $day = date('d', strtotime($customer->billing->auto_disable_date));
+                    $y = date('Y');
+                    $m = date('m');
 
-                $date = checkdate($m, $day, $y) ? "$y-$m-$day" : date('Y-m-t');
-                $billDate = date('d-M-Y', strtotime($date));
-            }else{
-                $billDate = Carbon::parse($customer->billing->auto_disable_date)->format('d-M-Y');
-            }
-            $data = [
-                'customer_name' => $customer->customer_name,
-                'month' => Carbon::now()->format('F Y'),
-                'bill_amount' => $customer->billing->total_amount,
-                'customer_id' => $customer->customer_unique_id,
-                'ip_or_user_name' => ($customer->pppUser->username ?? ''),
-                'last_day_of_pay_bill' => $billDate,
-                'company_name' => siteUrlSettings('site_name'),
-                'company_mobile' => siteUrlSettings('site_phone'),
-                'recipient' => $customer->mobile,
-            ];
-            $response = app(SMSController::class)->allCustomersSMS($data);
-            if ($response['status'] == 'success') {
-                $successfulIDs[] = $customer->customer_unique_id.' ('.($customer->pppUser->username ?? '').')';
-            } elseif ($response['status'] == 'error') {
-                $errorIDs[] = $customer->customer_unique_id.' ('.($customer->pppUser->username ?? '').')';
-            }
+                    $date = checkdate($m, $day, $y) ? "$y-$m-$day" : date('Y-m-t');
+                    $billDate = date('d-M-Y', strtotime($date));
+                } else {
+                    $billDate = Carbon::parse($customer->billing->auto_disable_date)->format('d-M-Y');
+                }
+                $data = [
+                    'customer_name' => $customer->customer_name,
+                    'month' => Carbon::now()->format('F Y'),
+                    'bill_amount' => $customer->billing->total_amount,
+                    'customer_id' => $customer->customer_unique_id,
+                    'ip_or_user_name' => ($customer->pppUser->username ?? ''),
+                    'last_day_of_pay_bill' => $billDate,
+                    'company_name' => siteUrlSettings('site_name'),
+                    'company_mobile' => siteUrlSettings('site_phone'),
+                    'recipient' => $customer->mobile,
+                ];
+                $response = app(SMSController::class)->allCustomersSMS($data);
+                if ($response['status'] == 'success') {
+                    $successfulIDs[] = $customer->customer_unique_id.' ('.($customer->pppUser->username ?? '').')';
+                } elseif ($response['status'] == 'error') {
+                    $errorIDs[] = $customer->customer_unique_id.' ('.($customer->pppUser->username ?? '').')';
+                }
             });
 
         // সফল বার্তা গুলো এবং ত্রুটি বার্তা গুলোকে লগে সংরক্ষণ করুন
@@ -201,7 +200,7 @@ class ScheduledTasksController extends Controller
         $errorIDs = [];
         CustomersInfo::where('status', 'active')
             ->where('ppp_user_id', '!=', null)
-            ->whereHas('billing', fn($q) => $q->autoDisable()->unpaid())
+            ->whereHas('billing', fn ($q) => $q->autoDisable()->unpaid())
             ->with(['pppUser', 'billing'])
             ->each(function ($customer) use (&$successfulIDs, &$errorIDs, &$expiredDate) {
                 $disableDate = Carbon::parse($customer->billing->auto_disable_date)->format('Y-m-d');
@@ -215,8 +214,8 @@ class ScheduledTasksController extends Controller
 
                         // Send SMS
                         $response = SmsBridge::to($customer->mobile)
-                                    ->message($message)
-                                    ->send();
+                            ->message($message)
+                            ->send();
 
                         if ($response['status'] == 'success') {
                             $successfulIDs[] = $customer->customer_unique_id.' ('.($customer->pppUser->username ?? '').')';
@@ -255,7 +254,7 @@ class ScheduledTasksController extends Controller
         CustomersInfo::active()
             ->underDisableLimit(siteUrlSettings('disable_check_no') ?? 1)
             ->hasPPPUser()
-            ->whereHas('billing', fn($q) => $q->autoDisable()->unpaid())
+            ->whereHas('billing', fn ($q) => $q->autoDisable()->unpaid())
             ->with(['pppUser', 'billing'])
             ->each(function ($customer) use (&$successfulIDs, &$errorIDs, $today) {
                 $billing = $customer->billing;
@@ -266,16 +265,16 @@ class ScheduledTasksController extends Controller
                 $vat = $billing->vat;
                 $due = $billing->due_amount;
 
-                if(siteUrlSettings('disable_check_no') === null || siteUrlSettings('disable_check_no') < 1 || siteUrlSettings('disable_check_no') === 1){
+                if (siteUrlSettings('disable_check_no') === null || siteUrlSettings('disable_check_no') < 1 || siteUrlSettings('disable_check_no') === 1) {
                     $autoDisableDate = Carbon::parse($billing->auto_disable_date)->startOfDay();
-                }else{
-                    $autoDisableDate = Carbon::parse($billing->auto_disable_date)->addDays(siteUrlSettings('disable_check_days')*$customer->disable_count)->startOfDay();
+                } else {
+                    $autoDisableDate = Carbon::parse($billing->auto_disable_date)->addDays(siteUrlSettings('disable_check_days') * $customer->disable_count)->startOfDay();
                 }
                 // for previous due
-                if(siteUrlSettings('disable_check_no') === null || siteUrlSettings('disable_check_no') < 1 || siteUrlSettings('disable_check_no') === 1){
+                if (siteUrlSettings('disable_check_no') === null || siteUrlSettings('disable_check_no') < 1 || siteUrlSettings('disable_check_no') === 1) {
                     $previousDueDisableDate = Carbon::parse($billing->auto_disable_date)->month(now()->month)->year(now()->year)->startOfDay();
-                }else{
-                    $previousDueDisableDate = Carbon::parse($billing->auto_disable_date)->month(now()->month)->year(now()->year)->addDays(siteUrlSettings('disable_check_days')*$customer->disable_count)->startOfDay();
+                } else {
+                    $previousDueDisableDate = Carbon::parse($billing->auto_disable_date)->month(now()->month)->year(now()->year)->addDays(siteUrlSettings('disable_check_days') * $customer->disable_count)->startOfDay();
                 }
                 $autoDisableMonth = $billing->auto_disable_month;
                 $disableLimitDate = $autoDisableDate->copy()->addMonths($autoDisableMonth);
@@ -286,19 +285,19 @@ class ScheduledTasksController extends Controller
                 // ✅ logic ১: for previous due
                 if ($billing->previous_due > 0 && $due > $totalBill && $today == $previousDueDisableDate) {
                     $shouldDisable = true;
-                    $disableFor = "Auto Disable for Previous Due";
+                    $disableFor = 'Auto Disable for Previous Due';
                 }
 
                 // ✅ logic ২: Due == Total Bill → Auto Disable Date <= today < DisableLimitDate
                 if ($due > $totalBill && $today->gte($disableLimitDate)) {
                     $shouldDisable = true;
-                    $disableFor = "Auto Disable for Due";
+                    $disableFor = 'Auto Disable for Due';
                 }
 
                 // ✅ logic ২: Due == Total Bill → Auto Disable Date <= today < DisableLimitDate
                 elseif ($due > 0 && $due <= $totalBill && $disableLimitDate && $today->gte($disableLimitDate)) {
                     $shouldDisable = true;
-                    $disableFor = "Auto Disable Date reached";
+                    $disableFor = 'Auto Disable Date reached';
                 }
 
                 if ($shouldDisable && $pppUser && $pppUser->username) {
@@ -312,15 +311,15 @@ class ScheduledTasksController extends Controller
                                 $router->password
                             );
 
-                            $response = $mikrotikSSHService->executeCommand('/ppp secret disable ' . $pppUser->username);
+                            $response = $mikrotikSSHService->executeCommand('/ppp secret disable '.$pppUser->username);
 
-                            if (!empty($response)) {
-                                $errorIDs[] = $customer->customer_unique_id . ' (' . $pppUser->username . ') {Mikrotik Command Error}';
+                            if (! empty($response)) {
+                                $errorIDs[] = $customer->customer_unique_id.' ('.$pppUser->username.') {Mikrotik Command Error}';
                             } else {
-                                $successfulID = $customer->customer_unique_id . ' (' . $pppUser->username . ')';
+                                $successfulID = $customer->customer_unique_id.' ('.$pppUser->username.')';
                                 $customer->update([
                                     'status' => 'disable',
-                                    'disable_count' => $customer->disable_count + 1
+                                    'disable_count' => $customer->disable_count + 1,
                                 ]);
 
                                 $message = 'Dear '.$customer->customer_name.', Your ID '.$customer->customer_unique_id.'('.($customer->pppUser->username ?? '').') is temporarily disconnected, Your Due amount: '.$due.'TK. Regards, '.siteUrlSettings('site_name').', Mobile: '.siteUrlSettings('site_phone');
@@ -337,12 +336,12 @@ class ScheduledTasksController extends Controller
                                 }
                             }
                             if (isset($successfulID)) {
-                                $successfulIDs[] = $successfulID . ' ' . ($successfulSMS ?? $errorSMS ?? '') . ' - (' . $disableFor. ')';
+                                $successfulIDs[] = $successfulID.' '.($successfulSMS ?? $errorSMS ?? '').' - ('.$disableFor.')';
                             }
                         } catch (\Exception $e) {
                             NotificationLogs::create([
                                 'title' => 'Disconnection Error',
-                                'message' => $customer->customer_unique_id . ' (' . $pppUser->username . ') - ' . $e->getMessage(),
+                                'message' => $customer->customer_unique_id.' ('.$pppUser->username.') - '.$e->getMessage(),
                                 'status' => 'Error on Mikrotik Command',
                                 'type' => 'Mikrotik Command',
                             ]);
@@ -352,7 +351,7 @@ class ScheduledTasksController extends Controller
             });
 
         // ✅ successful user log
-        if (!empty($successfulIDs)) {
+        if (! empty($successfulIDs)) {
             NotificationLogs::create([
                 'title' => 'Disconnection Success',
                 'message' => implode(', ', $successfulIDs),
@@ -362,7 +361,7 @@ class ScheduledTasksController extends Controller
         }
 
         // ❌ failed user log
-        if (!empty($errorIDs)) {
+        if (! empty($errorIDs)) {
             NotificationLogs::create([
                 'title' => 'Disconnection Failed',
                 'message' => implode(', ', $errorIDs),

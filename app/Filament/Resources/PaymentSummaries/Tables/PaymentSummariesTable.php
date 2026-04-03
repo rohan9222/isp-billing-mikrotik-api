@@ -2,9 +2,6 @@
 
 namespace App\Filament\Resources\PaymentSummaries\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -30,38 +27,38 @@ class PaymentSummariesTable
                     ->sortable(),
                 TextColumn::make('monthly_rent')
                     ->label('Monthly Rent')
-                    ->formatStateUsing(fn ($state) => number_format($state, 2) . ' ' . siteUrlSettings('site_currency'))
+                    ->formatStateUsing(fn ($state) => number_format($state, 2).' '.siteUrlSettings('site_currency'))
                     ->sortable(),
                 TextColumn::make('additional_charge')
                     ->label('Extra')
                     ->sortable()
-                    ->formatStateUsing(fn ($state) => number_format($state, 2) . ' ' . siteUrlSettings('site_currency')),
+                    ->formatStateUsing(fn ($state) => number_format($state, 2).' '.siteUrlSettings('site_currency')),
                 TextColumn::make('discount')
                     ->label('Discount')
                     ->sortable()
-                    ->formatStateUsing(fn ($state) => number_format($state, 2) . ' ' . siteUrlSettings('site_currency')),
+                    ->formatStateUsing(fn ($state) => number_format($state, 2).' '.siteUrlSettings('site_currency')),
                 TextColumn::make('advance')
                     ->label('Advance')
                     ->sortable()
-                    ->formatStateUsing(fn ($state) => number_format($state, 2) . ' ' . siteUrlSettings('site_currency')),
+                    ->formatStateUsing(fn ($state) => number_format($state, 2).' '.siteUrlSettings('site_currency')),
                 TextColumn::make('vat')
                     ->label('VAT')
                     ->sortable()
-                    ->formatStateUsing(fn ($state) => number_format($state, 2) . ' ' . siteUrlSettings('site_currency')),
+                    ->formatStateUsing(fn ($state) => number_format($state, 2).' '.siteUrlSettings('site_currency')),
                 TextColumn::make('previous_due')
                     ->label('Prev. Due')
                     ->sortable()
-                    ->formatStateUsing(fn ($state) => number_format($state, 2) . ' ' . siteUrlSettings('site_currency')),
+                    ->formatStateUsing(fn ($state) => number_format($state, 2).' '.siteUrlSettings('site_currency')),
                 TextColumn::make('total')
                     ->label('Total')
                     ->sortable()
-                    ->formatStateUsing(fn ($state) => number_format($state, 2) . ' ' . siteUrlSettings('site_currency')),
+                    ->formatStateUsing(fn ($state) => number_format($state, 2).' '.siteUrlSettings('site_currency')),
                 TextColumn::make('paid_amount')
                     ->label('Paid')
-                    ->formatStateUsing(fn ($state) => number_format($state, 2) . ' ' . siteUrlSettings('site_currency')),
+                    ->formatStateUsing(fn ($state) => number_format($state, 2).' '.siteUrlSettings('site_currency')),
                 TextColumn::make('due_amount')
                     ->label('Due')
-                    ->formatStateUsing(fn ($state) => number_format($state, 2) . ' ' . siteUrlSettings('site_currency')),
+                    ->formatStateUsing(fn ($state) => number_format($state, 2).' '.siteUrlSettings('site_currency')),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

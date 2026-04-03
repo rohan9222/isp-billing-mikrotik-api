@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use phpseclib3\Exception\RuntimeException;
-use phpseclib3\Net\SSH2;
 use App\Models\RouterList;
 use Exception;
+use phpseclib3\Exception\RuntimeException;
+use phpseclib3\Net\SSH2;
 
 class MikrotikSSHService
 {
@@ -15,8 +15,8 @@ class MikrotikSSHService
     {
         $this->ssh = new SSH2($host, $port);
 
-        if (!$this->ssh->login($username, $password)) {
-            throw new Exception('Login failed for ' . $host);
+        if (! $this->ssh->login($username, $password)) {
+            throw new Exception('Login failed for '.$host);
         }
     }
 
@@ -44,10 +44,10 @@ class MikrotikSSHService
                     $routerList->password
                 );
                 $interfaces = $mikrotikSSHService->executeCommand('/interface print where type="ether" or type="vlan"');
-                flash()->success('Router ' . $routerList->router_name . ' is connected successfully!');
+                flash()->success('Router '.$routerList->router_name.' is connected successfully!');
                 // return $interfaces;
-            } catch (\Exception $e) {
-                flash()->error('Router ' . $routerList->router_name . ' is not connected!');
+            } catch (Exception $e) {
+                flash()->error('Router '.$routerList->router_name.' is not connected!');
             }
         }
     }
@@ -78,13 +78,12 @@ class MikrotikSSHService
                     // dd('No match for: ' . $line); // Uncomment this to debug failing lines
                 }
             }
+
             return $secrets;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return ['error' => $e->getMessage()];
         }
     }
-
-
 
     // SHH command execution
     /**
@@ -135,7 +134,8 @@ class MikrotikSSHService
     protected function isListFormat($output)
     {
         $lines = array_filter(explode("\n", $output));
-        return count($lines) > 1 && !preg_match('/[:=]/', $lines[0]);
+
+        return count($lines) > 1 && ! preg_match('/[:=]/', $lines[0]);
     }
 
     /**
@@ -166,7 +166,9 @@ class MikrotikSSHService
 
         foreach ($lines as $line) {
             $line = trim($line);
-            if ($line === '') continue;
+            if ($line === '') {
+                continue;
+            }
 
             $entry = [];
 

@@ -24,7 +24,7 @@ class CustomerSummary extends Component
 
     public function mount()
     {
-        if (! hasAccess(['Super Admin'], ['payment-collection-report']))  {
+        if (! hasAccess(['Super Admin'], ['payment-collection-report'])) {
             abort(403, 'Unauthorized action.');
         }
 

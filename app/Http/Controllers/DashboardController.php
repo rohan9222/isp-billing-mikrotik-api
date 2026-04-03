@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\MikrotikController;
-
 use App\Models\CollectionSummary;
 use App\Models\CustomersInfo;
 use Carbon\Carbon;
@@ -68,9 +66,9 @@ class DashboardController extends Controller
             ];
         }
 
-        try{
+        try {
             $systemOverview = app(MikrotikController::class)->systemOverview();
-        }catch(\Exception $e){
+        } catch (\Exception $e) {
             $systemOverview = [];
         }
 

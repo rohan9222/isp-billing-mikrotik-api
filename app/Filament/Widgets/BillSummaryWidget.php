@@ -11,7 +11,7 @@ class BillSummaryWidget extends BaseWidget
     protected function getStats(): array
     {
         $user = Auth::user();
-        if (!$user || !$user->customer || !$user->customer->billing) {
+        if (! $user || ! $user->customer || ! $user->customer->billing) {
             return [
                 Stat::make('Monthly Bill', '0.00'),
                 Stat::make('Paid Amount', '0.00'),

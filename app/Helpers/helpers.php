@@ -1,30 +1,25 @@
 <?php
 
+use App\Http\Controllers\AvatarController;
+use App\Models\MainSiteData;
+
 /**
  * Created by Md. Jahangir Alam Rohan.
  * User: Md. Jahangir Alam Rohan.
  * Date: 25-Jun-2024
  * Time: 03.01 PM
  */
-
-use App\Models\SiteSetting;
-use Illuminate\Support\Facades\Cache;
-
-if (!function_exists('siteUrlSettings')) {
+if (! function_exists('siteUrlSettings')) {
     function siteUrlSettings($key)
     {
-        $settings = Cache::remember('site_settings', 3600, function () {
-            return SiteSetting::first();
-        });
-
-        return $settings->{$key} ?? null;
+        return MainSiteData::getValue($key);
     }
 }
 
 if (! function_exists('generate_avatar')) {
     function generate_avatar($name)
     {
-        $controller = app(App\Http\Controllers\AvatarController::class);
+        $controller = app(AvatarController::class);
 
         return $controller->generateAvatar($name);
     }
@@ -71,8 +66,13 @@ if (! function_exists('warningIfNoAccess')) {
 if (! function_exists('site_image')) {
     function site_image($path)
     {
-        if (!$path) return asset('img/placeholder.png');
-        if (str_starts_with($path, 'http')) return $path;
-        return asset('storage/' . $path);
+        if (! $path) {
+            return asset('img/placeholder.png');
+        }
+        if (str_starts_with($path, 'http')) {
+            return $path;
+        }
+
+        return asset('storage/'.$path);
     }
 }

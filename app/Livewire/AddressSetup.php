@@ -24,6 +24,7 @@ class AddressSetup extends Component
     public $complain_preview;
 
     public $addressFields;
+
     public $receiptOrders;
 
     public $addressFieldId; // Track the ID of the AddressField being edited
@@ -38,6 +39,7 @@ class AddressSetup extends Component
         $this->reset();
         $this->dataRender();
     }
+
     protected function rules()
     {
         return [

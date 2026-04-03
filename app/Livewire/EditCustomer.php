@@ -7,6 +7,7 @@ use App\Models\AddressField;
 use App\Models\BillingInfo;
 use App\Models\CustomersAddress;
 use App\Models\CustomersInfo;
+use App\Models\OfficialInfo;
 use App\Models\PackageList;
 use App\Models\PPPSecrets;
 use App\Models\RouterList;
@@ -15,6 +16,7 @@ use App\Services\MikrotikSSHService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
 use Livewire\Attributes\Validate;
@@ -200,7 +202,7 @@ class EditCustomer extends Component
                 ] : [],
                     [
                         'auto_disable_date' => $customer->billing?->auto_disable_date ? Carbon::parse($customer->billing->auto_disable_date)->format('d M Y') : '',
-                        'auto_disable_month' => $customer->billing?->auto_disable_month ? $customer->billing->auto_disable_month . ' Month' : '',
+                        'auto_disable_month' => $customer->billing?->auto_disable_month ? $customer->billing->auto_disable_month.' Month' : '',
                         'auto_disable' => $customer->billing->auto_disable ?? '',
                     ]
                 ),
@@ -520,7 +522,7 @@ class EditCustomer extends Component
                     flash()->error('Router '.$e->getMessage().' is not connected!');
                 }
             }
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             // Validation failed, extract error messages
             $errors = $e->validator->errors()->all();
 
@@ -604,9 +606,9 @@ class EditCustomer extends Component
                 $group = $segments[1];
                 $field = $segments[2];
                 if ($group === 'pppUser') {
-                    $dataUpdate = \App\Models\BillingInfo::where('customer_bill_unique_id', decrypt($this->customerId))->update([$field => $this->fields[$group][$field]]);
+                    $dataUpdate = BillingInfo::where('customer_bill_unique_id', decrypt($this->customerId))->update([$field => $this->fields[$group][$field]]);
                 } elseif ($group === 'official') {
-                    $dataUpdate = \App\Models\OfficialInfo::where('customer_office_unique_id', decrypt($this->customerId))->update([$field => $this->fields[$group][$field]]);
+                    $dataUpdate = OfficialInfo::where('customer_office_unique_id', decrypt($this->customerId))->update([$field => $this->fields[$group][$field]]);
                 }
                 if ($dataUpdate) {
                     flash()->success('Data updated successfully!');

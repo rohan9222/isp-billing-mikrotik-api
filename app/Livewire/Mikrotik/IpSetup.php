@@ -8,82 +8,116 @@ use Livewire\Component;
 
 class IpSetup extends Component
 {
-    public string $selectedRouter  = '';
-    public string $activeTab       = 'addresses';
+    public string $selectedRouter = '';
+
+    public string $activeTab = 'addresses';
 
     // IP Address form
-    public string $addr_address   = '';
+    public string $addr_address = '';
+
     public string $addr_interface = '';
-    public string $addr_comment   = '';
+
+    public string $addr_comment = '';
+
     public ?string $editAddressId = null;
 
     // IP Pool form
-    public string $pool_name       = '';
-    public string $pool_ranges     = '';
-    public string $pool_next_pool  = '';
-    public ?string $editPoolId     = null;
+    public string $pool_name = '';
+
+    public string $pool_ranges = '';
+
+    public string $pool_next_pool = '';
+
+    public ?string $editPoolId = null;
 
     // DHCP Server form
-    public string $dhcp_name      = '';
+    public string $dhcp_name = '';
+
     public string $dhcp_interface = '';
-    public string $dhcp_pool      = 'static-only';
-    public string $dhcp_lease     = '00:10:00';
-    public string $dhcp_comment   = '';
-    public ?string $editDhcpId    = null;
+
+    public string $dhcp_pool = 'static-only';
+
+    public string $dhcp_lease = '00:10:00';
+
+    public string $dhcp_comment = '';
+
+    public ?string $editDhcpId = null;
 
     // DHCP Network form
-    public string $net_address  = '';
-    public string $net_gateway  = '';
-    public string $net_dns      = '';
-    public string $net_comment  = '';
-    public ?string $editNetId   = null;
+    public string $net_address = '';
+
+    public string $net_gateway = '';
+
+    public string $net_dns = '';
+
+    public string $net_comment = '';
+
+    public ?string $editNetId = null;
 
     // Search and Pagination
     public string $searchDhcp = '';
 
-
     // Data
-    public array $ipAddresses  = [];
-    public array $ipPools      = [];
-    public array $dhcpServers  = [];
+    public array $ipAddresses = [];
+
+    public array $ipPools = [];
+
+    public array $dhcpServers = [];
+
     public array $dhcpNetworks = [];
-    public array $interfaces   = [];
+
+    public array $interfaces = [];
 
     public function mount(): void
     {
-        if (! hasAccess(['Super Admin'], ['mikrotik-setup'])) abort(403);
+        if (! hasAccess(['Super Admin'], ['mikrotik-setup'])) {
+            abort(403);
+        }
         $first = RouterList::where('action', 'connected')->first();
-        if ($first) { $this->selectedRouter = $first->router_name; $this->loadData(); }
+        if ($first) {
+            $this->selectedRouter = $first->router_name;
+            $this->loadData();
+        }
     }
 
-    public function updatedSelectedRouter(): void { $this->resetData(); if ($this->selectedRouter) $this->loadData(); }
+    public function updatedSelectedRouter(): void
+    {
+        $this->resetData();
+        if ($this->selectedRouter) {
+            $this->loadData();
+        }
+    }
 
     public function loadData(): void
     {
-        if (! $this->selectedRouter) return;
+        if (! $this->selectedRouter) {
+            return;
+        }
         $ctrl = app(MikrotikController::class);
         try {
-            $this->ipAddresses  = $ctrl->getIpAddresses($this->selectedRouter);
-            $this->ipPools      = $ctrl->getIpPools($this->selectedRouter);
-            $this->dhcpServers  = $ctrl->getDhcpServers($this->selectedRouter);
+            $this->ipAddresses = $ctrl->getIpAddresses($this->selectedRouter);
+            $this->ipPools = $ctrl->getIpPools($this->selectedRouter);
+            $this->dhcpServers = $ctrl->getDhcpServers($this->selectedRouter);
             $this->dhcpNetworks = $ctrl->getDhcpNetworks($this->selectedRouter);
-            $this->interfaces   = collect($ctrl->getInterfaces($this->selectedRouter))->pluck('name')->filter()->values()->toArray();
+            $this->interfaces = collect($ctrl->getInterfaces($this->selectedRouter))->pluck('name')->filter()->values()->toArray();
 
-        } catch (\Exception $e) { flash()->error('Load error: ' . $e->getMessage()); }
+        } catch (\Exception $e) {
+            flash()->error('Load error: '.$e->getMessage());
+        }
     }
 
     public function editAddress(array $addr): void
     {
-        $this->editAddressId  = $addr['.id'] ?? null;
-        $this->addr_address   = $addr['address'] ?? '';
+        $this->editAddressId = $addr['.id'] ?? null;
+        $this->addr_address = $addr['address'] ?? '';
         $this->addr_interface = $addr['interface'] ?? '';
-        $this->addr_comment   = $addr['comment'] ?? '';
+        $this->addr_comment = $addr['comment'] ?? '';
     }
 
     public function addAddress(): void
     {
         $this->validate([
-            'addr_address'   => 'required|regex:/^\d+\.\d+\.\d+\.\d+\/\d+$/',
+            'addr_address' => 'required|regex:/^\d+\.\d+\.\d+\.\d+\/\d+$/',
             'addr_interface' => 'required|string',
         ]);
         try {
@@ -92,7 +126,9 @@ class IpSetup extends Component
             $this->reset(['addr_address', 'addr_interface', 'addr_comment', 'editAddressId']);
             $this->ipAddresses = app(MikrotikController::class)->getIpAddresses($this->selectedRouter);
 
-        } catch (\Exception $e) { flash()->error($e->getMessage()); }
+        } catch (\Exception $e) {
+            flash()->error($e->getMessage());
+        }
     }
 
     public function removeAddress(string $address): void
@@ -102,13 +138,15 @@ class IpSetup extends Component
             flash()->success('IP Address removed.');
             $this->ipAddresses = app(MikrotikController::class)->getIpAddresses($this->selectedRouter);
 
-        } catch (\Exception $e) { flash()->error($e->getMessage()); }
+        } catch (\Exception $e) {
+            flash()->error($e->getMessage());
+        }
     }
 
     public function addPool(): void
     {
         $this->validate([
-            'pool_name'   => 'required|string|max:100',
+            'pool_name' => 'required|string|max:100',
             'pool_ranges' => 'required|string|max:255',
         ]);
         try {
@@ -118,15 +156,17 @@ class IpSetup extends Component
             $this->reset(['pool_name', 'pool_ranges', 'pool_next_pool', 'editPoolId']);
             $this->ipPools = $ctrl->getIpPools($this->selectedRouter);
 
-        } catch (\Exception $e) { flash()->error($e->getMessage()); }
+        } catch (\Exception $e) {
+            flash()->error($e->getMessage());
+        }
     }
 
     public function editPool(array $pool): void
     {
-        $this->editPoolId     = $pool['.id'] ?? null;
-        $this->pool_name      = $pool['name']       ?? '';
-        $this->pool_ranges    = $pool['ranges']      ?? '';
-        $this->pool_next_pool = $pool['next-pool']   ?? '';
+        $this->editPoolId = $pool['.id'] ?? null;
+        $this->pool_name = $pool['name'] ?? '';
+        $this->pool_ranges = $pool['ranges'] ?? '';
+        $this->pool_next_pool = $pool['next-pool'] ?? '';
     }
 
     public function removePool(string $name): void
@@ -136,39 +176,43 @@ class IpSetup extends Component
             flash()->success('Pool removed.');
             $this->ipPools = app(MikrotikController::class)->getIpPools($this->selectedRouter);
 
-        } catch (\Exception $e) { flash()->error($e->getMessage()); }
+        } catch (\Exception $e) {
+            flash()->error($e->getMessage());
+        }
     }
 
     // DHCP Server Methods
     public function editDhcpServer(array $srv): void
     {
-        $this->editDhcpId      = $srv['.id'] ?? null;
-        $this->dhcp_name       = $srv['name'] ?? '';
-        $this->dhcp_interface  = $srv['interface'] ?? '';
-        $this->dhcp_pool       = $srv['address-pool'] ?? 'static-only';
-        $this->dhcp_lease      = $srv['lease-time'] ?? '00:10:00';
-        $this->dhcp_comment    = $srv['comment'] ?? '';
+        $this->editDhcpId = $srv['.id'] ?? null;
+        $this->dhcp_name = $srv['name'] ?? '';
+        $this->dhcp_interface = $srv['interface'] ?? '';
+        $this->dhcp_pool = $srv['address-pool'] ?? 'static-only';
+        $this->dhcp_lease = $srv['lease-time'] ?? '00:10:00';
+        $this->dhcp_comment = $srv['comment'] ?? '';
     }
 
     public function addDhcpServer(): void
     {
         $this->validate([
-            'dhcp_name'      => 'required|string|max:100',
+            'dhcp_name' => 'required|string|max:100',
             'dhcp_interface' => 'required|string',
         ]);
         try {
             app(MikrotikController::class)->addDhcpServer($this->selectedRouter, [
-                'name'         => $this->dhcp_name,
-                'interface'    => $this->dhcp_interface,
+                'name' => $this->dhcp_name,
+                'interface' => $this->dhcp_interface,
                 'address_pool' => $this->dhcp_pool,
-                'lease_time'   => $this->dhcp_lease,
-                'comment'      => $this->dhcp_comment,
+                'lease_time' => $this->dhcp_lease,
+                'comment' => $this->dhcp_comment,
             ], $this->editDhcpId);
             flash()->success($this->editDhcpId ? 'DHCP Server updated!' : 'DHCP Server added!');
             $this->reset(['dhcp_name', 'dhcp_comment', 'editDhcpId']);
             $this->dhcpServers = app(MikrotikController::class)->getDhcpServers($this->selectedRouter);
 
-        } catch (\Exception $e) { flash()->error($e->getMessage()); }
+        } catch (\Exception $e) {
+            flash()->error($e->getMessage());
+        }
     }
 
     public function removeDhcpServer(string $name): void
@@ -178,27 +222,31 @@ class IpSetup extends Component
             flash()->success('DHCP Server removed.');
             $this->dhcpServers = app(MikrotikController::class)->getDhcpServers($this->selectedRouter);
 
-        } catch (\Exception $e) { flash()->error($e->getMessage()); }
+        } catch (\Exception $e) {
+            flash()->error($e->getMessage());
+        }
     }
 
     public function toggleDhcpServer(string $name, bool $enable): void
     {
         try {
             app(MikrotikController::class)->toggleDhcpServer($this->selectedRouter, $name, $enable);
-            flash()->success('DHCP Server ' . ($enable ? 'enabled' : 'disabled'));
+            flash()->success('DHCP Server '.($enable ? 'enabled' : 'disabled'));
             $this->dhcpServers = app(MikrotikController::class)->getDhcpServers($this->selectedRouter);
 
-        } catch (\Exception $e) { flash()->error($e->getMessage()); }
+        } catch (\Exception $e) {
+            flash()->error($e->getMessage());
+        }
     }
 
     // DHCP Network Methods
     public function editDhcpNetwork(array $net): void
     {
-        $this->editNetId    = $net['.id'] ?? null;
-        $this->net_address  = $net['address'] ?? '';
-        $this->net_gateway  = $net['gateway'] ?? '';
-        $this->net_dns      = $net['dns-server'] ?? '';
-        $this->net_comment  = $net['comment'] ?? '';
+        $this->editNetId = $net['.id'] ?? null;
+        $this->net_address = $net['address'] ?? '';
+        $this->net_gateway = $net['gateway'] ?? '';
+        $this->net_dns = $net['dns-server'] ?? '';
+        $this->net_comment = $net['comment'] ?? '';
     }
 
     public function addDhcpNetwork(): void
@@ -208,16 +256,18 @@ class IpSetup extends Component
         ]);
         try {
             app(MikrotikController::class)->addDhcpNetwork($this->selectedRouter, [
-                'address'    => $this->net_address,
-                'gateway'    => $this->net_gateway,
+                'address' => $this->net_address,
+                'gateway' => $this->net_gateway,
                 'dns_server' => $this->net_dns,
-                'comment'    => $this->net_comment,
+                'comment' => $this->net_comment,
             ], $this->editNetId);
             flash()->success($this->editNetId ? 'DHCP Network updated!' : 'DHCP Network added!');
             $this->reset(['net_address', 'net_gateway', 'net_dns', 'net_comment', 'editNetId']);
             $this->dhcpNetworks = app(MikrotikController::class)->getDhcpNetworks($this->selectedRouter);
 
-        } catch (\Exception $e) { flash()->error($e->getMessage()); }
+        } catch (\Exception $e) {
+            flash()->error($e->getMessage());
+        }
     }
 
     public function removeDhcpNetwork(string $address): void
@@ -227,7 +277,9 @@ class IpSetup extends Component
             flash()->success('DHCP Network removed.');
             $this->dhcpNetworks = app(MikrotikController::class)->getDhcpNetworks($this->selectedRouter);
 
-        } catch (\Exception $e) { flash()->error($e->getMessage()); }
+        } catch (\Exception $e) {
+            flash()->error($e->getMessage());
+        }
     }
 
     private function resetData(): void
@@ -238,7 +290,7 @@ class IpSetup extends Component
     public function render()
     {
         return view('livewire.mikrotik.ip-setup', [
-            'routers'          => RouterList::where('action', 'connected')->orderBy('router_name')->get()
+            'routers' => RouterList::where('action', 'connected')->orderBy('router_name')->get(),
         ])->layout('layouts.app');
     }
 }

@@ -24,8 +24,9 @@ class SMSController extends Controller
 
             // Send the SMS
             $response = SmsBridge::to($data['recipient'])
-                        ->message($message)
-                        ->send();
+                ->message($message)
+                ->send();
+
             return $response;
         }
     }
@@ -53,8 +54,9 @@ class SMSController extends Controller
 
         // Send the SMS
         $response = SmsBridge::to($data['recipient'])
-                    ->message($message)
-                    ->send();
+            ->message($message)
+            ->send();
+
         return $response;
     }
 
@@ -81,8 +83,9 @@ class SMSController extends Controller
 
         // Send the SMS
         $response = SmsBridge::to($data['recipient'])
-                    ->message($message)
-                    ->send();
+            ->message($message)
+            ->send();
+
         return $response;
     }
 }
