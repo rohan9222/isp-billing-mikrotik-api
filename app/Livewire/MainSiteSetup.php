@@ -530,7 +530,7 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                 }
             }
 
-            flash()->success($count > 0 ? "Fetched and stored {$count} fresh logs from your selected routers." : 'No new entries retrieved from selected routers.');
+            flash()->success($count > 0 ? "Fetched {$count} fresh logs from your selected routers." : 'No new entries retrieved from selected routers.');
         } catch (\Exception $e) {
             flash()->error('Failed to poll routers: '.$e->getMessage());
         }

@@ -155,7 +155,7 @@
                     </div>
                 </div>
             </div>
-            <div class="mt-2 x-small text-muted italic">Note: To add or edit packages, please go to the <b>Package List</b> menu.</div>
+            <div class="mt-2 x-small text-muted italic">Note: To add or edit packages, please go to the <b><a wire:navigate.hover href="{{ route('package-list-setup') }}">Package List</b></a> menu.</div>
         </div>
     </div>
     @endif

@@ -44,7 +44,7 @@ class RouterLogViewer extends Component
             ->first()?->router_name ?? '';
     }
 
-    /** Fetch fresh live logs from the router and optionally store them. */
+    /** Fetch fresh live logs from the router. */
     public function pollLogs(): void
     {
         if (! $this->selectedRouter) {

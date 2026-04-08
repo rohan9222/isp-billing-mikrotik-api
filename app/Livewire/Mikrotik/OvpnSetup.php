@@ -20,6 +20,10 @@ class OvpnSetup extends Component
     public bool $require_client_cert = false;
     public array $auth = ['sha1'];
     public array $cipher = ['aes128-cbc', 'aes256-cbc'];
+    public string $protocol = 'tcp';
+    public string $mac_address = '00:00:00:00:00:00';
+    public int $max_mtu = 1500;
+    public int $keepalive_timeout = 60;
 
     // Data lists
     public array $profiles = [];
@@ -60,6 +64,12 @@ class OvpnSetup extends Component
                 // Auth & Cipher (can be comma strings)
                 $this->auth = is_string($config['auth'] ?? null) ? explode(',', $config['auth']) : (array)($config['auth'] ?? ['sha1']);
                 $this->cipher = is_string($config['cipher'] ?? null) ? explode(',', $config['cipher']) : (array)($config['cipher'] ?? ['aes128-cbc']);
+
+                // Extras
+                $this->protocol = $config['protocol'] ?? 'tcp';
+                $this->mac_address = $config['mac-address'] ?? '00:00:00:00:00:00';
+                $this->max_mtu = (int) ($config['max-mtu'] ?? 1500);
+                $this->keepalive_timeout = (int) ($config['keepalive-timeout'] ?? 60);
             }
 
             // Load extra data
@@ -85,6 +95,10 @@ class OvpnSetup extends Component
                 'require_client_cert' => $this->require_client_cert,
                 'auth' => implode(',', $this->auth),
                 'cipher' => implode(',', $this->cipher),
+                'protocol' => $this->protocol,
+                'mac_address' => $this->mac_address,
+                'max_mtu' => $this->max_mtu,
+                'keepalive_timeout' => $this->keepalive_timeout,
             ]);
 
             if ($res === 'success') {

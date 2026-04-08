@@ -37,6 +37,25 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label small fw-bold">Protocol</label>
+                                <select class="form-select form-select-sm" wire:model.defer="protocol">
+                                    <option value="tcp">TCP</option>
+                                    <option value="udp">UDP</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">MAC Address</label>
+                                <input type="text" class="form-control form-control-sm" wire:model.defer="mac_address" placeholder="00:00:00:00:00:00">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Max MTU</label>
+                                <input type="number" class="form-control form-control-sm" wire:model.defer="max_mtu">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Keepalive Timeout</label>
+                                <input type="number" class="form-control form-control-sm" wire:model.defer="keepalive_timeout">
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label small fw-bold">Default Profile</label>
                                 <select class="form-select form-select-sm" wire:model.defer="default_profile">
                                     @foreach($profiles as $p)<option value="{{ $p }}">{{ $p }}</option>@endforeach

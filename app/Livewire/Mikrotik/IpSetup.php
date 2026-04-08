@@ -53,6 +53,7 @@ class IpSetup extends Component
     public string $net_comment = '';
 
     public ?string $editNetId = null;
+    public string $net_pool = '';
 
     // Search and Pagination
     public string $searchDhcp = '';
@@ -248,6 +249,23 @@ class IpSetup extends Component
         $this->net_gateway = $net['gateway'] ?? '';
         $this->net_dns = $net['dns-server'] ?? '';
         $this->net_comment = $net['comment'] ?? '';
+        $this->net_pool = ''; // Reset pool selector on edit
+    }
+
+    public function updatedNetPool(): void
+    {
+        if (!$this->net_pool) return;
+        
+        $pool = collect($this->ipPools)->firstWhere('name', $this->net_pool);
+        if ($pool && !empty($pool['ranges'])) {
+            // Very basic logic to guess network from first range
+            $range = explode('-', $pool['ranges'])[0];
+            $parts = explode('.', $range);
+            if (count($parts) === 4) {
+                $this->net_address = "{$parts[0]}.{$parts[1]}.{$parts[2]}.0/24";
+                $this->net_gateway = "{$parts[0]}.{$parts[1]}.{$parts[2]}.1";
+            }
+        }
     }
 
     public function addDhcpNetwork(): void
@@ -263,7 +281,7 @@ class IpSetup extends Component
                 'comment' => $this->net_comment,
             ], $this->editNetId);
             flash()->success($this->editNetId ? 'DHCP Network updated!' : 'DHCP Network added!');
-            $this->reset(['net_address', 'net_gateway', 'net_dns', 'net_comment', 'editNetId']);
+            $this->reset(['net_address', 'net_gateway', 'net_dns', 'net_comment', 'net_pool', 'editNetId']);
             $this->dhcpNetworks = app(MikrotikController::class)->getDhcpNetworks($this->selectedRouter);
 
         } catch (\Exception $e) {

@@ -165,7 +165,7 @@
                                     </td>
                                 </tr>
                                 @empty
-                                <tr><td colspan="5" class="text-center text-muted py-3">No IP pools found.</td></tr>
+                                <tr><td colspan="6" class="text-center text-muted py-3">No IP pools found.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -232,6 +232,13 @@
                 </div>
                 <div class="card-body">
                     <form wire:submit.prevent="addDhcpNetwork">
+                        <div class="mb-2">
+                            <label class="form-label">Basis (From IP Pool)</label>
+                            <select class="form-select form-select-sm" wire:model.live="net_pool">
+                                <option value="">-- No Pool / Manual --</option>
+                                @foreach($ipPools as $p)<option value="{{ $p['name'] }}">{{ $p['name'] }}</option>@endforeach
+                            </select>
+                        </div>
                         <div class="mb-2">
                             <label class="form-label">Address (CIDR) <span class="text-danger">*</span></label>
                             <input type="text" class="form-control form-control-sm @error('net_address') is-invalid @enderror" wire:model.defer="net_address" placeholder="192.168.1.0/24">
