@@ -11,16 +11,16 @@ class MikrotikApiService
 {
     protected $client;
 
-    public function __construct($host, $port, $username, $password)
+    public function __construct($host, $port, $username, $password, int $timeout = 5)
     {
         try {
             $config = new Config([
-                'host' => $host,
-                'user' => $username,
-                'pass' => $password,
-                'port' => $port ?? 8728, // default MikroTik API port
-                'timeout' => 5,          // prevent hanging
-                'attempts' => 1,         // single retry
+                'host'     => $host,
+                'user'     => $username,
+                'pass'     => $password,
+                'port'     => $port ?? 8728,
+                'timeout'  => $timeout,
+                'attempts' => 1,
             ]);
 
             $this->client = new Client($config);
@@ -36,12 +36,17 @@ class MikrotikApiService
      * @param  array  $params  Optional command parameters
      * @return array|string
      */
-    public function executeCommand(string $command, array $params = [])
+    public function executeCommand(string $command, array $params = [], array $filters = [])
     {
         try {
             $query = new Query($command);
 
-            // If parameters are provided, add them to the query
+            // Add filters (?) first as required by RouterOS API for some commands
+            foreach ($filters as $key => $value) {
+                $query->where($key, $value);
+            }
+
+            // Add parameters (=)
             foreach ($params as $key => $value) {
                 $query->equal($key, $value);
             }

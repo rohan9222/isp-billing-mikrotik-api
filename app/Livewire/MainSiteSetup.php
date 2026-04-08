@@ -6,6 +6,8 @@ use App\Http\Controllers\MikrotikController;
 use App\Models\MainSiteData;
 use App\Models\RouterList;
 use App\Models\SiteSetting;
+use Carbon\Carbon;
+use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\ColorPicker;
@@ -22,7 +24,12 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
 use Livewire\Component;
 
 class MainSiteSetup extends Component implements HasActions, HasForms
@@ -91,6 +98,7 @@ class MainSiteSetup extends Component implements HasActions, HasForms
             'site_secret_email' => MainSiteData::getValue('site_secret_email'),
 
             // Log Server
+            'mysql_binary_path' => MainSiteData::getValue('mysql_binary_path', ''),
             'log_server_enabled' => (bool) MainSiteData::getValue('log_server_enabled', false),
             'log_server_routers' => MainSiteData::getValue('log_server_routers', []),
             'log_retention_days' => MainSiteData::getValue('log_retention_days', 30),
@@ -195,6 +203,13 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                                     TextInput::make('site_secret_url'),
                                     TextInput::make('site_secret_email'),
                                 ])->columns(2),
+                            Section::make('Database Configuration')
+                                ->components([
+                                    TextInput::make('mysql_binary_path')
+                                        ->label('MySQL Binary Folder Path')
+                                        ->placeholder('e.g., C:\laragon\bin\mysql\mysql-x.x\bin\\')
+                                        ->helperText('Required if the backup feature fails due to mysqldump missing from PATH. Must include trailing slash!'),
+                                ])->columns(1),
                             Section::make('Log Server Operations')
                                 ->components([
                                     Toggle::make('log_server_enabled')->label('Stream Router Logs'),
@@ -244,6 +259,11 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                             ViewField::make('logs_table')->view('livewire.mikrotik.log-table-master-embed'),
                         ]),
 
+                    Tab::make('System Utilities')
+                        ->components([
+                            ViewField::make('system_utilities')->view('livewire.mikrotik.system-utilities-embed'),
+                        ]),
+
                     Tab::make('Data Review')
                         ->components([
                             Section::make('Full Key-Value Store Persistence')
@@ -273,7 +293,7 @@ class MainSiteSetup extends Component implements HasActions, HasForms
             'site_currency', 'site_invoice_prefix', 'site_invoice_logo', 'site_invoice_color', 'site_invoice_footer', 'site_invoice_notes', 'site_invoice_terms', 'site_invoice_signature',
             'disable_check_no', 'disable_check_days',
             'site_secret_key', 'site_secret_value', 'site_secret_validity', 'site_secret_url', 'site_secret_email',
-            'log_server_enabled', 'log_server_routers', 'log_retention_days',
+            'mysql_binary_path', 'log_server_enabled', 'log_server_routers', 'log_retention_days',
             'hero_title', 'hero_subtitle', 'hero_button_text', 'hero_button_link', 'registration_link',
             'about_title', 'about_body', 'packages_section_title', 'testimonial_title', 'footer_copyright', 'is_active',
             'hero_slides', 'services', 'testimonials', 'gallery_items',
@@ -296,6 +316,187 @@ class MainSiteSetup extends Component implements HasActions, HasForms
 
         Cache::flush();
         flash()->success('Master Setup saved. All settings and secrets migrated to universal KV store!');
+    }
+
+    public function clearCacheAction(): Action
+    {
+        return Action::make('clearCacheAction')
+            ->label('Clear Cache')
+            ->color('warning')
+            ->icon('heroicon-m-bolt')
+            ->requiresConfirmation()
+            ->action(function () {
+                Artisan::call('optimize:clear');
+                flash()->success('System caches cleared successfully!');
+            });
+    }
+
+    public function storageLinkAction(): Action
+    {
+        return Action::make('storageLinkAction')
+            ->label('Storage Link')
+            ->color('info')
+            ->icon('heroicon-m-link')
+            ->requiresConfirmation()
+            ->modalDescription('This will create a symbolic link from "public/storage" to "storage/app/public". Do this once on every new server deployment so your images work!')
+            ->action(function () {
+                Artisan::call('storage:link');
+                flash()->success(Artisan::output());
+            });
+    }
+
+    public function cronSetupAction(): Action
+    {
+        $path = base_path();
+
+        return Action::make('cronSetupAction')
+            ->label('Cron Setup')
+            ->color('gray')
+            ->icon('heroicon-m-clock')
+            ->modalHeading('Configure Background Tasks (Cron)')
+            ->modalSubmitAction(false) // No submit button needed, just info
+            ->modalCancelActionLabel('Close')
+            ->modalDescription(new HtmlString('
+                <p class="mb-3">For automated tasks (like auto-disabling, log polling, and router syncing) to run, you must add the following Cron Job to your server (e.g. cPanel or VPS):</p>
+                <div class="p-3 bg-secondary bg-opacity-10 rounded text-wrap text-break font-monospace" style="user-select: all;">
+                    * * * * * cd '.escapeshellarg($path).' && php artisan schedule:run >> /dev/null 2>&1
+                </div>
+                <p class="mt-3 text-sm text-muted">Set it to run <b>Every Minute (* * * * *)</b>.</p>
+            '));
+    }
+
+    public function backupDatabaseAction(): Action
+    {
+        return Action::make('backupDatabaseAction')
+            ->label('Backup Database')
+            ->color('success')
+            ->icon('heroicon-m-arrow-down-tray')
+            ->action(function () {
+                $dbName = config('database.connections.mysql.database');
+                $username = config('database.connections.mysql.username');
+                $password = config('database.connections.mysql.password');
+                $host = config('database.connections.mysql.host');
+                $port = config('database.connections.mysql.port');
+
+                $mysqlPath = MainSiteData::getValue('mysql_binary_path', '');
+
+                $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+                $executable = $isWindows ? 'mysqldump.exe' : 'mysqldump';
+
+                // If user didn't specify path, try to auto-detect it
+                if (! empty($mysqlPath)) {
+                    $mysqlDumpCmd = escapeshellarg(rtrim($mysqlPath, '/\\').DIRECTORY_SEPARATOR.$executable);
+                } else {
+                    $mysqlDumpCmd = escapeshellarg(app(MainSiteSetup::class)->autoDetectMysqlPath('mysqldump'));
+                }
+
+                if (! is_dir(base_path('backups'))) {
+                    mkdir(base_path('backups'), 0755, true);
+                }
+
+                $fileName = 'backup_'.date('Y_m_d_H_i_s').'_'.Str::random(5).'.sql';
+                $path = base_path('backups/'.$fileName);
+
+                $passwordStr = $password ? "--password=\"{$password}\"" : '';
+                $command = "{$mysqlDumpCmd} -h {$host} -P {$port} -u {$username} {$passwordStr} {$dbName} > \"{$path}\" 2>&1";
+
+                exec($command, $output, $returnVar);
+
+                if ($returnVar !== 0) {
+                    $errorMessage = implode('<br>', $output);
+                    Log::error('Backup failed: '.$errorMessage);
+                    flash()->error("<b>Backup Failed!</b><br>Error: <code>{$errorMessage}</code><br>Command run: <code style='font-size:10px;'>{$command}</code>");
+
+                    return;
+                }
+
+                flash()->success('Database backup created successfully!');
+            });
+    }
+
+    public function getBackupFiles()
+    {
+        $backupDir = base_path('backups');
+        if (! is_dir($backupDir)) {
+            return [];
+        }
+
+        $files = File::files($backupDir);
+        $backups = [];
+
+        foreach ($files as $file) {
+            if ($file->getExtension() === 'sql') {
+                $backups[] = [
+                    'name' => $file->getFilename(),
+                    'size' => number_format($file->getSize() / 1048576, 2).' MB',
+                    'date' => Carbon::createFromTimestamp($file->getMTime())->format('Y-m-d H:i:s'),
+                    'mtime' => $file->getMTime(),
+                ];
+            }
+        }
+
+        usort($backups, function ($a, $b) {
+            return $b['mtime'] <=> $a['mtime']; // Newest first
+        });
+
+        return $backups;
+    }
+
+    public function downloadBackupFile(string $name): void
+    {
+        flash()->warning("Native file download over RouterOS API/SSH is not supported for binary .backup files. Please use WinBox or an FTP client to retrieve '{$name}' from the router.");
+    }
+
+    public function deleteBackupFile($fileName)
+    {
+        $path = base_path('backups/'.$fileName);
+        if (file_exists($path)) {
+            unlink($path);
+            flash()->success("Backup {$fileName} deleted successfully!");
+        }
+    }
+
+    public function restoreFromBackup($fileName)
+    {
+        $path = base_path('backups/'.$fileName);
+
+        if (! file_exists($path)) {
+            flash()->error('Backup file not found on disk.');
+
+            return;
+        }
+
+        $dbName = config('database.connections.mysql.database');
+        $username = config('database.connections.mysql.username');
+        $password = config('database.connections.mysql.password');
+        $host = config('database.connections.mysql.host');
+        $port = config('database.connections.mysql.port');
+
+        $mysqlPath = MainSiteData::getValue('mysql_binary_path', '');
+
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+        $executable = $isWindows ? 'mysql.exe' : 'mysql';
+
+        if (! empty($mysqlPath)) {
+            $mysqlCmd = escapeshellarg(rtrim($mysqlPath, '/\\').DIRECTORY_SEPARATOR.$executable);
+        } else {
+            $mysqlCmd = escapeshellarg($this->autoDetectMysqlPath('mysql'));
+        }
+
+        $passwordStr = $password ? "--password=\"{$password}\"" : '';
+        $command = "{$mysqlCmd} -h {$host} -P {$port} -u {$username} {$passwordStr} {$dbName} < ".escapeshellarg($path)." 2>&1";
+
+        exec($command, $output, $returnVar);
+
+        if ($returnVar !== 0) {
+            $errorMessage = implode('<br>', $output);
+            Log::error('Restore failed: '.$errorMessage);
+            flash()->error("<b>Restore Failed!</b><br>Error: <code>{$errorMessage}</code><br>Command run: <code style='font-size:10px;'>{$command}</code>");
+
+            return;
+        }
+
+        flash()->success("Database successfully restored from {$fileName}!");
     }
 
     public function pollLogs(): void
@@ -333,6 +534,67 @@ class MainSiteSetup extends Component implements HasActions, HasForms
         } catch (\Exception $e) {
             flash()->error('Failed to poll routers: '.$e->getMessage());
         }
+    }
+
+    /**
+     * Attempts to auto-detect the path to a MySQL binary like mysqldump.
+     * Searches standard Windows paths (Laragon, XAMPP) and Unix paths,
+     * falling back to checking the system PATH.
+     */
+    public function autoDetectMysqlPath(string $binary = 'mysqldump'): string
+    {
+        $isWindows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+
+        if ($isWindows) {
+            $binaryWithExt = $binary.'.exe';
+
+            // First check if it's already cleanly in PATH
+            exec("where {$binaryWithExt} 2>nul", $output, $returnVar);
+            if ($returnVar === 0 && ! empty($output[0])) {
+                return trim($output[0]);
+            }
+
+            // Get current drive (e.g. C, D, F) to dynamically detect Laragon
+            $currentDrive = strtoupper(substr(base_path(), 0, 1));
+            $drivesToCheck = array_unique([$currentDrive, 'C', 'D', 'E', 'F']);
+
+            foreach ($drivesToCheck as $drive) {
+                // Laragon
+                $laragonPaths = glob($drive.':\\laragon\\bin\\mysql\\*\\bin\\'.$binaryWithExt);
+                if (! empty($laragonPaths) && file_exists($laragonPaths[0])) {
+                    return $laragonPaths[0];
+                }
+
+                // XAMPP
+                $xamppPath = $drive.':\\xampp\\mysql\\bin\\'.$binaryWithExt;
+                if (file_exists($xamppPath)) {
+                    return $xamppPath;
+                }
+            }
+
+            return $binaryWithExt; // fallback
+        }
+
+        // Unix / Linux / macOS
+        exec("which {$binary} 2>/dev/null", $output, $returnVar);
+        if ($returnVar === 0 && ! empty($output[0])) {
+            return trim($output[0]);
+        }
+
+        $commonUnixPaths = [
+            "/usr/bin/{$binary}",
+            "/usr/local/bin/{$binary}",
+            "/opt/lampp/bin/{$binary}",
+            "/opt/homebrew/bin/{$binary}",
+        ];
+
+        foreach ($commonUnixPaths as $path) {
+            if (file_exists($path)) {
+                return $path;
+            }
+        }
+
+        return $binary; // Fallback
     }
 
     public function render()

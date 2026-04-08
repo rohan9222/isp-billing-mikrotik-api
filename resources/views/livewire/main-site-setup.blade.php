@@ -11,7 +11,6 @@
                     
                     <form wire:submit.prevent="save">
                         {{ $this->form }}
-
                         <div class="mt-4 text-end">
                             <button type="submit" class="btn btn-primary px-5 py-2 fw-bold text-uppercase shadow-sm">
                                 <i class="bi bi-save me-2"></i> Save All Changes

@@ -105,7 +105,7 @@
                                 </div>
                                 <div class="col-md-4 d-flex align-items-end">
                                     <div class="form-check form-switch mb-1">
-                                        <input class="form-check-input" type="checkbox" wire:model.defer="push_to_mikrotik" id="push_to_mikrotik">
+                                        <input class="form-check-input" type="checkbox" wire:model.live="push_to_mikrotik" id="push_to_mikrotik">
                                         <label class="form-check-label" for="push_to_mikrotik">
                                             <i class="bi bi-router text-danger"></i> Push to MikroTik
                                         </label>

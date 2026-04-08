@@ -123,9 +123,13 @@
                             <input type="text" class="form-control form-control-sm @error('pool_ranges') is-invalid @enderror" wire:model.defer="pool_ranges" placeholder="192.168.1.10-192.168.1.100">
                             @error('pool_ranges')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <label class="form-label">Next Pool <small class="text-muted">(optional)</small></label>
                             <input type="text" class="form-control form-control-sm" wire:model.defer="pool_next_pool" placeholder="none">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Comment</label>
+                            <input type="text" class="form-control form-control-sm" wire:model.defer="pool_comment" placeholder="Optional">
                         </div>
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-sm btn-primary flex-fill">
@@ -145,7 +149,7 @@
                 <div class="card-body p-0">
                     <div class="table-responsive" wire:key="container-ip-pools-{{ $selectedRouter }}">
                         <table class="table table-sm table-hover align-middle mb-0 data-table" wire:key="tbl-ip-pools">
-                            <thead class="table-light"><tr><th>Name</th><th>Ranges</th><th>Next Pool</th><th>Used</th><th>Actions</th></tr></thead>
+                            <thead class="table-light"><tr><th>Name</th><th>Ranges</th><th>Next Pool</th><th>Comment</th><th>Used</th><th>Actions</th></tr></thead>
                             <tbody>
                                 @forelse($ipPools as $pool)
                                 @php $isP = is_array($pool); @endphp
@@ -153,6 +157,7 @@
                                     <td><strong>{{ ($isP ? $pool['name'] : $pool) ?? '-' }}</strong></td>
                                     <td><code class="small">{{ $isP ? ($pool['ranges'] ?? '-') : '-' }}</code></td>
                                     <td><small>{{ $isP ? ($pool['next-pool'] ?? 'none') : 'none' }}</small></td>
+                                    <td><small class="text-muted">{{ $isP ? ($pool['comment'] ?? '') : '' }}</small></td>
                                     <td><small class="text-muted">{{ $isP ? ($pool['total-addresses'] ?? '-') : '-' }}</small></td>
                                     <td>
                                         <button class="btn btn-info btn-sm" wire:click="editPool({{ json_encode($isP ? $pool : ['name' => $pool]) }})"><i class="bi bi-pencil-square"></i></button>
@@ -229,7 +234,8 @@
                     <form wire:submit.prevent="addDhcpNetwork">
                         <div class="mb-2">
                             <label class="form-label">Address (CIDR) <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-sm" wire:model.defer="net_address" placeholder="192.168.1.0/24">
+                            <input type="text" class="form-control form-control-sm @error('net_address') is-invalid @enderror" wire:model.defer="net_address" placeholder="192.168.1.0/24">
+                            @error('net_address')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="mb-2">
                             <label class="form-label">Gateway</label>
@@ -263,7 +269,7 @@
                 <div class="card-body p-0">
                     <div class="table-responsive" wire:key="container-dhcp-srv-{{ $selectedRouter }}">
                         <table class="table table-sm table-hover align-middle mb-0 data-table" wire:key="tbl-dhcp-servers">
-                            <thead class="table-light"><tr><th>Name</th><th>Interface</th><th>Pool</th><th>Lease</th><th>Status</th><th>Actions</th></tr></thead>
+                            <thead class="table-light"><tr><th>Name</th><th>Interface</th><th>Pool</th><th>Lease</th><th>Comment</th><th>Status</th><th>Actions</th></tr></thead>
                             <tbody>
                                 @forelse($dhcpServers as $srv)
                                 @php $isArr = is_array($srv); @endphp
@@ -272,6 +278,7 @@
                                     <td>{{ $isArr ? ($srv['interface'] ?? '-') : '-' }}</td>
                                     <td><code>{{ $isArr ? ($srv['address-pool'] ?? '-') : '-' }}</code></td>
                                     <td>{{ $isArr ? ($srv['lease-time'] ?? '-') : '-' }}</td>
+                                    <td><small class="text-muted">{{ $isArr ? ($srv['comment'] ?? '') : '' }}</small></td>
                                     <td>
                                         <div class="form-check form-switch p-0 m-0 d-flex justify-content-center">
                                             <input class="form-check-input ms-0" type="checkbox" role="switch" @checked(($isArr ? ($srv['disabled'] ?? 'false') : 'false') === 'false') wire:click="toggleDhcpServer('{{ $isArr ? ($srv['name'] ?? '') : '' }}', {{ ($isArr ? ($srv['disabled'] ?? 'false') : 'false') === 'true' ? 'true' : 'false' }})">

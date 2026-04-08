@@ -2,102 +2,78 @@
 
 namespace App\Services;
 
-use App\Models\RouterList;
 use Exception;
-use phpseclib3\Exception\RuntimeException;
 use phpseclib3\Net\SSH2;
 
 class MikrotikSSHService
 {
-    protected $ssh;
+    protected SSH2 $ssh;
 
-    public function __construct($host, $port, $username, $password)
+    public function __construct(string $host, int $port, string $username, string $password)
     {
         $this->ssh = new SSH2($host, $port);
 
         if (! $this->ssh->login($username, $password)) {
-            throw new Exception('Login failed for '.$host);
+            throw new Exception("SSH login failed for {$host}");
         }
     }
 
-    // SSH command execution method
-    public function executeCommand($command)
+    /**
+     * Execute a raw SSH command and return the raw output string.
+     */
+    public function executeCommand(string $command): string
     {
         try {
-            return $this->ssh->exec($command);
-        } catch (RuntimeException $e) {
+            return (string) $this->ssh->exec($command);
+        } catch (\RuntimeException $e) {
             return 'Error: '.$e->getMessage();
         }
     }
 
-    // Fetch connected routers from the Mikrotik Router
-    public function getInterface()
-    {
-        $routerLists = RouterList::where('action', 'connected')->get();
-
-        foreach ($routerLists as $routerList) {
-            try {
-                $mikrotikSSHService = new MikrotikSSHService(
-                    $routerList->ip_address,
-                    $routerList->ssh_port,
-                    $routerList->username,
-                    $routerList->password
-                );
-                $interfaces = $mikrotikSSHService->executeCommand('/interface print where type="ether" or type="vlan"');
-                flash()->success('Router '.$routerList->router_name.' is connected successfully!');
-                // return $interfaces;
-            } catch (Exception $e) {
-                flash()->error('Router '.$routerList->router_name.' is not connected!');
-            }
-        }
-    }
-
-    public function getPPPSecrets()
-    {
-        $command = '/ppp secret print without-paging terse';
-        try {
-            $result = $this->ssh->exec($command);
-            dd($result);
-            $lines = explode("\n", trim($result));
-            $secrets = [];
-
-            foreach ($lines as $line) {
-                // Adjust the regex to handle optional fields and capture the comment correctly
-                if (preg_match('/(?:comment=([^=]+?)\s+)?name=(\S+)(?:\s+service=(\S*))?(?:\s+caller-id=(\S*))?(?:\s+password=(\S+))?(?:\s+profile=(\S*))?/', $line, $matches)) {
-                    $secrets[] = [
-                        'comment' => $matches[1] ?? 'N/A',
-                        'name' => $matches[2] ?? 'N/A',
-                        'service' => $matches[3] ?? 'N/A',
-                        'caller_id' => $matches[4] ?? '$callerID',
-                        'password' => $matches[5] ?? 'N/A',
-                        'profile' => $matches[6] ?? 'N/A',
-                        'active' => strpos($line, 'X') !== false ? 'disable' : 'active',
-                    ];
-                } else {
-                    // Debug: Check if the regex is failing
-                    // dd('No match for: ' . $line); // Uncomment this to debug failing lines
-                }
-            }
-
-            return $secrets;
-        } catch (Exception $e) {
-            return ['error' => $e->getMessage()];
-        }
-    }
-
-    // SHH command execution
     /**
-     * Execute any MikroTik SSH command and always return an array.
+     * Execute a RouterOS command that requires an interactive PTY session.
+     *
+     * Some RouterOS commands (notably /system backup save) are silently ignored
+     * when sent via SSH exec without a pseudo-terminal. This method allocates a
+     * PTY, waits for the interactive shell prompt (consuming the login banner),
+     * sends the command, waits for the router to finish, then reads the response.
+     * 
+     * @throws \Exception on SSH failure
      */
-    public function executeCommandParsable($command)
+    public function executePtyCommand(string $command, int $waitSeconds = 5): string
+    {
+        $this->ssh->enablePTY();
+
+        // Wait for the RouterOS prompt, consuming the full login banner.
+        // Without a regex here, banner log lines bleed into the command output.
+        $this->ssh->read('/\[.+\@.+\]\s*>/');
+
+        // Send the command
+        $this->ssh->write($command."\n");
+
+        // Give RouterOS time to execute (e.g. write backup file to flash)
+        sleep($waitSeconds);
+
+        // Read until the next RouterOS prompt — this is the command's own output
+        $output = $this->ssh->read('/\[.+\@.+\]\s*>/');
+
+        $this->ssh->write("/quit\n");
+
+        return $output ?? '';
+    }
+
+    /**
+     * Execute any MikroTik SSH command and always return a structured array.
+     * Auto-detects colon, terse (key=value), or list format.
+     */
+    public function executeCommandParsable(string $command): array
     {
         $output = trim($this->ssh->exec($command));
 
         if (empty($output)) {
-            return ['message' => 'No output received'];
+            return [];
         }
 
-        // Detect format automatically
         if ($this->isColonFormat($output)) {
             return $this->parseColonFormat($output);
         }
@@ -106,48 +82,30 @@ class MikrotikSSHService
             return $this->parseTerseFormat($output);
         }
 
-        if ($this->isListFormat($output)) {
-            return $this->parseListFormat($output);
-        }
-
-        // Default fallback (raw text)
-        return ['raw_output' => explode("\n", $output)];
+        return $this->parseListFormat($output);
     }
 
-    /**
-     * Detect colon format (e.g. key: value)
-     */
-    protected function isColonFormat($output)
+    // ─── Format Detectors ─────────────────────────────────────────────────────
+
+    protected function isColonFormat(string $output): bool
     {
-        return preg_match('/^[\s\-a-zA-Z0-9]+:\s*.+$/m', $output);
+        return (bool) preg_match('/^\s*[a-zA-Z][a-zA-Z0-9\-]*:\s*.+$/m', $output);
     }
 
-    protected function isTerseFormat($output)
+    protected function isTerseFormat(string $output): bool
     {
-        // Detect terse format if any line contains a key=value pair (excluding command echoes)
-        return preg_match('/^.*[^\s]=[^\s].*$/m', $output);
+        return (bool) preg_match('/^\s*\d+\s+.*[^\s]=[^\s].*$/m', $output);
     }
 
-    /**
-     * Detect simple list format (e.g. one entry per line, no colons)
-     */
-    protected function isListFormat($output)
-    {
-        $lines = array_filter(explode("\n", $output));
 
-        return count($lines) > 1 && ! preg_match('/[:=]/', $lines[0]);
-    }
 
-    /**
-     * Parse key:value format
-     */
-    protected function parseColonFormat($output)
+    // ─── Format Parsers ───────────────────────────────────────────────────────
+
+    protected function parseColonFormat(string $output): array
     {
-        $lines = explode("\n", $output);
         $data = [];
-
-        foreach ($lines as $line) {
-            if (strpos($line, ':') !== false) {
+        foreach (explode("\n", $output) as $line) {
+            if (str_contains($line, ':')) {
                 [$key, $value] = array_map('trim', explode(':', $line, 2));
                 $data[$key] = $value;
             }
@@ -156,15 +114,10 @@ class MikrotikSSHService
         return [$data];
     }
 
-    /**
-     * Parse terse format (key=value pairs)
-     */
-    protected function parseTerseFormat($output)
+    protected function parseTerseFormat(string $output): array
     {
-        $lines = preg_split('/\r\n|\r|\n/', trim($output));
         $entries = [];
-
-        foreach ($lines as $line) {
+        foreach (preg_split('/\r\n|\r|\n/', trim($output)) as $line) {
             $line = trim($line);
             if ($line === '') {
                 continue;
@@ -172,20 +125,15 @@ class MikrotikSSHService
 
             $entry = [];
 
-            // id + name + active status
             if (preg_match('/^\s*(\d+)\s*(?:"([^"]+)"|([^\s]+))?/', $line, $m)) {
                 $entry['id'] = $m[1];
                 $entry['name'] = $m[2] ?? $m[3] ?? null;
-                $entry['status'] = strpos($line, 'X') !== false ? 'disable' : 'active';
+                $entry['status'] = str_contains($line, 'X') ? 'disable' : 'active';
             }
 
-            // New regex - captures values with spaces as well
             preg_match_all('/([^\s=]+)=("([^"]*)"|[^\s"].*?(?=\s+[^\s=]+=|$))/', $line, $matches, PREG_SET_ORDER);
-
             foreach ($matches as $kv) {
-                $k = $kv[1];
-                $v = isset($kv[3]) && $kv[3] !== '' ? $kv[3] : trim($kv[2], '"');
-                $entry[$k] = trim($v);
+                $entry[$kv[1]] = isset($kv[3]) && $kv[3] !== '' ? $kv[3] : trim($kv[2], '"');
             }
 
             $entries[] = $entry;
@@ -194,10 +142,7 @@ class MikrotikSSHService
         return $entries;
     }
 
-    /**
-     * Parse list format (one value per line)
-     */
-    protected function parseListFormat($output)
+    protected function parseListFormat(string $output): array
     {
         return array_values(array_filter(array_map('trim', explode("\n", $output))));
     }

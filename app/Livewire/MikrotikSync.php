@@ -125,12 +125,28 @@ class MikrotikSync extends Component
 
     public function userSync($pppSecrets)
     {
-        foreach ($pppSecrets as $routerName => $users) {
-            if (! is_array($users)) {
-                flash()->error($users);
+        foreach ($pppSecrets as $routerName => $result) {
+            if (! is_array($result)) {
+                flash()->error("Invalid response for router {$routerName}");
 
                 continue;
             }
+
+            if (empty($result['status'])) {
+                $msg = $result['message'] ?? 'Connection failed';
+                flash()->error("Skipped synchronizing {$routerName}: {$msg}");
+
+                continue;
+            }
+
+            $users = $result['data'] ?? [];
+            if (! is_array($users)) {
+                $users = [];
+            }
+
+            $createdCount = 0;
+            $updatedCount = 0;
+            $unchangedCount = 0;
 
             DB::beginTransaction();
             try {
@@ -223,12 +239,28 @@ class MikrotikSync extends Component
                         if ($existingSecret->isDirty()) {
                             // Password only gets updated here if it transitioned to hash or changed as plain
                             $existingSecret->save();
+                            $updatedCount++;
                             if ($existingSecret->isDirty('status')) {
                                 $statusGroups[$existingSecret->status][] = $existingSecret->id;
                             }
+                        } else {
+                            $unchangedCount++;
+                            // Even if unchanged, we consider them 'active/not removed' now since they were in Mikrotik.
+                            // But since we did `->update(['status' => 'removed'])` earlier on all users,
+                            // we need to set the status back if it was unchanged in fill() but is now 'removed' in DB!
+                            // Wait, fill() populated 'status' from Mikrotik, and if it wasn't dirty compared to PRE-fetched data,
+                            // we didn't save. But the actual DB row is now 'removed'!
+                            // Luckily, the $existingSecret instance hasn't re-fetched. It will think it's not dirty.
+                            // However, we SHOULD save to revert the 'removed' status.
+                            // To fix this cleanly: only the 'dirty' check needs to be mindful of the status change.
+                            // Actually, fill() overrides whatever is currently loaded.
+                            // If it matches exactly what we loaded at the start, isDirty is false.
+                            // But the DB row status was changed to 'removed'. We MUST unconditionally save the status back!
+                            PPPSecrets::where('id', $existingSecret->id)->update(['status' => $existingSecret->status]);
                         }
                     } else {
                         $newSecret = PPPSecrets::create($secretData);
+                        $createdCount++;
                         $lastIdCount++;
                         $newId = 'FCNET'.$lastIdCount;
 
@@ -257,7 +289,7 @@ class MikrotikSync extends Component
                     ->delete();
 
                 DB::commit();
-                flash()->success('Router '.$routerName.' users synchronized successfully!');
+                flash()->success("Router {$routerName} synchronized! Created: {$createdCount}, Updated: {$updatedCount}, Unchanged: {$unchangedCount}");
             } catch (\Exception $e) {
                 DB::rollBack();
                 flash()->error('Error syncing router '.$routerName.': '.$e->getMessage());

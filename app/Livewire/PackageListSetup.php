@@ -97,6 +97,7 @@ class PackageListSetup extends Component
     public function createPackage(): void
     {
         $this->validate();
+        \Log::info("PackageListSetup: Starting createPackage for id=" . ($this->package_id ?? 'NEW') . " name=" . $this->package_name);
 
         try {
             // Convert newline-separated features to JSON array
@@ -106,12 +107,18 @@ class PackageListSetup extends Component
                 ->values()
                 ->toArray();
 
-            $oldName = null;
+            $controller = app(MikrotikController::class);
+            $normalizedRouterName = !empty($this->router_name) ? $this->router_name : null;
+            
+            // Capture old state if editing
+            $oldPackage = null;
             if ($this->package_id) {
-                $oldName = PackageList::find($this->package_id)?->package;
+                $oldPackage = PackageList::find($this->package_id);
+                \Log::debug("PackageListSetup: Detected edit mode. Previous name=" . ($oldPackage?->package ?? 'N/A'));
             }
 
-            PackageList::updateOrCreate(
+            // 1. Update or Create local record
+            $package = PackageList::updateOrCreate(
                 ['id' => $this->package_id],
                 [
                     'package' => $this->package_name,
@@ -127,21 +134,47 @@ class PackageListSetup extends Component
                     'mikrotik_local_address' => $this->mikrotik_local_address,
                     'mikrotik_remote_address' => $this->mikrotik_remote_address,
                     'push_to_mikrotik' => $this->push_to_mikrotik,
-                    'router_name' => $this->router_name,
+                    'router_name' => $normalizedRouterName,
                 ]
             );
 
-            // Sync profile to MikroTik routers if toggle is on
-            if ($this->push_to_mikrotik && $this->mikrotik_rate_limit) {
-                $controller = app(MikrotikController::class);
-                if ($oldName && $oldName !== $this->package_name) {
-                    $controller->updateProfileOnRouters($oldName, $this->package_name, $this->mikrotik_rate_limit, $this->mikrotik_local_address, $this->mikrotik_remote_address, $this->router_name);
-                } else {
-                    $controller->pushProfileToRouters($this->package_name, $this->mikrotik_rate_limit, $this->mikrotik_local_address, $this->mikrotik_remote_address, $this->router_name);
+            // 2. Synchronous MikroTik Logic
+            if ($oldPackage) {
+                // CASE: Renaming on MikroTik (if sync was and still is ON)
+                if ($oldPackage->push_to_mikrotik && $this->push_to_mikrotik && $oldPackage->package !== $this->package_name) {
+                    \Log::info("PackageListSetup: Renaming profile on Mikrotik from '{$oldPackage->package}' to '{$this->package_name}'");
+                    $controller->updateProfileOnRouters($oldPackage->package, $this->package_name, $this->mikrotik_rate_limit, $this->mikrotik_local_address, $this->mikrotik_remote_address, $oldPackage->router_name);
+                }
+                
+                // CASE: Cleanup MikroTik (if sync toggled OFF OR router changed)
+                if ($oldPackage->push_to_mikrotik && (!$this->push_to_mikrotik || $oldPackage->router_name !== $normalizedRouterName)) {
+                    \Log::info("PackageListSetup: Toggled OFF or Router changed. Deleting profile '{$oldPackage->package}' from old router(s)");
+                    $controller->deleteProfileFromRouters($oldPackage->package, $oldPackage->router_name);
                 }
             }
 
-            flash()->success('Package saved successfully!');
+            // CASE: Create or Update current configuration on MikroTik (if sync is ON)
+            $pushError = null;
+            \Log::debug("PackageListSetup: Sync check: push_to_mikrotik=" . ($this->push_to_mikrotik ? 'TRUE' : 'FALSE') . ", router=" . ($normalizedRouterName ?? 'ALL'));
+            if ($this->push_to_mikrotik) {
+                \Log::info("PackageListSetup: Pushing/Updating configuration for '{$this->package_name}' on router: " . ($normalizedRouterName ?? 'ALL'));
+                $pushResults = $controller->pushProfileToRouters($this->package_name, $this->mikrotik_rate_limit, $this->mikrotik_local_address, $this->mikrotik_remote_address, $normalizedRouterName);
+                \Log::debug("PackageListSetup: Push Result: " . json_encode($pushResults));
+                
+                // Track failures
+                $failures = collect($pushResults)->filter(fn($res) => $res !== 'OK' && (!isset($res['status']) || !$res['status']));
+                if ($failures->isNotEmpty()) {
+                    $pushError = "MikroTik Sync failed on: " . $failures->keys()->implode(', ');
+                }
+            }
+
+            if ($pushError) {
+                flash()->warning("Package saved locally, but " . $pushError);
+            } else {
+                flash()->success('Package saved and synchronized successfully!');
+            }
+            
+            \Log::info("PackageListSetup: createPackage COMPLETED for '{$this->package_name}'");
             $this->reset([
                 'package_id', 'package_name', 'price', 'description', 'plan_label', 'speed',
                 'features_text', 'is_featured', 'sort_order',
@@ -150,6 +183,9 @@ class PackageListSetup extends Component
             $this->show_on_site = true;
             $this->dataRender();
         } catch (\Exception $e) {
+            \Log::error("PackageListSetup: FAILED to save or sync package '{$this->package_name}': " . $e->getMessage(), [
+                'exception' => $e
+            ]);
             flash()->error('Error saving data: '.$e->getMessage());
         }
     }
@@ -221,18 +257,17 @@ class PackageListSetup extends Component
             );
 
             $uniquePools = [];
-            foreach ($routersPools as $routerName => $pools) {
-                if (is_array($pools)) {
-                    foreach ($pools as $pool) {
+            foreach ($routersPools as $routerName => $result) {
+                if (isset($result['status']) && $result['status'] && is_array($result['data'])) {
+                    foreach ($result['data'] as $pool) {
                         if (isset($pool['name'])) {
                             $uniquePools[] = $pool['name'];
                         }
                     }
                 } else {
-                    // It might be an error string from checkConnection
-                    if (is_string($pools) && str_starts_with($pools, 'Error:')) {
-                        flash()->error("$routerName: $pools");
-                    }
+                    // It might be an error from checkConnection
+                    $message = $result['message'] ?? 'Unknown error';
+                    flash()->error("[$routerName] $message");
                 }
             }
 
@@ -249,38 +284,45 @@ class PackageListSetup extends Component
 
     public function syncFromMikrotik(): void
     {
+        \Log::info('PackageListSetup: Starting full Two-Way Synchronization.');
         try {
-            $profiles = app(MikrotikController::class)->routerList(
-                null,
-                '/ppp/profile/print',
+            $controller = app(MikrotikController::class);
+            $profilesResults = $controller->routerList(
+                null, 
+                '/ppp/profile/print', 
                 '/ppp profile print without-paging terse'
             );
 
-            $synced = 0;
+            $syncedCount = 0;
+            $restoredCount = 0;
             $errors = [];
+            $existingOnRouter = []; // Track actual profiles: ['RouterName' => ['profile1', 'profile2']]
 
-            foreach ($profiles as $routerName => $routerProfiles) {
-                if (! is_array($routerProfiles)) {
-                    $errors[] = "$routerName: $routerProfiles";
-
+            // --- PHASE 1: Pull from MikroTik to Local DB ---
+            foreach ($profilesResults as $routerName => $result) {
+                if (!isset($result['status']) || !$result['status'] || !is_array($result['data'])) {
+                    $errors[] = "$routerName: " . ($result['message'] ?? 'Connection failed');
                     continue;
                 }
+
+                $routerProfiles = $result['data'];
+                $existingOnRouter[$routerName] = [];
 
                 foreach ($routerProfiles as $profile) {
                     $name = $profile['name'] ?? null;
                     if (! $name || $name === 'default' || $name === 'default-encryption') {
-                        continue; // skip built-in profiles
+                        continue;
                     }
 
-                    // Parse rate-limit to a human-readable speed string
+                    $existingOnRouter[$routerName][] = $name;
+
+                    // Parse rate-limit to Mbps for local display
                     $rateLimit = $profile['rate-limit'] ?? null;
                     $speed = null;
                     if ($rateLimit) {
-                        // Format: "8M/8M" or "8192000/8192000"
                         $parts = explode('/', $rateLimit);
                         $upload = trim($parts[0] ?? '');
                         $download = trim($parts[1] ?? $upload);
-                        // Convert bps numbers to Mbps if not already string
                         $speed = is_numeric($upload)
                             ? round($upload / 1048576, 1).'/'.round($download / 1048576, 1).' Mbps'
                             : "$upload / $download";
@@ -294,13 +336,10 @@ class PackageListSetup extends Component
                     PackageList::updateOrCreate(
                         ['package' => $name, 'router_name' => $routerName],
                         [
-                            // Auto-fill speed/address only if not already set
-                            'speed' => $existing?->speed ?? $speed,
-                            'mikrotik_rate_limit' => $existing?->mikrotik_rate_limit ?? $rateLimit,
-                            'mikrotik_local_address' => $existing?->mikrotik_local_address ?? $localAddress,
-                            'mikrotik_remote_address' => $existing?->mikrotik_remote_address ?? $remoteAddress,
-
-                            // Preserve existing price/features if already set
+                            'speed' => $speed, // Source of truth: Router
+                            'mikrotik_rate_limit' => $rateLimit, // Source of truth: Router
+                            'mikrotik_local_address' => $localAddress, // Source of truth: Router
+                            'mikrotik_remote_address' => $remoteAddress, // Source of truth: Router
                             'price' => $existing?->price ?? 0,
                             'description' => $existing?->description ?? null,
                             'plan_label' => $existing?->plan_label ?? null,
@@ -312,18 +351,47 @@ class PackageListSetup extends Component
                         ]
                     );
 
-                    $synced++;
+                    $syncedCount++;
                 }
             }
 
-            if (! empty($errors)) {
-                flash()->warning('Sync done with some errors: '.implode(', ', $errors));
-            } else {
-                flash()->success("$synced profile(s) synced from MikroTik successfully!");
+            // --- PHASE 2: Push missing local packages to MikroTik ---
+            $allConnectedRouters = array_keys(array_filter($profilesResults, fn($r) => $r['status'] ?? false));
+            $packagesToSync = PackageList::where('push_to_mikrotik', true)->get();
+
+            foreach ($packagesToSync as $package) {
+                // If package defines a specific router, use it. Otherwise, assume it should exist on ALL connected routers.
+                $targetRouters = !empty($package->router_name) ? [$package->router_name] : $allConnectedRouters;
+
+                foreach ($targetRouters as $rName) {
+                    // Skip if the router failed connection during pull
+                    if (!isset($existingOnRouter[$rName])) continue;
+
+                    // If profile is missing from this specific router, push it back
+                    if (!in_array($package->package, $existingOnRouter[$rName])) {
+                        $rateLimit = $package->mikrotik_rate_limit ?: null;
+                        \Log::info("PackageListSetup: Restoring missing profile '{$package->package}' to router '{$rName}' (Push enabled)");
+                        $controller->pushProfileToRouters($package->package, $rateLimit, $package->mikrotik_local_address, $package->mikrotik_remote_address, $rName);
+                        $restoredCount++;
+                    }
+                }
             }
+
+            // --- FINAL MESSAGING ---
+            if (! empty($errors)) {
+                flash()->warning('Sync partially completed: ' . implode(', ', $errors));
+            }
+            
+            $msg = "$syncedCount profile(s) imported/updated.";
+            if ($restoredCount > 0) {
+                $msg .= " AND $restoredCount missing profile(s) restored to MikroTik.";
+            }
+            flash()->success($msg);
+
             $this->dataRender();
         } catch (\Exception $e) {
-            flash()->error('Sync failed: '.$e->getMessage());
+            \Log::error("PackageListSetup: Two-Way Sync FAILED: " . $e->getMessage());
+            flash()->error('Full sync failed: '.$e->getMessage());
         }
     }
 

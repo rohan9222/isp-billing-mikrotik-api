@@ -27,7 +27,7 @@ class IpSetup extends Component
     public string $pool_ranges = '';
 
     public string $pool_next_pool = '';
-
+    public string $pool_comment = '';
     public ?string $editPoolId = null;
 
     // DHCP Server form
@@ -151,9 +151,9 @@ class IpSetup extends Component
         ]);
         try {
             $ctrl = app(MikrotikController::class);
-            $ctrl->addIpPool($this->selectedRouter, $this->pool_name, $this->pool_ranges, $this->pool_next_pool ?: null, $this->editPoolId);
+            $ctrl->addIpPool($this->selectedRouter, $this->pool_name, $this->pool_ranges, $this->pool_next_pool ?: null, $this->editPoolId, $this->pool_comment);
             flash()->success($this->editPoolId ? 'Pool updated!' : 'Pool added!');
-            $this->reset(['pool_name', 'pool_ranges', 'pool_next_pool', 'editPoolId']);
+            $this->reset(['pool_name', 'pool_ranges', 'pool_next_pool', 'pool_comment', 'editPoolId']);
             $this->ipPools = $ctrl->getIpPools($this->selectedRouter);
 
         } catch (\Exception $e) {
@@ -167,6 +167,7 @@ class IpSetup extends Component
         $this->pool_name = $pool['name'] ?? '';
         $this->pool_ranges = $pool['ranges'] ?? '';
         $this->pool_next_pool = $pool['next-pool'] ?? '';
+        $this->pool_comment = $pool['comment'] ?? '';
     }
 
     public function removePool(string $name): void
@@ -252,7 +253,7 @@ class IpSetup extends Component
     public function addDhcpNetwork(): void
     {
         $this->validate([
-            'net_address' => 'required|string',
+            'net_address' => 'required|regex:/^\d+\.\d+\.\d+\.\d+\/\d+$/',
         ]);
         try {
             app(MikrotikController::class)->addDhcpNetwork($this->selectedRouter, [

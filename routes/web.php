@@ -14,6 +14,7 @@ use App\Livewire\CustomerList;
 use App\Livewire\CustomerSummary;
 use App\Livewire\EditCustomer;
 use App\Livewire\MainSiteSetup;
+use App\Livewire\Mikrotik\BackupManager;
 use App\Livewire\Mikrotik\FirewallSetup;
 use App\Livewire\Mikrotik\HotspotSetup;
 use App\Livewire\Mikrotik\InterfaceSetup;
@@ -95,6 +96,17 @@ Route::middleware([
     'verified',
 ])->group(function () use ($baseDomain) {
     Route::domain('billing.'.$baseDomain)->group(function () {
+        Route::get('/system/db-backup/download/{filename}', function ($filename) {
+            if (str_contains($filename, '/') || str_contains($filename, '\\')) {
+                abort(403, 'Invalid filename.');
+            }
+            $path = base_path('backups/'.$filename);
+            if (file_exists($path)) {
+                return response()->download($path);
+            }
+            abort(404, 'Backup file not found.');
+        })->name('system.db-backup.download');
+
         Route::redirect('/', '/dashboard');
 
         Route::post('customers/enable/{id}', [CustomersController::class, 'customerEnable'])->name('customers.enable');
@@ -122,6 +134,7 @@ Route::middleware([
             Route::get('/interface', InterfaceSetup::class)->name('mikrotik-interface-setup');
             Route::get('/traffic', TrafficMonitor::class)->name('mikrotik-traffic-monitor');
             Route::get('/logs', RouterLogViewer::class)->name('mikrotik-log-viewer');
+            Route::get('/backup', BackupManager::class)->name('mikrotik-backup-setup');
         });
 
         Route::get('/address', AddressSetup::class)->name('address-setup');

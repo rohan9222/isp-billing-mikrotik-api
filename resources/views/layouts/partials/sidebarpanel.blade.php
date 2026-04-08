@@ -75,6 +75,9 @@
             <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-log-viewer') }}">
                 <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Router Logs</span><span class="badge rounded-pill ms-2 badge-subtle-warning">Log</span></div>
             </a></li>
+            <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-backup-setup') }}">
+                <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Backup & Restore</span><span class="badge rounded-pill ms-2 badge-subtle-primary">Admin</span></div>
+            </a></li>
         </ul>
     </li>
     <li class="nav-item">

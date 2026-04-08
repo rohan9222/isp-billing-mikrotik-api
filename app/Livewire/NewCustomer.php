@@ -186,7 +186,7 @@ class NewCustomer extends Component
         // If package name is set, get the package price
         if ($this->package_name) {
             $package = PackageList::where('package', $this->package_name)
-                ->where('router_name', $this->router_name)
+                ->where('router_name', !empty($this->router_name) ? $this->router_name : null)
                 ->first();
             $this->monthly_rent = $package?->price ?? '';
         }
@@ -437,10 +437,8 @@ class NewCustomer extends Component
             // Get package_id based on selected package name and router
             $assignedPackageId = null;
             if ($this->package_name) {
-                $pkg = PackageList::where('package', $this->package_name);
-                if ($this->router_name) {
-                    $pkg = $pkg->where('router_name', $this->router_name);
-                }
+                $pkg = PackageList::where('package', $this->package_name)
+                    ->where('router_name', !empty($this->router_name) ? $this->router_name : null);
                 $assignedPackageId = $pkg->first()?->id;
             }
             $customer->package_id = $assignedPackageId;
@@ -528,7 +526,7 @@ class NewCustomer extends Component
         $this->addressFields = AddressField::orderBy('order', 'asc')->get();
         $this->routers = RouterList::select('router_name')->where('action', 'connected')->get();
         $this->packages = PackageList::select('price', 'package')
-            ->when($this->router_name, fn ($q) => $q->where('router_name', $this->router_name))
+            ->when(!empty($this->router_name), fn ($q) => $q->where('router_name', $this->router_name))
             ->get();
         // $users = User::permission('create-user')->get();
         $this->users = User::all();

@@ -138,9 +138,13 @@
                                 <input type="text" class="form-control form-control-sm" wire:model.defer="up_rate_limit" placeholder="1M/1M">
                             </div>
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <label class="form-label">Session Timeout</label>
                             <input type="text" class="form-control form-control-sm" wire:model.defer="up_session_timeout" placeholder="1h or 1d">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Comment</label>
+                            <input type="text" class="form-control form-control-sm" wire:model.defer="up_comment">
                         </div>
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-info btn-sm flex-fill text-dark" wire:loading.attr="disabled" wire:target="addUserProfile">
@@ -161,15 +165,16 @@
                 <div class="card-body p-0">
                     <div class="table-responsive">
                     <table class="table table-sm table-hover align-middle mb-0 data-table" wire:key="tbl-hs-user-profiles">
-                        <thead class="table-light"><tr><th>Name</th><th>Shared Users</th><th>Rate Limit</th><th>Session Timeout</th><th>Action</th></tr></thead>
+                        <thead class="table-light"><tr><th>Name</th><th>Shared Users</th><th>Rate Limit</th><th>Comment</th><th>Action</th></tr></thead>
                         <tbody>
                             @forelse($userProfiles as $p)
                             <tr wire:key="row-hs-uprof-{{ $loop->index }}-{{ $p['name'] ?? $loop->index }}">
                                 <td><strong>{{ $p['name'] ?? '-' }}</strong></td>
                                 <td><span class="badge bg-primary">{{ $p['shared-users'] ?? '-' }}</span></td>
                                 <td><code class="text-danger">{{ $p['rate-limit'] ?? '-' }}</code></td>
-                                <td><small>{{ $p['session-timeout'] ?? 'none' }}</small></td>
+                                <td><small class="text-muted">{{ $p['comment'] ?? '' }}</small></td>
                                 <td>
+                        @php // removed session timeout col to save space for comment @endphp
                                     <button class="btn btn-warning btn-sm" wire:click="editUserProfile({{ json_encode($p) }})"><i class="bi bi-pencil-square"></i></button>
                                     @if(($p['default'] ?? 'no') === 'no')
                                     <button class="btn btn-danger btn-sm" wire:click="removeUserProfile('{{ $p['name'] ?? '' }}')" wire:confirm="Remove profile '{{ $p['name'] ?? '' }}'?"><i class="bi bi-trash"></i></button>

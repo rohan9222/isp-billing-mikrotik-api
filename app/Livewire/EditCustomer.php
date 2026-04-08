@@ -61,6 +61,10 @@ class EditCustomer extends Component
 
     public $password;
 
+    public $data = [];
+
+    public $auto_disable;
+
     public $tempValue;
 
     public $ppp_remote_ip;
@@ -91,12 +95,16 @@ class EditCustomer extends Component
 
         $this->addressFields = AddressField::all();
         $this->routers = RouterList::all();
-        $this->packageLists = PackageList::all()->pluck('package');
         $this->userLists = User::select('id', 'name', 'email')->get();
         $this->customerId = $customerId;
         // Call loadCustomerData with the customerId parameter
         $this->loadCustomerData($customerId);
         $this->loadInterfaceNames();
+        
+        // Load packages based on the customer's router
+        $routerName = $this->fields['pppUser']['router_name'] ?? null;
+        $this->packageLists = PackageList::where('router_name', !empty($routerName) ? $routerName : null)
+            ->pluck('package');
     }
 
     public function loadInterfaceNames()
@@ -132,7 +140,7 @@ class EditCustomer extends Component
     public function loadCustomerData($customerId)
     {
         $customer = CustomersInfo::where('customer_unique_id', decrypt($customerId))
-            ->with('customerAddress', 'billing', 'official', 'pppUser')
+            ->with('customerAddress', 'billing', 'official', 'pppUser', 'package')
             ->first();
 
         if ($customer) {
@@ -187,7 +195,7 @@ class EditCustomer extends Component
 
                 'pppUser' => array_merge([
                     'connection_date' => Carbon::parse($customer->connection_date)->format('d M Y') ?? '',
-                    'package_name' => $customer->package_name ?? '',
+                    'package_name' => $customer->package?->package ?? '',
                     'ppp_user_id' => $this->ppp_user_id ?? '',
                 ], $this->ppp_user_id !== null ? [
                     'router_name' => $customer->pppUser->router_name ?? '',
@@ -225,6 +233,12 @@ class EditCustomer extends Component
                     // Add more pppUser-related fields
                 ],
             ];
+
+            // Initialize class-level properties linked to the UI
+            $this->router_name = $customer->pppUser->router_name ?? '';
+            $this->service = $customer->pppUser->service ?? '';
+            $this->auto_disable = $customer->billing->auto_disable ?? true;
+            $this->auto_disable_date = $customer->billing->auto_disable_date ?? null;
         } else {
             flash()->error('Customer not found.');
         }
@@ -283,7 +297,8 @@ class EditCustomer extends Component
             ];
             // Proceed only if service is static and router_name is set
             // auto disable date will be set only if router_name is set
-            if ($this->router_name) {
+            $normalizedRouterName = !empty($this->router_name) ? $this->router_name : null;
+            if ($normalizedRouterName) {
                 $this->auto_disable = true;
                 $this->auto_disable_date = now()->addDays(30)->format('Y-m-d');
             } else {
@@ -291,9 +306,9 @@ class EditCustomer extends Component
                 $this->auto_disable_date = $this->ip_address = $this->interface = $this->queue_name = $this->profile = $this->username = $this->password = $this->ppp_remote_ip = $this->caller_id = $this->bandwidth = $this->service = null;
             }
             // Proceed only if service is static and router_name is set than fetch interfaces and profile
-            if ($this->service == 'static' && $this->router_name) {
+            if ($this->service == 'static' && $normalizedRouterName) {
                 try {
-                    $router = RouterList::where('router_name', $this->router_name)->first();
+                    $router = RouterList::where('router_name', $normalizedRouterName)->first();
                     $mikrotikSSHService = new MikrotikSSHService(
                         $router->ip_address,
                         $router->ssh_port,
@@ -320,10 +335,10 @@ class EditCustomer extends Component
                 $this->username = $this->password = $this->ppp_remote_ip = $this->caller_id = null;
 
                 return;
-            } elseif ($this->service == 'pppoe' && $this->router_name) {
+            } elseif ($this->service == 'pppoe' && $normalizedRouterName) {
                 // Proceed only if service is pppoe and router_name is set
                 try {
-                    $router = RouterList::where('router_name', $this->router_name)->first();
+                    $router = RouterList::where('router_name', $normalizedRouterName)->first();
 
                     $mikrotikSSHService = new MikrotikSSHService(
                         $router->ip_address,
@@ -731,13 +746,20 @@ class EditCustomer extends Component
                     }
                     flash()->success(ucfirst(str_replace('_', ' ', $attribute)).' updated successfully!');
                     data_set($this->fields, $field, $value);
-                } elseif ($relation == 'pppUser' && $attribute == 'connection_date' || $attribute == 'package_name') {
-                    $customer->$attribute = ($attribute == 'connection_date') ? date('Y-m-d', strtotime($value)) : (($value != '') ? $value : null);
-                    // $customer->$attribute = $value;
+                } elseif ($relation == 'pppUser' && ($attribute == 'connection_date' || $attribute == 'package_name')) {
+                    if ($attribute == 'package_name') {
+                        $router = $customer->pppUser->router_name ?? null;
+                        $pkg = PackageList::where('package', $value)
+                            ->where('router_name', !empty($router) ? $router : null)
+                            ->first();
+                        $customer->package_id = $pkg?->id;
+                    } else {
+                        $customer->connection_date = date('Y-m-d', strtotime($value));
+                    }
                     $customer->save();
                     data_set($this->fields, $field, $value); // Update the specific field in the 'customer'
                     flash()->success(ucfirst(str_replace('_', ' ', $field)).' updated successfully!');
-                } elseif ($relation == 'pppUser' && $attribute == 'auto_disable_date' || $attribute == 'auto_disable_month') {
+                } elseif ($relation == 'pppUser' && ($attribute == 'auto_disable_date' || $attribute == 'auto_disable_month')) {
                     $customer->billing->$attribute = ($attribute == 'auto_disable_date') ? date('Y-m-d', strtotime($value)) : (($value != '') ? $value : null);
                     $customer->billing->save();
 

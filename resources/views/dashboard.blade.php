@@ -6,8 +6,11 @@
     <div class="row g-2">
         @foreach ($systemOverview as $routerName => $routerData)
             @php
-                // If $routerData is nested (array of arrays), take the first one
-                $info = is_array($routerData[0] ?? null) ? $routerData[0] : $routerData;
+                if (! ($routerData['status'] ?? false)) {
+                    continue;
+                }
+
+                $info = $routerData['data'][0] ?? $routerData['data'] ?? [];
 
                 $cpuLoad = (int) filter_var($info['cpu-load'] ?? 0, FILTER_SANITIZE_NUMBER_INT);
                 $cpuColor = $cpuLoad > 80 ? 'bg-danger' : ($cpuLoad > 50 ? 'bg-warning' : 'bg-success');

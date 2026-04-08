@@ -31,7 +31,7 @@ class HotspotSetup extends Component
     public int $up_shared_users = 1;
 
     public string $up_session_timeout = '';
-
+    public string $up_comment = '';
     public ?string $editUserProfileId = null;
 
     // Data
@@ -132,6 +132,7 @@ class HotspotSetup extends Component
         $this->up_rate_limit = $up['rate-limit'] ?? '';
         $this->up_shared_users = (int) ($up['shared-users'] ?? 1);
         $this->up_session_timeout = $up['session-timeout'] ?? '';
+        $this->up_comment = $up['comment'] ?? '';
     }
 
     public function addUserProfile(): void
@@ -144,9 +145,10 @@ class HotspotSetup extends Component
             app(MikrotikController::class)->addHotspotUserProfile($this->selectedRouter, [
                 'name' => $this->up_name, 'rate_limit' => $this->up_rate_limit,
                 'shared_users' => $this->up_shared_users, 'session_timeout' => $this->up_session_timeout,
+                'comment' => $this->up_comment,
             ], $this->editUserProfileId);
             flash()->success($this->editUserProfileId ? 'User profile updated!' : 'User profile added!');
-            $this->reset(['up_name', 'up_rate_limit', 'up_session_timeout', 'editUserProfileId']);
+            $this->reset(['up_name', 'up_rate_limit', 'up_session_timeout', 'up_comment', 'editUserProfileId']);
             $this->up_shared_users = 1;
             $this->userProfiles = app(MikrotikController::class)->getHotspotUserProfiles($this->selectedRouter);
             $this->dispatch('reinit-datatables');
