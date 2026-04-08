@@ -51,9 +51,6 @@
             <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-pppoe-setup') }}">
                 <div class="d-flex align-items-center"><span class="nav-link-text ps-1">PPPoE Server</span></div>
             </a></li>
-            <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-hotspot-setup') }}">
-                <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Hotspot</span></div>
-            </a></li>
             <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-radius-setup') }}">
                 <div class="d-flex align-items-center"><span class="nav-link-text ps-1">RADIUS</span></div>
             </a></li>
@@ -77,6 +74,27 @@
             </a></li>
             <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-backup-setup') }}">
                 <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Backup & Restore</span><span class="badge rounded-pill ms-2 badge-subtle-primary">Admin</span></div>
+            </a></li>
+        </ul>
+        
+        <!-- Hotspot Setup Dropdown -->
+        <a class="nav-link dropdown-indicator collapsed" href="#hotspotSetup" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="hotspotSetup">
+            <div class="d-flex align-items-center">
+                <span class="nav-link-icon">
+                    <i class="bi bi-wifi"></i>
+                </span>
+                <span class="nav-link-text ps-1">Hotspot Setup</span>
+            </div>
+        </a>
+        <ul class="nav collapse" id="hotspotSetup" style="">
+            <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-hotspot-setup') }}">
+                <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Hotspot Basic</span></div>
+            </a></li>
+            <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-hotspot-manager') }}">
+                <div class="d-flex align-items-center">
+                    <span class="nav-link-text ps-1">Hotspot Manager</span>
+                    <span class="badge rounded-pill ms-2 badge-subtle-success">New</span>
+                </div>
             </a></li>
         </ul>
     </li>

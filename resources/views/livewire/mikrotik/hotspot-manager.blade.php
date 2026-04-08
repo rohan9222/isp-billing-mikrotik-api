@@ -1,0 +1,1010 @@
+<div class="zoom-in">
+    <x-slot name="header">🛜 Hotspot Manager</x-slot>
+
+    @push('styles')
+    <style>
+        /* ── Voucher Print Styles ── */
+        @media print {
+            body * { visibility: hidden; }
+            #voucher-print-area, #voucher-print-area * { visibility: visible; }
+            #voucher-print-area { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+        }
+        .voucher-card {
+            border: 2px dashed #6366f1;
+            border-radius: 10px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #f8f9ff 0%, #eef2ff 100%);
+            text-align: center;
+            min-width: 160px;
+        }
+        .voucher-code {
+            font-family: 'Courier New', monospace;
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: #3730a3;
+            word-break: break-all;
+        }
+        .stat-card {
+            border-radius: 14px;
+            padding: 1.1rem 1.4rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 4px 18px rgba(0,0,0,.12);
+            transition: transform .2s;
+        }
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-card .stat-icon { font-size: 2.2rem; opacity: .85; }
+        .stat-card .stat-value { font-size: 1.7rem; font-weight: 800; line-height: 1; }
+        .stat-card .stat-label { font-size: .78rem; opacity: .85; text-transform: uppercase; letter-spacing: 1px; }
+        .nav-tabs .nav-link { border-radius: 8px 8px 0 0; font-size: .85rem; padding: .5rem .9rem; }
+        .nav-tabs .nav-link.active { font-weight: 600; }
+        .online-dot { width:10px; height:10px; border-radius:50%; background:#22c55e; display:inline-block; animation: pulse 1.5s infinite; margin-right:4px; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+        .hs-table thead th { background:#f1f5f9; font-size:.8rem; text-transform:uppercase; letter-spacing:.5px; white-space:nowrap; }
+        .badge-profile { background: linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; font-size:.72rem; }
+    </style>
+    @endpush
+
+    {{-- ── Router Selector ── --}}
+    <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+        <i class="bi bi-wifi text-primary fs-5"></i>
+        <select class="form-select form-select-sm w-auto" wire:model.live="selectedRouter" id="hs-router-select">
+            <option value="">-- Select Router --</option>
+            @foreach($routers as $r)
+                <option value="{{ $r->router_name }}">{{ $r->router_name }} ({{ $r->ip_address }})</option>
+            @endforeach
+        </select>
+        @if($selectedRouter)
+            <button class="btn btn-sm btn-outline-secondary no-print" wire:click="loadData" wire:loading.attr="disabled">
+                <span wire:loading.remove wire:target="loadData"><i class="bi bi-arrow-clockwise"></i> Refresh</span>
+                <span wire:loading wire:target="loadData"><span class="spinner-border spinner-border-sm"></span></span>
+            </button>
+            <span class="badge bg-success ms-auto">
+                <span class="online-dot"></span> {{ $onlineCount }} Online
+            </span>
+        @endif
+    </div>
+
+    @if(!$selectedRouter)
+        <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Select a connected router to manage Hotspot.</div>
+    @else
+
+    {{-- ── Navigation Tabs ── --}}
+    <ul class="nav nav-tabs mb-3 no-print flex-wrap">
+        @foreach([
+            ['dashboard','bi-speedometer2','Dashboard'],
+            ['users','bi-people','Users'],
+            ['sessions','bi-activity','Sessions'],
+            ['vouchers','bi-ticket-perforated','Vouchers'],
+            ['profiles','bi-person-badge','Profiles'],
+            ['income','bi-cash-coin','Income'],
+            ['report','bi-bar-chart-line','Reports'],
+        ] as [$tab, $icon, $label])
+        <li class="nav-item">
+            <button class="nav-link {{ $activeTab===$tab?'active':'' }}" wire:click="$set('activeTab','{{ $tab }}')">
+                <i class="bi {{ $icon }} me-1"></i>{{ $label }}
+                @if($tab==='sessions')<span class="badge bg-success ms-1 rounded-pill">{{ $onlineCount }}</span>@endif
+            </button>
+        </li>
+        @endforeach
+    </ul>
+
+    {{-- ====================================================================== --}}
+    {{-- DASHBOARD TAB --}}
+    {{-- ====================================================================== --}}
+    @if($activeTab==='dashboard')
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
+                <i class="bi bi-people-fill stat-icon"></i>
+                <div>
+                    <div class="stat-value">{{ count($users) }}</div>
+                    <div class="stat-label">Total Users</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card" style="background:linear-gradient(135deg,#22c55e,#16a34a)">
+                <i class="bi bi-wifi stat-icon"></i>
+                <div>
+                    <div class="stat-value">{{ $onlineCount }}</div>
+                    <div class="stat-label">Online Now</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+                <i class="bi bi-ticket-perforated stat-icon"></i>
+                <div>
+                    <div class="stat-value">{{ $totalVouchers - $usedVouchers }}</div>
+                    <div class="stat-label">Unused Vouchers</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card" style="background:linear-gradient(135deg,#0ea5e9,#0284c7)">
+                <i class="bi bi-cash-coin stat-icon"></i>
+                <div>
+                    <div class="stat-value">৳{{ number_format($monthIncome,0) }}</div>
+                    <div class="stat-label">This Month Income</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        {{-- Active Sessions Mini --}}
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-activity text-success me-1"></i>Active Sessions</span>
+                    <button class="btn btn-xs btn-outline-secondary" wire:click="refreshSessions"><i class="bi bi-arrow-clockwise"></i></button>
+                </div>
+                <div class="card-body p-0" style="max-height:300px;overflow-y:auto">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light"><tr><th>User</th><th>IP</th><th>MAC</th><th>Uptime</th></tr></thead>
+                        <tbody>
+                        @forelse($sessions as $s)
+                            <tr>
+                                <td><strong>{{ $s['user'] ?? '-' }}</strong></td>
+                                <td><code class="small">{{ $s['address'] ?? '-' }}</code></td>
+                                <td><code class="small">{{ $s['mac-address'] ?? '-' }}</code></td>
+                                <td><small>{{ $s['uptime'] ?? '-' }}</small></td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="4" class="text-center text-muted py-3">No active sessions</td></tr>
+                        @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {{-- Today Income --}}
+        <div class="col-lg-3">
+            <div class="card h-100">
+                <div class="card-header"><i class="bi bi-cash me-1 text-success"></i>Today Income</div>
+                <div class="card-body text-center d-flex flex-column justify-content-center">
+                    <div style="font-size:2.2rem;font-weight:800;color:#16a34a">৳{{ number_format($todayIncome,2) }}</div>
+                    <small class="text-muted">{{ now()->format('d M Y') }}</small>
+                </div>
+            </div>
+        </div>
+
+        {{-- Servers --}}
+        <div class="col-lg-3">
+            <div class="card h-100">
+                <div class="card-header"><i class="bi bi-server me-1 text-primary"></i>Hotspot Servers</div>
+                <div class="card-body p-0">
+                    @forelse($servers as $sv)
+                    <div class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center">
+                        <div><strong class="small">{{ $sv['name'] ?? '-' }}</strong><br><code class="x-small text-muted">{{ $sv['interface'] ?? '' }}</code></div>
+                        <span class="badge {{ ($sv['disabled'] ?? 'false')==='false'?'bg-success':'bg-danger' }}">{{ ($sv['disabled'] ?? 'false')==='false'?'ON':'OFF' }}</span>
+                    </div>
+                    @empty
+                    <div class="text-center text-muted p-3 small">No servers</div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- ====================================================================== --}}
+    {{-- USERS TAB --}}
+    {{-- ====================================================================== --}}
+    @if($activeTab==='users')
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-people me-1 text-primary"></i>Hotspot Users on <strong>{{ $selectedRouter }}</strong> <span class="badge bg-secondary ms-1">{{ count($users) }}</span></span>
+                    <button class="btn btn-sm btn-primary no-print" data-bs-toggle="modal" data-bs-target="#userModal">
+                        <i class="bi bi-plus-lg me-1"></i>Add User
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0 hs-table data-table" wire:key="tbl-hs-users-{{ $selectedRouter }}">
+                            <thead><tr>
+                                <th>#</th><th>Username / Pwd</th><th>Profile</th><th>Uptime</th><th>Data Used</th><th>Status</th><th>Comment</th><th class="no-print">Actions</th>
+                            </tr></thead>
+                            <tbody>
+                            @forelse($users as $u)
+                            @php
+                                $activeSession = collect($sessions)->firstWhere('user', $u['name'] ?? '');
+                                $isOnline = (bool)$activeSession;
+                            @endphp
+                            <tr wire:key="user-{{ $loop->index }}-{{ $u['name'] ?? $loop->index }}">
+                                <td class="small text-muted">{{ $loop->iteration }}</td>
+                                <td>
+                                    <strong>{{ $u['name'] ?? '-' }}</strong>
+                                    @if($isOnline)<span class="online-dot ms-1" title="Online"></span>@endif
+                                    @if(isset($u['password']) && $u['password']) <br><code class="text-danger small">{{ $u['password'] }}</code> @endif
+                                </td>
+                                <td><span class="badge badge-profile">{{ $u['profile'] ?? '-' }}</span></td>
+                                <td><small>{{ $activeSession['uptime'] ?? ($u['uptime'] ?? '—') }}</small></td>
+                                <td>
+                                    @php
+                                        $bytesIn  = (int)($u['bytes-in']  ?? $activeSession['bytes-in']  ?? 0);
+                                        $bytesOut = (int)($u['bytes-out'] ?? $activeSession['bytes-out'] ?? 0);
+                                    @endphp
+                                    <small class="text-muted">↓{{ number_format($bytesIn/1048576,1) }}M / ↑{{ number_format($bytesOut/1048576,1) }}M</small>
+                                </td>
+                                <td>
+                                    @if($isOnline)
+                                        <span class="badge bg-success">Online</span>
+                                    @else
+                                        <span class="badge bg-secondary">Offline</span>
+                                    @endif
+                                    @if(($u['disabled'] ?? 'false') === 'true')
+                                        <span class="badge bg-danger ms-1">Disabled</span>
+                                    @endif
+                                </td>
+                                <td><small class="text-muted">{{ $u['comment'] ?? '' }}</small></td>
+                                <td class="no-print">
+                                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#userModal"
+                                        wire:click="editUser({{ json_encode($u) }})">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    @if($isOnline)
+                                    <button class="btn btn-info btn-sm" wire:click="disconnectSession('{{ $u['name'] ?? '' }}')"
+                                        wire:confirm="Disconnect '{{ $u['name'] }}'s session?">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                    @endif
+                                    <button class="btn btn-danger btn-sm" wire:click="removeUser('{{ $u['name'] ?? '' }}')"
+                                        wire:confirm="Permanently delete user '{{ $u['name'] ?? '' }}'?">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="8" class="text-center text-muted py-4">No hotspot users found.</td></tr>
+                            @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- User Modal --}}
+    <div class="modal fade" id="userModal" tabindex="-1" wire:ignore.self>
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header {{ $editUserId ? 'bg-warning text-dark' : 'bg-primary text-white' }}">
+                    <h5 class="modal-title"><i class="bi bi-{{ $editUserId ? 'pencil-square' : 'person-plus' }} me-1"></i>{{ $editUserId ? 'Edit User' : 'Add Hotspot User' }}</h5>
+                    <button type="button" class="btn-close {{ $editUserId ? '' : 'btn-close-white' }}" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form wire:submit.prevent="addUser" id="user-form">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">Username <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm" wire:model.defer="u_name" id="u_name" placeholder="username">
+                                @error('u_name')<div class="text-danger small">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Password <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm" wire:model.defer="u_password" id="u_password" placeholder="password">
+                                @error('u_password')<div class="text-danger small">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Profile <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-sm" wire:model.defer="u_profile" id="u_profile">
+                                    @forelse($userProfiles as $p)
+                                        <option value="{{ $p['name'] }}">{{ $p['name'] }}</option>
+                                    @empty
+                                        <option value="default">default</option>
+                                    @endforelse
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Limit Uptime</label>
+                                <input type="text" class="form-control form-control-sm" wire:model.defer="u_limit_uptime" placeholder="1h / 1d">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Limit Bytes (Total)</label>
+                                <input type="text" class="form-control form-control-sm" wire:model.defer="u_limit_bytes" placeholder="100000000">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Comment</label>
+                                <input type="text" class="form-control form-control-sm" wire:model.defer="u_comment" placeholder="Note...">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="user-form" class="btn btn-primary btn-sm" wire:loading.attr="disabled" wire:target="addUser">
+                        <span wire:loading.remove wire:target="addUser"><i class="bi bi-{{ $editUserId ? 'save' : 'plus-lg' }} me-1"></i>{{ $editUserId ? 'Update' : 'Add User' }}</span>
+                        <span wire:loading wire:target="addUser"><span class="spinner-border spinner-border-sm me-1"></span>Saving...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- ====================================================================== --}}
+    {{-- SESSIONS TAB --}}
+    {{-- ====================================================================== --}}
+    @if($activeTab==='sessions')
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-activity text-success me-1"></i>Active Sessions on <strong>{{ $selectedRouter }}</strong></span>
+            <button class="btn btn-sm btn-outline-success no-print" wire:click="refreshSessions" wire:loading.attr="disabled">
+                <span wire:loading.remove wire:target="refreshSessions"><i class="bi bi-arrow-clockwise me-1"></i>Refresh</span>
+                <span wire:loading wire:target="refreshSessions"><span class="spinner-border spinner-border-sm"></span></span>
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0 hs-table data-table" wire:key="tbl-sessions-{{ $selectedRouter }}">
+                    <thead><tr>
+                        <th>#</th><th>User</th><th>IP Address</th><th>MAC Address</th><th>Uptime</th><th>Download</th><th>Upload</th><th>Server</th><th class="no-print">Action</th>
+                    </tr></thead>
+                    <tbody>
+                    @forelse($sessions as $s)
+                    <tr wire:key="sess-{{ $loop->index }}">
+                        <td class="text-muted small">{{ $loop->iteration }}</td>
+                        <td><strong>{{ $s['user'] ?? '-' }}</strong></td>
+                        <td><code>{{ $s['address'] ?? '-' }}</code></td>
+                        <td><code class="small">{{ $s['mac-address'] ?? '-' }}</code></td>
+                        <td><span class="badge bg-success">{{ $s['uptime'] ?? '-' }}</span></td>
+                        <td><small>{{ number_format((int)($s['bytes-in'] ?? 0)/1048576,2) }} MB</small></td>
+                        <td><small>{{ number_format((int)($s['bytes-out'] ?? 0)/1048576,2) }} MB</small></td>
+                        <td><span class="badge bg-info text-dark small">{{ $s['server'] ?? '-' }}</span></td>
+                        <td class="no-print">
+                            <button class="btn btn-danger btn-sm" wire:click="disconnectSession('{{ $s['user'] ?? '' }}')"
+                                wire:confirm="Disconnect {{ $s['user'] ?? 'this' }}'s session?">
+                                <i class="bi bi-x-circle me-1"></i>Kick
+                            </button>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr><td colspan="9" class="text-center text-muted py-4">No active hotspot sessions.</td></tr>
+                    @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- ====================================================================== --}}
+    {{-- VOUCHERS TAB --}}
+    {{-- ====================================================================== --}}
+    @if($activeTab==='vouchers')
+    <div class="row g-3">
+        {{-- Generator Form --}}
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white"><i class="bi bi-ticket-perforated-fill me-1"></i>Voucher Generator</div>
+                <div class="card-body">
+                    <form wire:submit.prevent="generateVouchers" id="voucher-gen-form">
+                        <div class="mb-2">
+                            <label class="form-label">User Profile <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-sm" wire:model.defer="v_profile" id="v_profile">
+                                <option value="">-- Select Profile --</option>
+                                @foreach($userProfiles as $p)
+                                    <option value="{{ $p['name'] }}">{{ $p['name'] }}</option>
+                                @endforeach
+                            </select>
+                            @error('v_profile')<div class="text-danger small">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label">Count <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control form-control-sm" wire:model.defer="v_count" min="1" max="500">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">User Length <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control form-control-sm" wire:model.defer="v_length" min="3" max="20">
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label">Type</label>
+                                <select class="form-select form-select-sm" wire:model.defer="v_type">
+                                    <option value="numeric">Numeric (1234)</option>
+                                    <option value="lower">Lowercase (abcd)</option>
+                                    <option value="upper">Uppercase (ABCD)</option>
+                                    <option value="mixed">Mixed (aBcD)</option>
+                                    <option value="alphanumeric_lower">AlphaNum Lower (a1b2)</option>
+                                    <option value="alphanumeric_upper">AlphaNum Upper (A1B2)</option>
+                                    <option value="alphanumeric_mixed">AlphaNum Mixed (a1B2)</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Prefix</label>
+                                <input type="text" class="form-control form-control-sm" wire:model.defer="v_prefix" placeholder="HS-" maxlength="5">
+                            </div>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" wire:model.live="v_user_equals_pass" id="v_user_equals_pass">
+                            <label class="form-check-label small fw-bold" for="v_user_equals_pass">Password = Username (PIN style)</label>
+                        </div>
+                        @if(!$v_user_equals_pass)
+                        <div class="mb-3 p-2 border rounded bg-light">
+                            <label class="form-label text-primary"><i class="bi bi-key"></i> Password Length <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control form-control-sm" wire:model.defer="v_pwd_length" min="3" max="20">
+                        </div>
+                        @endif
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label">Price (৳)</label>
+                                <input type="number" step="0.01" class="form-control form-control-sm" wire:model.defer="v_price" min="0">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Limit Uptime</label>
+                                <input type="text" class="form-control form-control-sm" wire:model.defer="v_limit_uptime" placeholder="1h">
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Batch Name</label>
+                            <input type="text" class="form-control form-control-sm" wire:model.defer="v_batch_name" placeholder="Auto-generated if blank">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Comment</label>
+                            <input type="text" class="form-control form-control-sm" wire:model.defer="v_comment" placeholder="e.g. Daily voucher">
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" wire:model.defer="v_push_to_router" id="push-to-router">
+                            <label class="form-check-label small" for="push-to-router">Push to MikroTik router</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm w-100" wire:loading.attr="disabled" wire:target="generateVouchers">
+                            <span wire:loading.remove wire:target="generateVouchers"><i class="bi bi-magic me-1"></i>Generate Vouchers</span>
+                            <span wire:loading wire:target="generateVouchers"><span class="spinner-border spinner-border-sm me-1"></span>Generating...</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {{-- Voucher List + Print --}}
+        <div class="col-lg-8">
+            {{-- Stats row --}}
+            <div class="row g-2 mb-3">
+                <div class="col-4">
+                    <div class="card text-center py-2">
+                        <div class="fw-bold fs-5 text-primary">{{ $totalVouchers }}</div>
+                        <small class="text-muted">Total</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card text-center py-2">
+                        <div class="fw-bold fs-5 text-success">{{ $totalVouchers - $usedVouchers }}</div>
+                        <small class="text-muted">Unused</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card text-center py-2">
+                        <div class="fw-bold fs-5 text-warning">{{ $usedVouchers }}</div>
+                        <small class="text-muted">Used</small>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Batch overview --}}
+            @if($voucherBatches->isNotEmpty())
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between">
+                    <span class="small fw-bold"><i class="bi bi-collection me-1"></i>Batches</span>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-sm align-middle mb-0 hs-table">
+                        <thead><tr><th>Batch</th><th>Profile</th><th>Price</th><th>Unused</th><th>Used</th><th class="no-print">Actions</th></tr></thead>
+                        <tbody>
+                        @foreach($voucherBatches as $b)
+                        <tr>
+                            <td><code class="small">{{ $b->batch_name }}</code></td>
+                            <td><span class="badge badge-profile">{{ $b->profile }}</span></td>
+                            <td><small>৳{{ number_format($b->price,0) }}</small></td>
+                            <td><span class="badge bg-success">{{ $b->unused_count }}</span></td>
+                            <td><span class="badge bg-secondary">{{ $b->used_count }}</span></td>
+                            <td class="no-print">
+                                <button class="btn btn-xs btn-outline-primary"
+                                    wire:click="triggerPrintBatch('{{ $b->batch_name }}')" title="Print batch">
+                                    <span wire:loading.remove wire:target="triggerPrintBatch('{{ $b->batch_name }}')"><i class="bi bi-printer"></i></span>
+                                    <span wire:loading wire:target="triggerPrintBatch('{{ $b->batch_name }}')"><span class="spinner-border spinner-border-sm"></span></span>
+                                </button>
+                                <button class="btn btn-xs btn-outline-danger"
+                                    wire:click="deleteVoucherBatch('{{ $b->batch_name }}')"
+                                    wire:confirm="Delete all UNUSED vouchers in batch '{{ $b->batch_name }}'?">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
+
+            {{-- Filter --}}
+            <div class="d-flex gap-2 mb-2 flex-wrap no-print">
+                <div class="btn-group btn-group-sm">
+                    @foreach(['all','unused','used','expired'] as $f)
+                    <button class="btn {{ $voucherFilter===$f?'btn-primary':'btn-outline-secondary' }}"
+                        wire:click="$set('voucherFilter','{{ $f }}')">{{ ucfirst($f) }}</button>
+                    @endforeach
+                </div>
+                <input type="text" class="form-control form-control-sm w-auto ms-auto" wire:model.live.debounce.300ms="voucherSearch" placeholder="🔍 Search code / batch...">
+                <button class="btn btn-sm btn-outline-success" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print All</button>
+            </div>
+
+            {{-- Voucher Table --}}
+            <div class="card">
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height:420px;overflow-y:auto">
+                        <table class="table table-sm table-hover align-middle mb-0 hs-table">
+                            <thead><tr><th>Code</th><th>Profile</th><th>Price</th><th>Status</th><th>Used By</th><th>Batch</th><th class="no-print">Del</th></tr></thead>
+                            <tbody>
+                            @forelse($vouchers as $v)
+                            <tr wire:key="vc-{{ $v->id }}">
+                                <td><code class="fw-bold text-primary">{{ $v->code }}</code></td>
+                                <td><span class="badge badge-profile small">{{ $v->profile }}</span></td>
+                                <td><small>৳{{ number_format($v->price,0) }}</small></td>
+                                <td>
+                                    @if($v->status === 'unused')<span class="badge bg-success">Unused</span>
+                                    @elseif($v->status === 'used')<span class="badge bg-secondary">Used</span>
+                                    @else<span class="badge bg-danger">Expired</span>@endif
+                                </td>
+                                <td><small class="text-muted">{{ $v->used_by ?? '—' }}</small></td>
+                                <td><small>{{ $v->batch_name }}</small></td>
+                                <td class="no-print">
+                                    @if($v->status === 'unused')
+                                    <button class="btn btn-xs btn-outline-danger" wire:click="deleteSingleVoucher({{ $v->id }})"
+                                        wire:confirm="Delete this voucher?"><i class="bi bi-trash"></i></button>
+                                    @endif
+                                </td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="7" class="text-center text-muted py-4">No vouchers found.</td></tr>
+                            @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="p-2 no-print">{{ $vouchers->links() }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Print area for vouchers --}}
+    <div id="voucher-print-area" style="display:none">
+        <div style="text-align:center;margin-bottom:12px;font-size:1.1rem;font-weight:700">🛜 Hotspot Vouchers — {{ $selectedRouter }}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start" id="voucher-cards-container">
+        </div>
+    </div>
+
+    @push('scripts')
+    <script>
+        document.addEventListener('livewire:init', () => {
+            Livewire.on('print-vouchers', (data) => {
+                const payload = data[0] || data;
+                let cards = '';
+                payload.vouchers.forEach(v => {
+                    const pwdDisplay = v.username === v.password ? '' : `<div style="font-size:.8rem;color:#374151">Pwd: <b style="font-family:monospace;letter-spacing:1px">${v.password}</b></div>`;
+                    cards += `<div class="voucher-card" style="border:2px dashed #6366f1;border-radius:10px;padding:12px 16px;background:linear-gradient(135deg,#f8f9ff 0%,#eef2ff 100%);text-align:center;min-width:160px;break-inside:avoid">
+                        <div style="font-size:.7rem;color:#6b7280;margin-bottom:2px">🛜 HOTSPOT VOUCHER</div>
+                        <div style="font-family:monospace;font-size:1.2rem;font-weight:800;letter-spacing:3px;color:#3730a3;margin:4px 0">${v.username}</div>
+                        ${pwdDisplay}
+                        <div style="font-size:.75rem;color:#374151">Profile: <b>${v.profile}</b></div>
+                        <div style="font-size:.75rem;color:#374151">Price: <b>৳${v.price}</b></div>
+                        <div style="font-size:.65rem;color:#9ca3af;margin-top:4px">${payload.router}</div>
+                    </div>`;
+                });
+                
+                document.getElementById('voucher-cards-container').innerHTML = cards;
+                const area = document.getElementById('voucher-print-area');
+                area.style.display = 'block';
+                window.print();
+                setTimeout(() => { area.style.display = 'none'; }, 1000);
+            });
+        });
+    </script>
+    @endpush
+    @endif
+
+    {{-- ====================================================================== --}}
+    {{-- PROFILES TAB --}}
+    {{-- ====================================================================== --}}
+    @if($activeTab==='profiles')
+    <div class="row g-3">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header {{ $editUserProfileId ? 'bg-warning text-dark' : 'bg-info text-dark' }}">
+                    <i class="bi bi-{{ $editUserProfileId ? 'pencil-square' : 'plus-circle' }} me-1"></i>
+                    {{ $editUserProfileId ? 'Edit User Profile' : 'Add User Profile' }}
+                </div>
+                <div class="card-body">
+                    <form wire:submit.prevent="addUserProfile">
+                        <div class="mb-2">
+                            <label class="form-label">Profile Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" wire:model.defer="up_name" placeholder="1Hour / 1Day">
+                            @error('up_name')<div class="text-danger small">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label">Shared Users</label>
+                                <input type="number" class="form-control form-control-sm" wire:model.defer="up_shared_users" min="1">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Rate Limit</label>
+                                <input type="text" class="form-control form-control-sm" wire:model.defer="up_rate_limit" placeholder="2M/2M">
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label">Session Timeout</label>
+                                <input type="text" class="form-control form-control-sm" wire:model.defer="up_session_timeout" placeholder="1h">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Idle Timeout</label>
+                                <input type="text" class="form-control form-control-sm" wire:model.defer="up_idle_timeout" placeholder="30m">
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Status Auto-Refresh</label>
+                            <select class="form-select form-select-sm" wire:model.defer="up_status_autorefresh">
+                                <option value="">None</option>
+                                <option value="1m">1 minute</option>
+                                <option value="3m">3 minutes</option>
+                                <option value="5m">5 minutes</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Comment</label>
+                            <input type="text" class="form-control form-control-sm" wire:model.defer="up_comment">
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-info btn-sm flex-fill text-dark" wire:loading.attr="disabled" wire:target="addUserProfile">
+                                <span wire:loading.remove wire:target="addUserProfile"><i class="bi bi-{{ $editUserProfileId ? 'save' : 'plus-lg' }} me-1"></i>{{ $editUserProfileId ? 'Update' : 'Add Profile' }}</span>
+                                <span wire:loading wire:target="addUserProfile"><span class="spinner-border spinner-border-sm me-1"></span>Saving...</span>
+                            </button>
+                            @if($editUserProfileId)
+                            <button type="button" class="btn btn-secondary btn-sm" wire:click="$set('editUserProfileId', null)">Cancel</button>
+                            @endif
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {{-- Linked packages from billing DB --}}
+            @if($hotspotPackages->isNotEmpty())
+            <div class="card mt-3 border-0 shadow-sm">
+                <div class="card-header bg-light text-dark small fw-bold"><i class="bi bi-box-seam me-1"></i>Packages in Billing DB</div>
+                <div class="card-body p-0">
+                    @foreach($hotspotPackages as $pkg)
+                    <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom small">
+                        <div>
+                            <strong>{{ $pkg->package }}</strong>
+                            @if($pkg->mikrotik_rate_limit)<br><code class="x-small text-danger">{{ $pkg->mikrotik_rate_limit }}</code>@endif
+                        </div>
+                        <span class="badge bg-light text-dark border">৳{{ number_format($pkg->price,0) }}</span>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card mb-3">
+                <div class="card-header"><i class="bi bi-person-badge me-1 text-info"></i>User Profiles on <strong>{{ $selectedRouter }}</strong></div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0 hs-table data-table" wire:key="tbl-up-{{ $selectedRouter }}">
+                            <thead><tr><th>Name</th><th>Rate Limit</th><th>Shared</th><th>Session Timeout</th><th>Idle Timeout</th><th>Comment</th><th class="no-print">Actions</th></tr></thead>
+                            <tbody>
+                            @forelse($userProfiles as $p)
+                            <tr wire:key="up-{{ $loop->index }}">
+                                <td><strong class="text-primary">{{ $p['name'] ?? '-' }}</strong></td>
+                                <td><code class="text-danger small">{{ $p['rate-limit'] ?? '—' }}</code></td>
+                                <td><span class="badge bg-primary">{{ $p['shared-users'] ?? '1' }}</span></td>
+                                <td><small>{{ $p['session-timeout'] ?? '—' }}</small></td>
+                                <td><small>{{ $p['idle-timeout'] ?? '—' }}</small></td>
+                                <td><small class="text-muted">{{ $p['comment'] ?? '' }}</small></td>
+                                <td class="no-print">
+                                    <button class="btn btn-warning btn-sm" wire:click="editUserProfile({{ json_encode($p) }})"><i class="bi bi-pencil-square"></i></button>
+                                    @if(($p['default'] ?? 'no') === 'no')
+                                    <button class="btn btn-danger btn-sm" wire:click="removeUserProfile('{{ $p['name'] ?? '' }}')"
+                                        wire:confirm="Remove profile '{{ $p['name'] ?? '' }}'?"><i class="bi bi-trash"></i></button>
+                                    @endif
+                                </td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="7" class="text-center text-muted py-4">No user profiles found.</td></tr>
+                            @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Server Profiles (read-only) --}}
+            <div class="card">
+                <div class="card-header"><i class="bi bi-file-earmark-text me-1"></i>Server Profiles</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0 hs-table" wire:key="tbl-sp-{{ $selectedRouter }}">
+                            <thead><tr><th>Name</th><th>Hotspot Address</th><th>DNS Name</th><th>Login By</th></tr></thead>
+                            <tbody>
+                            @forelse($profiles as $p)
+                            <tr>
+                                <td><strong>{{ $p['name'] ?? '-' }}</strong></td>
+                                <td><code>{{ $p['hotspot-address'] ?? '-' }}</code></td>
+                                <td><small>{{ $p['dns-name'] ?? '-' }}</small></td>
+                                <td><small class="text-muted">{{ $p['login-by'] ?? '-' }}</small></td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="4" class="text-center text-muted py-3">No server profiles.</td></tr>
+                            @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- ====================================================================== --}}
+    {{-- INCOME TAB --}}
+    {{-- ====================================================================== --}}
+    @if($activeTab==='income')
+    <div class="row g-3">
+        {{-- Record Sale Form --}}
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white"><i class="bi bi-cash-coin me-1"></i>Record Sale / Payment</div>
+                <div class="card-body">
+                    <form wire:submit.prevent="recordSale">
+                        <div class="mb-2">
+                            <label class="form-label">Voucher Code <small class="text-muted">(optional)</small></label>
+                            <input type="text" class="form-control form-control-sm" wire:model.live="s_voucher_code" placeholder="Auto-fills user & price">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Username <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" wire:model.defer="s_username" placeholder="Hotspot username">
+                            @error('s_username')<div class="text-danger small">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Profile <span class="text-danger">*</span></label>
+                            <select class="form-select form-select-sm" wire:model.defer="s_profile">
+                                <option value="">-- Profile --</option>
+                                @foreach($userProfiles as $p)
+                                    <option value="{{ $p['name'] }}">{{ $p['name'] }}</option>
+                                @endforeach
+                            </select>
+                            @error('s_profile')<div class="text-danger small">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-7">
+                                <label class="form-label">Amount (৳) <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" class="form-control form-control-sm" wire:model.defer="s_amount">
+                                @error('s_amount')<div class="text-danger small">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-5">
+                                <label class="form-label">Method</label>
+                                <select class="form-select form-select-sm" wire:model.defer="s_payment_method">
+                                    <option value="cash">Cash</option>
+                                    <option value="bkash">bKash</option>
+                                    <option value="nagad">Nagad</option>
+                                    <option value="rocket">Rocket</option>
+                                    <option value="card">Card</option>
+                                    <option value="online">Online</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control form-control-sm" wire:model.defer="s_date">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Note</label>
+                            <input type="text" class="form-control form-control-sm" wire:model.defer="s_note" placeholder="Optional note">
+                        </div>
+                        <button type="submit" class="btn btn-success btn-sm w-100" wire:loading.attr="disabled" wire:target="recordSale">
+                            <span wire:loading.remove wire:target="recordSale"><i class="bi bi-plus-lg me-1"></i>Record Sale</span>
+                            <span wire:loading wire:target="recordSale"><span class="spinner-border spinner-border-sm me-1"></span>Saving...</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {{-- Sales list --}}
+        <div class="col-lg-8">
+            <div class="row g-2 mb-3">
+                <div class="col-4">
+                    <div class="card text-center py-2 border-start border-4 border-success">
+                        <div class="fw-bold fs-5 text-success">৳{{ number_format($todayIncome,2) }}</div>
+                        <small class="text-muted">Today</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card text-center py-2 border-start border-4 border-primary">
+                        <div class="fw-bold fs-5 text-primary">৳{{ number_format($monthIncome,2) }}</div>
+                        <small class="text-muted">This Month</small>
+                    </div>
+                </div>
+                <div class="col-4 d-flex align-items-center gap-1 flex-wrap">
+                    <input type="date" class="form-control form-control-sm" style="width: auto" wire:model.live="report_from">
+                    <span class="small">to</span>
+                    <input type="date" class="form-control form-control-sm" style="width: auto" wire:model.live="report_to">
+                    <button class="btn btn-sm btn-outline-secondary py-1 px-2" style="font-size: 0.75rem" wire:click="$set('report_from', '{{ now()->startOfYear()->toDateString() }}'); $set('report_to', '{{ now()->toDateString() }}')">This Year</button>
+                    <button class="btn btn-sm btn-outline-secondary py-1 px-2" style="font-size: 0.75rem" wire:click="$set('report_from', '{{ now()->startOfMonth()->toDateString() }}'); $set('report_to', '{{ now()->toDateString() }}')">This Month</button>
+                    <button class="btn btn-sm btn-outline-secondary py-1 px-2" style="font-size: 0.75rem" wire:click="$set('report_from', '{{ now()->toDateString() }}'); $set('report_to', '{{ now()->toDateString() }}')">Today</button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><i class="bi bi-receipt me-1"></i>Sales Records</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0 hs-table data-table" wire:key="tbl-sales-{{ $selectedRouter }}">
+                            <thead><tr><th>Date</th><th>User</th><th>Profile</th><th>Amount</th><th>Method</th><th>Voucher</th><th>Note</th><th class="no-print">Del</th></tr></thead>
+                            <tbody>
+                            @forelse($sales as $s)
+                            <tr wire:key="sale-{{ $s->id }}">
+                                <td><small>{{ $s->sale_date->format('d M Y') }}</small></td>
+                                <td><strong class="small">{{ $s->username }}</strong></td>
+                                <td><span class="badge badge-profile small">{{ $s->profile }}</span></td>
+                                <td><strong class="text-success">৳{{ number_format($s->amount,2) }}</strong></td>
+                                <td><span class="badge bg-light text-dark border small">{{ $s->payment_method }}</span></td>
+                                <td><code class="small">{{ $s->voucher_code ?? '—' }}</code></td>
+                                <td><small class="text-muted">{{ $s->note }}</small></td>
+                                <td class="no-print">
+                                    <button class="btn btn-xs btn-outline-danger" wire:click="deleteSale({{ $s->id }})"
+                                        wire:confirm="Delete this sale record?"><i class="bi bi-trash"></i></button>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="8" class="text-center text-muted py-4">No sales recorded for selected period.</td></tr>
+                            @endforelse
+                            </tbody>
+                            @if($sales->isNotEmpty())
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="3" class="text-end fw-bold small">Total:</td>
+                                    <td><strong class="text-success">৳{{ number_format($sales->sum('amount'),2) }}</strong></td>
+                                    <td colspan="4"></td>
+                                </tr>
+                            </tfoot>
+                            @endif
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- ====================================================================== --}}
+    {{-- REPORT TAB --}}
+    {{-- ====================================================================== --}}
+    @if($activeTab==='report')
+    @php
+        $r = $reportData;
+        $dailyData = $r['daily'] ?? collect();
+        $byProfile = $r['byProfile'] ?? collect();
+    @endphp
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <label class="form-label small">From</label>
+            <input type="date" class="form-control form-control-sm" wire:model.live="report_from">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label small">To</label>
+            <input type="date" class="form-control form-control-sm" wire:model.live="report_to">
+        </div>
+        <div class="col-md-4 d-flex align-items-end gap-1">
+            <button class="btn btn-sm btn-outline-secondary" wire:click="$set('report_from', '{{ now()->startOfMonth()->toDateString() }}'); $set('report_to', '{{ now()->toDateString() }}')">This Month</button>
+            <button class="btn btn-sm btn-outline-secondary" wire:click="$set('report_from', '{{ now()->subMonth()->startOfMonth()->toDateString() }}'); $set('report_to', '{{ now()->subMonth()->endOfMonth()->toDateString() }}')">Last Month</button>
+            <button class="btn btn-sm btn-outline-primary ms-auto" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print</button>
+        </div>
+    </div>
+
+    {{-- Summary Cards --}}
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <div class="card text-center py-3 border-0 shadow-sm">
+                <div style="font-size:1.8rem;font-weight:800;color:#16a34a">৳{{ number_format($r['total'] ?? 0, 2) }}</div>
+                <small class="text-muted">Total Income ({{ $r['from'] ?? '' }} → {{ $r['to'] ?? '' }})</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center py-3 border-0 shadow-sm">
+                <div style="font-size:1.8rem;font-weight:800;color:#6366f1">{{ $r['count'] ?? 0 }}</div>
+                <small class="text-muted">Total Sales</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center py-3 border-0 shadow-sm">
+                <div style="font-size:1.8rem;font-weight:800;color:#f59e0b">৳{{ $r['count'] > 0 ? number_format(($r['total'] ?? 0) / $r['count'], 2) : '0.00' }}</div>
+                <small class="text-muted">Avg Per Sale</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        {{-- Daily breakdown --}}
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header"><i class="bi bi-bar-chart me-1 text-primary"></i>Daily Income Breakdown</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0 hs-table data-table">
+                            <thead><tr><th>Date</th><th>Sales Count</th><th>Total Amount</th><th>% of Period</th></tr></thead>
+                            <tbody>
+                            @php $grandTotal = $r['total'] ?? 0; @endphp
+                            @forelse($dailyData as $date => $daySales)
+                            @php $dayTotal = $daySales->sum('amount'); @endphp
+                            <tr>
+                                <td><strong class="small">{{ \Carbon\Carbon::parse($date)->format('d M Y') }}</strong></td>
+                                <td><span class="badge bg-primary">{{ $daySales->count() }}</span></td>
+                                <td><strong class="text-success">৳{{ number_format($dayTotal,2) }}</strong></td>
+                                <td>
+                                    @if($grandTotal > 0)
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-fill" style="height:6px">
+                                            <div class="progress-bar bg-success" style="width:{{ round($dayTotal/$grandTotal*100) }}%"></div>
+                                        </div>
+                                        <small>{{ round($dayTotal/$grandTotal*100) }}%</small>
+                                    </div>
+                                    @endif
+                                </td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="4" class="text-center text-muted py-4">No data for selected period.</td></tr>
+                            @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- By Profile --}}
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header"><i class="bi bi-pie-chart me-1 text-info"></i>Income by Profile</div>
+                <div class="card-body p-0">
+                    @forelse($byProfile as $bp)
+                    <div class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge badge-profile">{{ $bp['profile'] }}</span>
+                            <small class="text-muted ms-1">×{{ $bp['count'] }}</small>
+                        </div>
+                        <strong class="text-success small">৳{{ number_format($bp['total'],2) }}</strong>
+                    </div>
+                    @empty
+                    <div class="text-center text-muted py-4 small">No profile data.</div>
+                    @endforelse
+                </div>
+            </div>
+
+            {{-- Voucher summary --}}
+            <div class="card mt-3 border-0 shadow-sm">
+                <div class="card-header"><i class="bi bi-ticket me-1 text-warning"></i>Voucher Summary</div>
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between small border-bottom py-1"><span>Total Vouchers</span><strong>{{ $totalVouchers }}</strong></div>
+                    <div class="d-flex justify-content-between small border-bottom py-1"><span>Used</span><strong class="text-warning">{{ $usedVouchers }}</strong></div>
+                    <div class="d-flex justify-content-between small py-1"><span>Unused</span><strong class="text-success">{{ $totalVouchers - $usedVouchers }}</strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    @endif {{-- end $selectedRouter --}}
+</div>

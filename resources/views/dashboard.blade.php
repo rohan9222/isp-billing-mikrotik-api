@@ -3,6 +3,105 @@
         {{ __('Dashboard') }}
     </x-slot>
 
+    {{-- Modern Stat Cards Row --}}
+    <div class="row g-3 mb-4">
+        <!-- Card 1: Active Users -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm overflow-hidden h-100" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; border-radius: 12px; transition: transform 0.3s ease;">
+                <div class="card-body position-relative z-1">
+                    <div class="d-flex justify-content-between align-items-sm-center">
+                        <div>
+                            <h6 class="text-uppercase fw-bold mb-1" style="font-size: 0.72rem; letter-spacing: 1px; opacity: 0.85;">Active PPPoE Users</h6>
+                            <h3 class="fw-bold mb-0">{{ $customersData['active'] ?? 0 }} <span style="font-size: 0.85rem; font-weight: normal; opacity: 0.75;">/ {{ $customersData['total'] ?? 0 }}</span></h3>
+                        </div>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: rgba(255,255,255,0.2);">
+                            <i class="bi bi-people-fill fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-2 border-top border-white border-opacity-25">
+                        <span class="small fw-medium" style="opacity: 0.9;"><i class="bi bi-person-plus-fill me-1"></i>{{ $customersData['recent'] ?? 0 }} New this month</span>
+                        <span class="small float-end" style="opacity: 0.9;"><i class="bi bi-x-circle me-1 text-light"></i>{{ $customersData['inactive'] ?? 0 }} Inactive</span>
+                    </div>
+                </div>
+                <div class="position-absolute end-0 bottom-0" style="opacity: 0.15; transform: translate(10%, 10%); z-index: 0; pointer-events: none;">
+                    <i class="bi bi-person-check-fill" style="font-size: 5.5rem;"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Today PPPoE Collection -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm overflow-hidden h-100" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff; border-radius: 12px; transition: transform 0.3s ease;">
+                <div class="card-body position-relative z-1">
+                    <div class="d-flex justify-content-between align-items-sm-center">
+                        <div>
+                            <h6 class="text-uppercase fw-bold mb-1" style="font-size: 0.72rem; letter-spacing: 1px; opacity: 0.85;">Today's PPPoE Sales</h6>
+                            <h3 class="fw-bold mb-0">৳{{ number_format($billInformationData['today_paid_amount'] ?? 0, 0) }}</h3>
+                        </div>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: rgba(255,255,255,0.2);">
+                            <i class="bi bi-wallet2 fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-2 border-top border-white border-opacity-25">
+                        <span class="small fw-medium" style="opacity: 0.9;"><i class="bi bi-calendar3 me-1"></i>Total Mo: ৳{{ number_format($billInformationData['paid_amount'] ?? 0, 0) }}</span>
+                        <span class="small float-end" style="opacity: 0.9;"><i class="bi bi-arrow-up-right me-1"></i>PPPoE Only</span>
+                    </div>
+                </div>
+                <div class="position-absolute end-0 bottom-0" style="opacity: 0.15; transform: translate(10%, 10%); z-index: 0; pointer-events: none;">
+                    <i class="bi bi-cash-stack" style="font-size: 5.5rem;"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Today Hotspot Sales -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm overflow-hidden h-100" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border-radius: 12px; transition: transform 0.3s ease;">
+                <div class="card-body position-relative z-1">
+                    <div class="d-flex justify-content-between align-items-sm-center">
+                        <div>
+                            <h6 class="text-uppercase fw-bold mb-1" style="font-size: 0.72rem; letter-spacing: 1px; opacity: 0.85;">Today's Hotspot Sales</h6>
+                            <h3 class="fw-bold mb-0">৳{{ number_format($billInformationData['hotspot_today'] ?? 0, 0) }}</h3>
+                        </div>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: rgba(255,255,255,0.2);">
+                            <i class="bi bi-wifi fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-2 border-top border-white border-opacity-25">
+                        <span class="small fw-medium" style="opacity: 0.9;"><i class="bi bi-calendar3 me-1"></i>Total Mo: ৳{{ number_format($billInformationData['hotspot_total'] ?? 0, 0) }}</span>
+                        <span class="small float-end" style="opacity: 0.9;"><i class="bi bi-arrow-up-right me-1"></i>Hotspot Only</span>
+                    </div>
+                </div>
+                <div class="position-absolute end-0 bottom-0" style="opacity: 0.15; transform: translate(10%, 10%); z-index: 0; pointer-events: none;">
+                    <i class="bi bi-router-fill" style="font-size: 5.5rem;"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Total Revenue YTD -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm overflow-hidden h-100" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-radius: 12px; transition: transform 0.3s ease;">
+                <div class="card-body position-relative z-1">
+                    <div class="d-flex justify-content-between align-items-sm-center">
+                        <div>
+                            <h6 class="text-uppercase fw-bold mb-1" style="font-size: 0.72rem; letter-spacing: 1px; opacity: 0.85;">Total Global Revenue</h6>
+                            <h3 class="fw-bold mb-0">৳{{ number_format(($billInformationData['paid_amount'] ?? 0) + ($billInformationData['hotspot_total'] ?? 0), 0) }}</h3>
+                        </div>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: rgba(255,255,255,0.2);">
+                            <i class="bi bi-graph-up-arrow fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-2 border-top border-white border-opacity-25">
+                        <span class="small fw-semibold text-warning" style="opacity: 1;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Pending Due: ৳{{ number_format($billInformationData['due_amount'] ?? 0, 0) }}</span>
+                        <span class="small float-end" style="opacity: 0.9;">Total Arrears</span>
+                    </div>
+                </div>
+                <div class="position-absolute end-0 bottom-0" style="opacity: 0.15; transform: translate(10%, 10%); z-index: 0; pointer-events: none;">
+                    <i class="bi bi-bank2" style="font-size: 5.5rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-2">
         @foreach ($systemOverview as $routerName => $routerData)
             @php
@@ -179,7 +278,7 @@
                                 }
                             },
                             legend: { show: false },
-                            colors: ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#2ed1f9', '#775DD0'],
+                            colors: ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#2ed1f9', '#FF69B4', '#1E90FF', '#775DD0'],
                             dataLabels: {
                                 enabled: true,
                                 formatter: function (val) {
@@ -199,19 +298,21 @@
                                     }
                                 }
                             },
-                            xaxis: {
+                                xaxis: {
                                 categories: [
                                     'Monthly Rent',
                                     'Previous Due',
                                     'Advance',
-                                    'Total Collection',
-                                    'Today Collection',
-                                    ['Total Due', '(Except Inactive Customers)']
+                                    'Total PPPoE Collection',
+                                    'Today PPPoE Collection',
+                                    'Total Hotspot Sales',
+                                    'Today Hotspot Sales',
+                                    ['Total Due', '(Except Inactive)']
                                 ],
                                 labels: {
                                     style: {
                                         fontSize: '12px',
-                                        colors: ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#2ed1f9', '#775DD0']
+                                        colors: ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#2ed1f9', '#FF69B4', '#1E90FF', '#775DD0']
                                     }
                                 }
                             }

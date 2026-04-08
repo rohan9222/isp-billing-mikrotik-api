@@ -961,6 +961,86 @@ class MikrotikController extends Controller
         return $this->removeByName($routerName, '/ip hotspot user profile', $name);
     }
 
+    public function getHotspotHosts(string $routerName): array
+    {
+        return $this->getItems($routerName, '/ip/hotspot/host');
+    }
+
+    public function getHotspotCookies(string $routerName): array
+    {
+        return $this->getItems($routerName, '/ip/hotspot/cookie');
+    }
+
+    /**
+     * Disconnect (remove) an active hotspot session by user.
+     */
+    public function disconnectHotspotUser(string $routerName, string $user): string
+    {
+        try {
+            return $this->singleWrite($routerName, "/ip hotspot active remove [find user=\"{$user}\"]");
+        } catch (\Exception $e) {
+            return 'Error: ' . $e->getMessage();
+        }
+    }
+
+    /**
+     * Push a batch of hotspot users (vouchers) to the router.
+     * $users = [['name'=>'...','password'=>'...','profile'=>'...','comment'=>'...'], ...]
+     */
+    public function pushHotspotUserBatch(string $routerName, array $users): array
+    {
+        $results = [];
+        foreach ($users as $u) {
+            try {
+                $this->addHotspotUser($routerName, $u);
+                $results[$u['name']] = 'OK';
+            } catch (\Exception $e) {
+                $results[$u['name']] = 'Error: ' . $e->getMessage();
+            }
+        }
+        return $results;
+    }
+
+    /**
+     * Remove a hotspot user from the router.
+     */
+    public function removeHotspotUserFromRouter(string $routerName, string $name): string
+    {
+        return $this->removeByName($routerName, '/ip hotspot user', $name);
+    }
+
+    /**
+     * Toggle (enable/disable) a hotspot user.
+     */
+    public function toggleHotspotUser(string $routerName, string $name, bool $enable): string
+    {
+        return $this->toggleByName($routerName, '/ip hotspot user', $name, $enable);
+    }
+
+    /**
+     * Get hotspot user stats (uptime, bytes) from active sessions joined with user list.
+     */
+    public function getHotspotUserStats(string $routerName): array
+    {
+        try {
+            $active = $this->getHotspotActiveSessions($routerName);
+            $users  = $this->getHotspotUsers($routerName);
+
+            $activeMap = [];
+            foreach ($active as $sess) {
+                $activeMap[$sess['user'] ?? ''] = $sess;
+            }
+
+            return array_map(function ($u) use ($activeMap) {
+                $u['_online']   = isset($activeMap[$u['name'] ?? '']);
+                $u['_session']  = $activeMap[$u['name'] ?? ''] ?? [];
+                return $u;
+            }, $users);
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
     // =========================================================================
     // RADIUS
     // =========================================================================

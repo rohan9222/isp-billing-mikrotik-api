@@ -17,6 +17,7 @@ use App\Livewire\MainSiteSetup;
 use App\Livewire\Mikrotik\BackupManager;
 use App\Livewire\Mikrotik\FirewallSetup;
 use App\Livewire\Mikrotik\HotspotSetup;
+use App\Livewire\Mikrotik\HotspotManager;
 use App\Livewire\Mikrotik\InterfaceSetup;
 use App\Livewire\Mikrotik\IpSetup;
 use App\Livewire\Mikrotik\PppoeSetup;
@@ -129,6 +130,7 @@ Route::middleware([
             Route::get('/queue', QueueSetup::class)->name('mikrotik-queue-setup');
             Route::get('/firewall', FirewallSetup::class)->name('mikrotik-firewall-setup');
             Route::get('/hotspot', HotspotSetup::class)->name('mikrotik-hotspot-setup');
+            Route::get('/hotspot-manager', HotspotManager::class)->name('mikrotik-hotspot-manager');
             Route::get('/radius', RadiusSetup::class)->name('mikrotik-radius-setup');
             Route::get('/vpn', VpnSetup::class)->name('mikrotik-vpn-setup');
             Route::get('/interface', InterfaceSetup::class)->name('mikrotik-interface-setup');

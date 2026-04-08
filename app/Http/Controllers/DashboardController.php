@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CollectionSummary;
 use App\Models\CustomersInfo;
+use App\Models\HotspotSale;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -38,6 +39,8 @@ class DashboardController extends Controller
             'advance' => $customersAllData->pluck('billing')->flatten()->sum('advance'),
             'paid_amount' => $customersAllData->pluck('billing')->flatten()->sum('paid_amount'),
             'today_paid_amount' => CollectionSummary::whereDate('collection_date', Carbon::today())->sum('collection_amount'),
+            'hotspot_total' => HotspotSale::sum('amount'),
+            'hotspot_today' => HotspotSale::whereDate('sale_date', Carbon::today())->sum('amount'),
             'due_amount' => -1 * $customersAllData->reject(function ($customer) {
                 return $customer->status === 'inactive';
             })->pluck('billing')->flatten()->sum('due_amount'),
@@ -48,12 +51,18 @@ class DashboardController extends Controller
             // Cashflow (previous year's month's total)
             $cashflowPreviousYear = CollectionSummary::whereYear('collection_date', $previousYear)
                 ->whereMonth('collection_date', $month)
-                ->sum('collection_amount');
+                ->sum('collection_amount')
+                + HotspotSale::whereYear('sale_date', $previousYear)
+                ->whereMonth('sale_date', $month)
+                ->sum('amount');
 
             // Income (current year's month's total)
             $incomeCurrentYear = CollectionSummary::whereYear('collection_date', $currentYear)
                 ->whereMonth('collection_date', $month)
-                ->sum('collection_amount');
+                ->sum('collection_amount')
+                + HotspotSale::whereYear('sale_date', $currentYear)
+                ->whereMonth('sale_date', $month)
+                ->sum('amount');
 
             // Revenue Difference (current year's income - previous year's cashflow)
             $revenueDifference = $incomeCurrentYear - $cashflowPreviousYear;
