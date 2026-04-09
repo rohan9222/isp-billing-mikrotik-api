@@ -102,7 +102,8 @@
         </div>
     </div>
 
-    <div class="row g-2">
+    <div class="row g-4 mb-4">
+        {{-- Unified Row for Routers and Graphs to allow dynamic "weight" adjustment --}}
         @foreach ($systemOverview as $routerName => $routerData)
             @php
                 if (! ($routerData['status'] ?? false)) {
@@ -113,95 +114,191 @@
 
                 $cpuLoad = (int) filter_var($info['cpu-load'] ?? 0, FILTER_SANITIZE_NUMBER_INT);
                 $cpuColor = $cpuLoad > 80 ? 'bg-danger' : ($cpuLoad > 50 ? 'bg-warning' : 'bg-success');
+                
+                // Memory Math
+                $memTotal = (int)($info['total-memory'] ?? 1);
+                $memFree = (int)($info['free-memory'] ?? 0);
+                $memUsed = $memTotal - $memFree;
+                $memPct = $memTotal > 0 ? round(($memUsed / $memTotal) * 100) : 0;
+
+                // HDD Math
+                $hddTotal = (int)($info['total-hdd-space'] ?? 1);
+                $hddFree = (int)($info['free-hdd-space'] ?? 0);
+                $hddUsed = $hddTotal - $hddFree;
+                $hddPct = $hddTotal > 0 ? round(($hddUsed / $hddTotal) * 100) : 0;
+
+                $cardId = 'router_' . \Illuminate\Support\Str::slug($routerName);
+
+                if (!function_exists('formatRouterBytesLg')) {
+                    function formatRouterBytesLg($bytes) {
+                        if ($bytes == 0) return '0 B';
+                        $k = 1024;
+                        $sizes = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
+                        $i = floor(log($bytes) / log($k));
+                        return round($bytes / pow($k, $i), 2) . ' ' . $sizes[$i];
+                    }
+                }
             @endphp
 
-            <div class="col-12 col-md-6 col-xl-3 mb-4">
-                {{-- Router Card --}}
-                <div class="card border-0 shadow-lg rounded-4 overflow-hidden h-100">
-                    {{-- Header --}}
-                    <div class="card-header text-white text-center p-3"
-                        style="background: linear-gradient(135deg, #00d27a, #10f2c1);">
-                        <div class="d-flex flex-column align-items-center">
-                            <div class="rounded-circle bg-white text-success d-flex align-items-center justify-content-center mb-3"
-                                style="width:70px; height:70px;">
-                                <i class="bi bi-hdd-network fs-2"></i>
+            <div class="col-12 col-md-6 col-lg-4 col-xxl-4 d-flex flex-fill">
+                {{-- Refined Router Card with Full Details --}}
+                <div class="card border-0 shadow-sm rounded-4 w-100 overflow-hidden d-flex flex-column" style="min-height: 460px; background: #ffffff; border: 1px solid rgba(0,0,0,0.08);">
+                    <div class="px-3 py-2" style="background: linear-gradient(135deg, #0f172a, #1e293b); color: white;">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-hdd-network fs-2 text-info me-3" style="font-size: 1.5rem;"></i>
+                            <div class="flex-grow-1 overflow-hidden">
+                                <h5 class="fw-bold mb-0 text-white text-truncate">{{ $info['board-name'] ?? $routerName }}</h5>
+                                <div class="text-white-50 mt-1 d-flex gap-2 flex-wrap align-items-center" style="font-size: 0.7rem;">
+                                    <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-25 px-2 py-1">{{ strtoupper($info['platform'] ?? 'N/A') }}</span>
+                                    <span>•</span>
+                                    <span class="text-white text-opacity-75">{{ $info['architecture-name'] ?? 'N/A' }}</span>
+                                </div>
                             </div>
-                            <h4 class="fw-bold mb-0">{{ $info['board-name'] ?? $routerName }}</h4>
-                            <small class="opacity-75 text-white">
-                                Router • {{ $info['platform'] ?? 'N/A' }}
-                            </small>
                         </div>
                     </div>
 
-                    {{-- Body --}}
-                    <div class="card-body bg-light">
-                        {{-- Summary --}}
-                        <div class="row text-center mb-3">
-                            <div class="col">
-                                <h6 class="text-muted mb-1">Uptime</h6>
-                                <h5 class="fw-semibold text-dark">{{ $info['uptime'] ?? 'N/A' }}</h5>
+                    <div class="card-body bg-light p-0 d-flex flex-column h-100">
+                        <div class="px-4 py-2 bg-white border-bottom">
+                            <div class="row text-center mb-4">
+                                <div class="col">
+                                    <small class="text-muted d-block mb-1 fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">Uptime</small>
+                                    <span class="fw-bold text-dark uptime-clock" 
+                                          style="font-size: 0.85rem;" 
+                                          data-uptime="{{ $info['uptime'] ?? '0s' }}">
+                                        {{ str_replace(['w', 'd', 'h', 'm', 's'], ['w ', 'd ', 'h ', 'm ', 's '], $info['uptime'] ?? 'N/A') }}
+                                    </span>
+                                </div>
+                                <div class="col border-start">
+                                    <small class="text-muted d-block mb-1 fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">Version</small>
+                                    <span class="fw-bold text-dark" style="font-size: 0.85rem;">{{ $info['version'] ?? 'N/A' }}</span>
+                                </div>
                             </div>
-                            <div class="col">
-                                <h6 class="text-muted mb-1">Version</h6>
-                                <h5 class="fw-semibold text-dark">{{ $info['version'] ?? 'N/A' }}</h5>
+
+                            <div class="space-y-3">
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between text-dark mb-1" style="font-size:0.75rem; font-weight:700;">
+                                        <span>CPU Usage</span>
+                                        <span class="text-info fw-bold">{{ ($info['cpu-count'] ?? '?') . ' × ' . ($info['cpu-frequency'] ?? '?') }}MHz <span class="text-muted fw-normal">({{ $cpuLoad }}%)</span></span>
+                                    </div>
+                                    <div class="progress" style="height: 6px; border-radius:10px; background: rgba(0,0,0,0.05);">
+                                        <div class="progress-bar {{ $cpuColor }}" role="progressbar" style="width: {{ $cpuLoad }}%;"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between text-dark mb-1" style="font-size:0.75rem; font-weight:700;">
+                                        <span>Memory Usage</span>
+                                        <span>{{ formatRouterBytesLg($memUsed) }} / {{ formatRouterBytesLg($memTotal) }} <span class="text-muted fw-normal ms-1">({{ $memPct }}%)</span></span>
+                                    </div>
+                                    <div class="progress" style="height: 6px; border-radius:10px; background: rgba(0,0,0,0.05);">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ $memPct }}%;"></div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between text-dark mb-1" style="font-size:0.75rem; font-weight:700;">
+                                        <span>Storage Usage</span>
+                                        <span>{{ formatRouterBytesLg($hddUsed) }} / {{ formatRouterBytesLg($hddTotal) }} <span class="text-muted fw-normal ms-1">({{ $hddPct }}%)</span></span>
+                                    </div>
+                                    <div class="progress" style="height: 6px; border-radius:10px; background: rgba(0,0,0,0.05);">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ $hddPct }}%;"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {{-- CPU Load --}}
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between small text-muted">
-                                <span>CPU Usage</span>
-                                <span>{{ $cpuLoad }}%</span>
-                            </div>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar {{ $cpuColor }}"
-                                    role="progressbar"
-                                    style="width: {{ $cpuLoad }}%;"></div>
-                            </div>
-                        </div>
+                        <div class="flex-grow-1 overflow-auto">
+                            <div class="accordion accordion-flush" id="acc_{{ $cardId }}">
+                                
+                                {{-- Part 1: Platform & Architecture --}}
+                                <div class="accordion-item border-0">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed py-3 px-4 fw-bold bg-white text-info" type="button" data-bs-toggle="collapse" data-bs-target="#plat_{{ $cardId }}" style="font-size: 0.72rem;">
+                                            <i class="bi bi-info-square me-2"></i> Platform & Architecture
+                                        </button>
+                                    </h2>
+                                    <div id="plat_{{ $cardId }}" class="accordion-collapse collapse" data-bs-parent="#acc_{{ $cardId }}">
+                                        <div class="accordion-body p-3 bg-white border-top border-light">
+                                            <div class="d-flex flex-column gap-2" style="font-size: 0.72rem;">
+                                                <div class="d-flex justify-content-between"><span>Board Name</span><span class="fw-bold">{{ $info['board-name'] ?? 'N/A' }}</span></div>
+                                                <div class="d-flex justify-content-between"><span>Platform</span><span class="fw-bold">{{ $info['platform'] ?? 'N/A' }}</span></div>
+                                                <div class="d-flex justify-content-between"><span>Architecture</span><span class="fw-bold text-info">{{ $info['architecture-name'] ?? 'N/A' }}</span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                        <hr>
+                                {{-- Part 2: System & Software --}}
+                                <div class="accordion-item border-0">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed py-3 px-4 fw-bold bg-white text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#sys_{{ $cardId }}" style="font-size: 0.72rem;">
+                                            <i class="bi bi-gear-wide-connected me-2"></i> System Diagnostics & Build
+                                        </button>
+                                    </h2>
+                                    <div id="sys_{{ $cardId }}" class="accordion-collapse collapse" data-bs-parent="#acc_{{ $cardId }}">
+                                        <div class="accordion-body p-3 bg-white border-top border-light">
+                                            <div class="d-flex flex-column gap-2" style="font-size: 0.72rem;">
+                                                <div class="d-flex justify-content-between"><span>OS Version</span><span class="fw-bold text-primary">{{ $info['version'] ?? 'N/A' }}</span></div>
+                                                <div class="d-flex justify-content-between"><span>Factory OS</span><span class="fw-bold">{{ $info['factory-software'] ?? 'N/A' }}</span></div>
+                                                <div class="d-flex justify-content-between"><span>Build Timestamp</span><span class="fw-bold">{{ $info['build-time'] ?? 'N/A' }}</span></div>
+                                                <div class="d-flex justify-content-between"><span>Uptime</span><span class="fw-bold text-dark">{{ $info['uptime'] ?? 'N/A' }}</span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                        {{-- System Info --}}
-                        <div class="row small text-dark">
-                            <div class="col-6 mb-2">
-                                <strong>CPU:</strong>
-                                <div>{{ ($info['cpu-count'] ?? '?') . ' × ' . ($info['cpu-frequency'] ?? '?') }}</div>
-                            </div>
-                            <div class="col-6 mb-2">
-                                <strong>Memory:</strong>
-                                <div>{{ ($info['free-memory'] ?? '?') . ' / ' . ($info['total-memory'] ?? '?') }}</div>
-                            </div>
-                            <div class="col-6 mb-2">
-                                <strong>HDD:</strong>
-                                <div>{{ ($info['free-hdd-space'] ?? '?') . ' / ' . ($info['total-hdd-space'] ?? '?') }}</div>
-                            </div>
-                            <div class="col-6 mb-2">
-                                <strong>Architecture:</strong>
-                                <div>{{ $info['architecture-name'] ?? 'N/A' }}</div>
-                            </div>
-                        </div>
+                                {{-- Part 3: Hardware Information --}}
+                                <div class="accordion-item border-0">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed py-3 px-4 fw-bold bg-white text-warning" type="button" data-bs-toggle="collapse" data-bs-target="#hw_{{ $cardId }}" style="font-size: 0.72rem;">
+                                            <i class="bi bi-gpu-card me-2"></i> Hardware Information
+                                        </button>
+                                    </h2>
+                                    <div id="hw_{{ $cardId }}" class="accordion-collapse collapse" data-bs-parent="#acc_{{ $cardId }}">
+                                        <div class="accordion-body p-3 bg-white border-top border-light">
+                                            <div class="d-flex flex-column gap-2" style="font-size: 0.72rem;">
+                                                <div class="d-flex justify-content-between"><span>CPU</span><span class="fw-bold">{{ $info['cpu'] ?? 'N/A' }}</span></div>
+                                                <div class="d-flex justify-content-between"><span>CPU count/freq/load</span><span class="fw-bold text-info">{{ ($info['cpu-count'] ?? '?') }} / {{ ($info['cpu-frequency'] ?? '?') }} / {{ $info['cpu-load'] ?? '0' }}%</span></div>
+                                                <div class="d-flex justify-content-between"><span>Hdd</span><span class="fw-bold text-dark">{{ formatRouterBytesLg($hddUsed) }} / {{ formatRouterBytesLg($hddTotal) }}</span></div>
+                                                <div class="d-flex justify-content-between"><span>Write Total</span><span class="fw-bold text-warning">{{ $info['write-sect-total'] ?? '0' }}</span></div>
+                                                <div class="d-flex justify-content-between"><span>Write Since Reboot</span><span class="fw-bold text-warning">{{ $info['write-sect-since-reboot'] ?? '0' }}</span></div>
+                                                <div class="d-flex justify-content-between"><span>Temp / Voltage</span><span class="fw-bold text-dark"><span class="text-danger">{{ isset($info['temperature']) ? $info['temperature'].'°C' : 'N/A' }}</span> | <span class="text-primary">{{ isset($info['voltage']) ? $info['voltage'].'V' : 'N/A' }}</span></span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                        <hr class="my-3">
-
-                        {{-- Footer --}}
-                        <div class="text-center small text-muted">
-                            <div><strong>Build:</strong> {{ $info['build-time'] ?? 'N/A' }}</div>
-                            <div><strong>Platform:</strong> {{ $info['platform'] ?? 'N/A' }}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         @endforeach
 
-        <div class="col-md-4 col-xxl-3">
-            <div class="card" id="customers"></div>
+        {{-- Analytical Graphs Section --}}
+        <div class="col-12 col-md-6 col-lg-4 col-xxl-4 d-flex flex-fill">
+            <div class="card border-0 shadow-sm rounded-4 w-100 overflow-hidden d-flex flex-column" style="min-height: 460px; border: 1px solid rgba(0,0,0,0.08);">
+                <div class="card-header bg-white py-3 border-0">
+                    <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-people-fill text-primary me-2"></i>Customer Segmentation</h6>
+                </div>
+                <div class="card-body p-0 d-flex align-items-center justify-content-center" id="customers"></div>
+            </div>
         </div>
-        <div class="col-md-5 col-xxl-3">
-            <div class="card" id="billInformation"></div>
+
+        <div class="col-12 col-md-6 col-lg-4 col-xxl-4 d-flex flex-fill">
+            <div class="card border-0 shadow-sm rounded-4 w-100 overflow-hidden d-flex flex-column" style="min-height: 460px; border: 1px solid rgba(0,0,0,0.08);">
+                <div class="card-header bg-white py-3 border-0">
+                    <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-cash-stack text-success me-2"></i>Billing Overview</h6>
+                </div>
+                <div class="card-body p-2 d-flex flex-column justify-content-center" id="billInformation"></div>
+            </div>
         </div>
-        <div class="col-md-12 col-xxl-6">
-            <div class="card" id="income_revenue"></div>
+
+        <div class="col-12 col-md-12 col-lg-12 col-xxxl-12 d-flex flex-fill">
+            <div class="card border-0 shadow-sm rounded-4 w-100 overflow-hidden d-flex flex-column" style="min-height: 460px; border: 1px solid rgba(0,0,0,0.08);">
+                <div class="card-header bg-white py-3 border-0 text-center">
+                    <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-graph-up-arrow text-danger me-2"></i>Income & Revenue Overview</h6>
+                </div>
+                <div class="card-body p-3" id="income_revenue"></div>
+            </div>
         </div>
     </div>
     @push('scripts')
@@ -396,6 +493,39 @@
                         window.chart3 = new ApexCharts(revenueEl, income_revenue);
                         chart3.render();
                     }
+
+                    // ✅ 4th: initUptimeClocks
+                    if (window.uptimeInterval) clearInterval(window.uptimeInterval);
+                    window.uptimeInterval = setInterval(() => {
+                        document.querySelectorAll('.uptime-clock').forEach(clock => {
+                            let uptime = clock.getAttribute('data-uptime');
+                            if (!uptime || uptime === 'N/A') return;
+
+                            // Parse MikroTik uptime (e.g., 1w2d3h4m5s)
+                            const regex = /(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/;
+                            const matches = uptime.match(regex);
+                            
+                            let w = parseInt(matches[1]) || 0;
+                            let d = parseInt(matches[2]) || 0;
+                            let h = parseInt(matches[3]) || 0;
+                            let m = parseInt(matches[4]) || 0;
+                            let s = parseInt(matches[5]) || 0;
+
+                            s++;
+                            if (s >= 60) { s = 0; m++; }
+                            if (m >= 60) { m = 0; h++; }
+                            if (h >= 24) { h = 0; d++; }
+                            if (d >= 7) { d = 0; w++; }
+
+                            // Rebuild raw data
+                            let newRaw = (w ? w+'w' : '') + (d ? d+'d' : '') + (h ? h+'h' : '') + (m ? m+'m' : '') + s + 's';
+                            clock.setAttribute('data-uptime', newRaw);
+
+                            // Rebuild display string
+                            let display = (w ? w+'w ' : '') + (d ? d+'d ' : '') + (h ? h+'h ' : '') + (m ? m+'m ' : '') + s + 's';
+                            clock.innerText = display;
+                        });
+                    }, 1000);
                 });
             });
         </script>

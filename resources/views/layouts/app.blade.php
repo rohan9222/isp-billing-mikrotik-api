@@ -204,28 +204,15 @@
     // Run on Livewire navigate
     document.addEventListener('livewire:navigated', handleNavbarHover);
 
-    // For Livewire SPA support
-    function toggleSidebar() {
-        return {
-            toggleSidebar: JSON.parse(localStorage.getItem('isNavbarVerticalCollapsed')) || false,
-
-            init() {
-                this.toggleSidebar = JSON.parse(localStorage.getItem('isNavbarVerticalCollapsed')) || false;
-                document.documentElement.classList.toggle('navbar-vertical-collapsed', this.toggleSidebar);
-                // For Livewire SPA support
-                window.addEventListener('livewire:navigated', () => {
-                    this.toggleSidebar = JSON.parse(localStorage.getItem('isNavbarVerticalCollapsed')) || false;
-                    document.documentElement.classList.toggle('navbar-vertical-collapsed', this.toggleSidebar);
-                });
-            },
-
-            toggle() {
-                this.toggleSidebar = !this.toggleSidebar;
-                localStorage.setItem('isNavbarVerticalCollapsed', this.toggleSidebar);
-                document.documentElement.classList.toggle('navbar-vertical-collapsed', this.toggleSidebar);
-            }
+    // For Livewire SPA support to maintain sidebar state
+    document.addEventListener('livewire:navigated', () => {
+        const isCollapsedStorage = localStorage.getItem("isNavbarVerticalCollapsed");
+        if (isCollapsedStorage === 'true' || isCollapsedStorage === true) {
+            document.documentElement.classList.add("navbar-vertical-collapsed");
+        } else {
+            document.documentElement.classList.remove("navbar-vertical-collapsed");
         }
-    }
+    });
 
     // For theme toggle
     function themeToggle() {

@@ -75,8 +75,8 @@
         }
     </script>
     <div class="d-flex align-items-center">
-        <div x-data="toggleSidebar()" x-init="init()" class="toggle-icon-wrapper">
-            <button @click="toggle()" class="btn navbar-toggler-humburger-icon navbar-vertical-toggle" data-bs-toggle="tooltip" data-bs-placement="left" title="Toggle Navigation">
+        <div class="toggle-icon-wrapper">
+            <button class="btn navbar-toggler-humburger-icon navbar-vertical-toggle" data-bs-toggle="tooltip" data-bs-placement="left" title="Toggle Navigation">
                 <span class="navbar-toggle-icon">
                     <span class="toggle-line"></span>
                 </span>

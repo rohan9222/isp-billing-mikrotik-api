@@ -294,7 +294,7 @@ const CodePagol = {
                     ? arguments[1]
                     : document.documentElement;
             return getComputedStyle(dom)
-                .getPropertyValue("--falcon-".concat(name))
+                .getPropertyValue("--cp-".concat(name))
                 .trim();
         };
         var getColors = function getColors(dom) {
