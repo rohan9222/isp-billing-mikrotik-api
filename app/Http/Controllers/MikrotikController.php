@@ -354,7 +354,7 @@ class MikrotikController extends Controller
 
     protected function removeByName(string $routerName, string $path, string $name): string
     {
-        return $this->singleWrite($routerName, "{$path} remove [find name=\"{$name}\"]");
+        return $this->singleWrite($routerName, "{$path} remove [find name=" . $this->mtQuote($name) . ']');
     }
 
     protected function removeByAddress(string $routerName, string $path, string $address): string
@@ -364,7 +364,7 @@ class MikrotikController extends Controller
 
     protected function toggleByName(string $routerName, string $path, string $name, bool $enable): string
     {
-        return $this->singleWrite($routerName, "{$path} " . ($enable ? 'enable' : 'disable') . " [find name=\"{$name}\"]");
+        return $this->singleWrite($routerName, "{$path} " . ($enable ? 'enable' : 'disable') . ' [find name=' . $this->mtQuote($name) . ']');
     }
 
     protected function toggleByIndex(string $routerName, string $path, int $index, bool $enable): string
@@ -915,18 +915,33 @@ class MikrotikController extends Controller
         return $this->getItems($routerName, '/ip/hotspot/active');
     }
 
-    public function addHotspotUser(string $routerName, array $p, ?string $editId = null): string
+    public function addHotspotUser(string $routerName, array $p, ?string $oldName = null): string
     {
-        $base = "name=" . $this->mtQuote($p['name'] ?? '') . " password=" . $this->mtQuote($p['password'] ?? '') . " profile=" . $this->mtQuote($p['profile'] ?? 'default');
-        $cmd = $editId
-            ? "/ip hotspot user set numbers={$editId} {$base}"
-            : "/ip hotspot user add {$base}";
-
+        $base = "name=" . $this->mtQuote($p['name'] ?? '') . " profile=" . $this->mtQuote($p['profile'] ?? 'default');
+        
+        if (isset($p['password'])) $base .= " password=" . $this->mtQuote($p['password']);
+        if (isset($p['disabled'])) $base .= " disabled=" . ($p['disabled'] === 'true' ? 'yes' : 'no');
+        if (isset($p['limit-uptime'])) $base .= " limit-uptime=" . $this->mtQuote($p['limit-uptime']);
+        if (isset($p['limit-bytes-total'])) $base .= " limit-bytes-total=" . $this->mtQuote($p['limit-bytes-total']);
+        
         if ($p['comment'] ?? '') {
-            $cmd .= " comment=" . $this->mtQuote($p['comment']);
+            $base .= " comment=" . $this->mtQuote($p['comment']);
         }
 
+        $cmd = $oldName
+            ? "/ip hotspot user set {$base} [find name=" . $this->mtQuote($oldName) . "]"
+            : "/ip hotspot user add server=all {$base}";
+
         return $this->singleWrite($routerName, $cmd);
+    }
+
+    public function updateHotspotUser(string $routerName, string $username, array $params): string
+    {
+        // Name from params override or use username
+        if (!isset($params['name'])) {
+            $params['name'] = $username;
+        }
+        return $this->addHotspotUser($routerName, $params, $username);
     }
 
     public function removeHotspotUser(string $routerName, string $name): string
@@ -934,24 +949,27 @@ class MikrotikController extends Controller
         return $this->removeByName($routerName, '/ip hotspot user', $name);
     }
 
-    public function addHotspotUserProfile(string $routerName, array $p, ?string $editId = null): string
+    public function addHotspotUserProfile(string $routerName, array $p, ?string $oldName = null): string
     {
-        $rateLimit = $p['rate_limit'] ?? '';
+        $rateLimit   = $p['rate_limit'] ?? '';
         $sharedUsers = $p['shared_users'] ?? 1;
         $sessionTime = $p['session_timeout'] ?? '';
+        $idleTime    = $p['idle_timeout'] ?? '';
+        $refresh     = $p['status_autorefresh'] ?? '';
+        $pool        = $p['address_pool'] ?? '';
 
-        $cmd = $editId
-            ? "/ip hotspot user profile set numbers={$editId} name=" . $this->mtQuote($p['name'] ?? '') . " shared-users={$sharedUsers}"
-            : "/ip hotspot user profile add name=" . $this->mtQuote($p['name'] ?? '') . " shared-users={$sharedUsers}";
-        if ($rateLimit) {
-            $cmd .= " rate-limit=" . $this->mtQuote($rateLimit);
-        }
-        if ($sessionTime) {
-            $cmd .= " session-timeout={$sessionTime}";
-        }
-        if ($p['comment'] ?? '') {
-            $cmd .= " comment=" . $this->mtQuote($p['comment']);
-        }
+        $base = "name=" . $this->mtQuote($p['name'] ?? '') . " shared-users={$sharedUsers}";
+            
+        if ($rateLimit) $base .= " rate-limit=" . $this->mtQuote($rateLimit);
+        if ($sessionTime) $base .= " session-timeout={$sessionTime}";
+        if ($idleTime) $base .= " idle-timeout={$idleTime}";
+        if ($refresh) $base .= " status-autorefresh={$refresh}";
+        if ($pool && $pool !== 'none') $base .= " address-pool=" . $this->mtQuote($pool);
+        if ($p['comment'] ?? '') $base .= " comment=" . $this->mtQuote($p['comment']);
+
+        $cmd = $oldName
+            ? "/ip hotspot user profile set {$base} [find name=" . $this->mtQuote($oldName) . "]"
+            : "/ip hotspot user profile add {$base}";
 
         return $this->singleWrite($routerName, $cmd);
     }
@@ -959,6 +977,35 @@ class MikrotikController extends Controller
     public function removeHotspotUserProfile(string $routerName, string $name): string
     {
         return $this->removeByName($routerName, '/ip hotspot user profile', $name);
+    }
+
+    /**
+     * Sync local Database Packages to Router Hotspot User Profiles
+     */
+    public function syncHotspotProfilesToRouter(string $routerName, $packages): array
+    {
+        $results = [];
+        foreach ($packages as $pkg) {
+            try {
+                $p = [
+                    'name'               => $pkg->package,
+                    'rate_limit'         => $pkg->mikrotik_rate_limit,
+                    'shared_users'       => 1,
+                    'status_autorefresh' => '1m',
+                    'comment'            => 'Synced from local DB (ID: '.$pkg->id.')',
+                ];
+                
+                // Check if profile exists
+                $check = $this->singleRead($routerName, "/ip/hotspot/user/profile/print", "ip hotspot user profile print without-paging terse where name=" . $this->mtQuote($pkg->package), [], false);
+                $exists = is_array($check) && count($check) > 0;
+
+                $this->addHotspotUserProfile($routerName, $p, $exists ? $pkg->package : null);
+                $results[$pkg->package] = 'Synced';
+            } catch (\Exception $e) {
+                $results[$pkg->package] = 'Error: ' . $e->getMessage();
+            }
+        }
+        return $results;
     }
 
     public function getHotspotHosts(string $routerName): array

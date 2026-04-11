@@ -8,16 +8,21 @@ import Swal from "sweetalert2";
 window.Swal = Swal;
 import print from "print-js";
 window.print = print;
+
+import QRCode from 'qrcode';
+window.QRCode = QRCode;
+
+// Import ApexCharts and ApexTree
+import ApexCharts from 'apexcharts';
+window.ApexCharts = ApexCharts;
+
+import 'bootstrap-icons/font/bootstrap-icons.css';
 // Make libraries available globally
 window.bootstrap = bootstrap;
 window.$ = window.jQuery = jQuery;
 
 import "daterangepicker/daterangepicker.css";
 import "daterangepicker/daterangepicker.js";
-
-// Import ApexCharts and ApexTree
-import ApexCharts from 'apexcharts';
-window.ApexCharts = ApexCharts;
 
 // Import JSZip for handling zip files
 import JSZip from 'jszip';

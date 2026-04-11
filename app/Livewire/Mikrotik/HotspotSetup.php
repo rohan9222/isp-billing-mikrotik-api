@@ -23,6 +23,8 @@ class HotspotSetup extends Component
 
     public ?string $editUserId = null;
 
+    public string $original_u_name = '';
+
     // User Profile form
     public string $up_name = '';
 
@@ -33,6 +35,8 @@ class HotspotSetup extends Component
     public string $up_session_timeout = '';
     public string $up_comment = '';
     public ?string $editUserProfileId = null;
+
+    public string $original_up_name = '';
 
     // Data
     public array $servers = [];
@@ -86,10 +90,19 @@ class HotspotSetup extends Component
     public function editUser(array $u): void
     {
         $this->editUserId = $u['.id'] ?? null;
+        $this->original_u_name = $u['name'] ?? '';
         $this->u_name = $u['name'] ?? '';
         $this->u_password = $u['password'] ?? '';
         $this->u_profile = $u['profile'] ?? 'default';
         $this->u_comment = $u['comment'] ?? '';
+    }
+
+    public function editUserAtIndex(int $index): void
+    {
+        $u = $this->users[$index] ?? null;
+        if (is_array($u)) {
+            $this->editUser($u);
+        }
     }
 
     public function addUser(): void
@@ -103,9 +116,9 @@ class HotspotSetup extends Component
             app(MikrotikController::class)->addHotspotUser($this->selectedRouter, [
                 'name' => $this->u_name, 'password' => $this->u_password,
                 'profile' => $this->u_profile, 'comment' => $this->u_comment,
-            ], $this->editUserId);
+            ], $this->original_u_name !== '' ? $this->original_u_name : null);
             flash()->success($this->editUserId ? 'Hotspot user updated!' : 'Hotspot user added!');
-            $this->reset(['u_name', 'u_password', 'u_comment', 'editUserId']);
+            $this->reset(['u_name', 'u_password', 'u_comment', 'editUserId', 'original_u_name']);
             $this->users = app(MikrotikController::class)->getHotspotUsers($this->selectedRouter);
             $this->dispatch('reinit-datatables');
         } catch (\Exception $e) {
@@ -125,14 +138,33 @@ class HotspotSetup extends Component
         }
     }
 
+    public function removeUserAtIndex(int $index): void
+    {
+        $u = $this->users[$index] ?? null;
+        $name = is_array($u) ? (string) ($u['name'] ?? '') : '';
+        if ($name === '') {
+            return;
+        }
+        $this->removeUser($name);
+    }
+
     public function editUserProfile(array $up): void
     {
         $this->editUserProfileId = $up['.id'] ?? null;
+        $this->original_up_name = $up['name'] ?? '';
         $this->up_name = $up['name'] ?? '';
         $this->up_rate_limit = $up['rate-limit'] ?? '';
         $this->up_shared_users = (int) ($up['shared-users'] ?? 1);
         $this->up_session_timeout = $up['session-timeout'] ?? '';
         $this->up_comment = $up['comment'] ?? '';
+    }
+
+    public function editUserProfileAtIndex(int $index): void
+    {
+        $up = $this->userProfiles[$index] ?? null;
+        if (is_array($up)) {
+            $this->editUserProfile($up);
+        }
     }
 
     public function addUserProfile(): void
@@ -146,9 +178,9 @@ class HotspotSetup extends Component
                 'name' => $this->up_name, 'rate_limit' => $this->up_rate_limit,
                 'shared_users' => $this->up_shared_users, 'session_timeout' => $this->up_session_timeout,
                 'comment' => $this->up_comment,
-            ], $this->editUserProfileId);
+            ], $this->original_up_name !== '' ? $this->original_up_name : null);
             flash()->success($this->editUserProfileId ? 'User profile updated!' : 'User profile added!');
-            $this->reset(['up_name', 'up_rate_limit', 'up_session_timeout', 'up_comment', 'editUserProfileId']);
+            $this->reset(['up_name', 'up_rate_limit', 'up_session_timeout', 'up_comment', 'editUserProfileId', 'original_up_name']);
             $this->up_shared_users = 1;
             $this->userProfiles = app(MikrotikController::class)->getHotspotUserProfiles($this->selectedRouter);
             $this->dispatch('reinit-datatables');
@@ -167,6 +199,16 @@ class HotspotSetup extends Component
         } catch (\Exception $e) {
             flash()->error($e->getMessage());
         }
+    }
+
+    public function removeUserProfileAtIndex(int $index): void
+    {
+        $p = $this->userProfiles[$index] ?? null;
+        $name = is_array($p) ? (string) ($p['name'] ?? '') : '';
+        if ($name === '' || ($p['default'] ?? 'no') !== 'no') {
+            return;
+        }
+        $this->removeUserProfile($name);
     }
 
     public function refreshSessions(): void

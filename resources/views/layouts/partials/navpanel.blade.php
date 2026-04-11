@@ -24,15 +24,8 @@
             </div>
         </div>
     </li>
-    <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="hotspotSetupNav">Hotspot Setup</a>
-        <div class="dropdown-menu dropdown-caret dropdown-menu-card border-0 mt-0" aria-labelledby="hotspotSetupNav">
-            <div class="bg-white dark__bg-1000 rounded-3 py-2">
-                <img class="img-dropdown" src="{{asset('images/authentication-corner.png')}}" width="60" alt="" />
-                <a wire:navigate.hover wire:current="active" class="dropdown-item link-600 fw-medium" href="{{route('mikrotik-hotspot-setup') }}">Hotspot Basic</a>
-                <a wire:navigate.hover wire:current="active" class="dropdown-item link-600 fw-medium" href="{{route('mikrotik-hotspot-manager') }}">🛜 Hotspot Manager <span class="badge rounded-pill ms-2 badge-subtle-success">New</span></a>
-            </div>
-        </div>
+    <li class="nav-item">
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-hotspot-manager') }}">Hotspot</a>
     </li>
     <li class="nav-item">
         <!-- parent pages-->

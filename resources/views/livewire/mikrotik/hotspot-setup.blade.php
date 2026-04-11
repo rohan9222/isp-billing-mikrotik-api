@@ -175,9 +175,9 @@
                                 <td><small class="text-muted">{{ $p['comment'] ?? '' }}</small></td>
                                 <td>
                         @php // removed session timeout col to save space for comment @endphp
-                                    <button class="btn btn-warning btn-sm" wire:click="editUserProfile({{ json_encode($p) }})"><i class="bi bi-pencil-square"></i></button>
+                                    <button type="button" class="btn btn-warning btn-sm" wire:click="editUserProfileAtIndex({{ $loop->index }})"><i class="bi bi-pencil-square"></i></button>
                                     @if(($p['default'] ?? 'no') === 'no')
-                                    <button class="btn btn-danger btn-sm" wire:click="removeUserProfile('{{ $p['name'] ?? '' }}')" wire:confirm="Remove profile '{{ $p['name'] ?? '' }}'?"><i class="bi bi-trash"></i></button>
+                                    <button type="button" class="btn btn-danger btn-sm" wire:click="removeUserProfileAtIndex({{ $loop->index }})" wire:confirm="Remove this user profile?"><i class="bi bi-trash"></i></button>
                                     @endif
                                 </td>
                             </tr>
@@ -205,8 +205,8 @@
                                 <td><small class="text-muted">{{ number_format(($u['bytes-in'] ?? 0) / 1048576, 2) }} MB / {{ number_format(($u['bytes-out'] ?? 0) / 1048576, 2) }} MB</small></td>
                                 <td><small class="text-muted">{{ $u['comment'] ?? '' }}</small></td>
                                 <td>
-                                    <button class="btn btn-warning btn-sm" wire:click="editUser({{ json_encode($u) }})"><i class="bi bi-pencil-square"></i></button>
-                                    <button class="btn btn-danger btn-sm" wire:click="removeUser('{{ $u['name'] ?? '' }}')" wire:confirm="Remove user '{{ $u['name'] ?? '' }}'?"><i class="bi bi-trash"></i></button>
+                                    <button type="button" class="btn btn-warning btn-sm" wire:click="editUserAtIndex({{ $loop->index }})"><i class="bi bi-pencil-square"></i></button>
+                                    <button type="button" class="btn btn-danger btn-sm" wire:click="removeUserAtIndex({{ $loop->index }})" wire:confirm="Remove this hotspot user?"><i class="bi bi-trash"></i></button>
                                 </td>
                             </tr>
                             @empty

@@ -44,9 +44,50 @@
         .nav-tabs .nav-link.active { font-weight: 600; }
         .online-dot { width:10px; height:10px; border-radius:50%; background:#22c55e; display:inline-block; animation: pulse 1.5s infinite; margin-right:4px; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-        .hs-table thead th { background:#f1f5f9; font-size:.8rem; text-transform:uppercase; letter-spacing:.5px; white-space:nowrap; }
-        .badge-profile { background: linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; font-size:.72rem; }
+        .hs-table thead th { background:#343a40; color:#fff; font-size:.75rem; text-transform:none; letter-spacing:0; padding: 8px 10px; border: 1px solid #454d55; }
+        .hs-table tbody td { padding: 6px 10px; font-size: .8rem; border: 1px solid #dee2e6; vertical-align: middle; }
+        .hs-table tbody tr:hover { background-color: rgba(0,0,0,0.03); }
+        .icon-action { cursor: pointer; padding: 2px 4px; border-radius: 3px; font-size: .9rem; }
+        .icon-delete { color: #dc3545; }
+        .icon-lock { color: #343a40; }
+        .icon-edit { color: #343a40; font-size: .7rem; margin-left: 4px; }
+        .icon-print { color: #343a40; margin-right: 5px; }
+        .icon-qr { color: #343a40; }
+        .icon-comment { color: #343a40; opacity: 0.7; margin-right: 4px; }
+        .badge-profile { background: none; color: #007bff; font-weight: 400; font-size: .8rem; }
+        .log-item { font-size: .8rem; border-left: 3px solid #cbd5e1; padding-left: 10px; margin-bottom: 8px; }
+        .log-item.hotspot { border-left-color: #f59e0b; }
+        .resource-mini { font-size: .75rem; color: #64748b; }
+        .resource-val { font-weight: 700; color: #1e293b; }
+        
+        /* Premium Voucher */
+        .voucher-premium {
+            width: 220px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        .voucher-header {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 8px;
+            text-align: center;
+            font-weight: 800;
+            font-size: .85rem;
+            text-transform: uppercase;
+        }
+        .voucher-body { padding: 12px; display: flex; flex-direction: column; align-items: center; }
+        .voucher-qr { width: 80px; height: 80px; margin-bottom: 8px; background: #f1f5f9; }
+        .voucher-user { font-size: 1.25rem; font-weight: 900; color: #1e293b; letter-spacing: 1px; margin-bottom: 2px; }
+        .voucher-pass { font-size: .9rem; color: #64748b; margin-bottom: 8px; }
+        .voucher-info { width: 100%; border-top: 1px dashed #e2e8f0; padding-top: 8px; font-size: .75rem; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
     </style>
+    @endpush
+
+    @push('scripts')
+    {{-- Scripts handled by Vite/NPM --}}
     @endpush
 
     {{-- ── Router Selector ── --}}
@@ -83,6 +124,7 @@
             ['profiles','bi-person-badge','Profiles'],
             ['income','bi-cash-coin','Income'],
             ['report','bi-bar-chart-line','Reports'],
+            ['setup','bi-gear-fill','Setup'],
         ] as [$tab, $icon, $label])
         <li class="nav-item">
             <button class="nav-link {{ $activeTab===$tab?'active':'' }}" wire:click="$set('activeTab','{{ $tab }}')">
@@ -98,6 +140,25 @@
     {{-- ====================================================================== --}}
     @if($activeTab==='dashboard')
     <div class="row g-3 mb-4">
+        {{-- Resources Bar --}}
+        @if($routerResources)
+        <div class="col-12">
+            <div class="card border-0 shadow-sm overflow-hidden" style="background: #f8fafc;">
+                <div class="card-body py-2 px-3 d-flex align-items-center gap-4 flex-wrap">
+                    <div class="resource-mini"><i class="bi bi-cpu me-1"></i>CPU: <span class="resource-val">{{ $routerResources['cpu-load'] ?? 0 }}%</span></div>
+                    <div class="resource-mini"><i class="bi bi-memory me-1"></i>MEM: <span class="resource-val">
+                        {{ number_format(($routerResources['free-memory'] ?? 0)/1048576, 1) }}MB / {{ number_format(($routerResources['total-memory'] ?? 0)/1048576, 1) }}MB</span>
+                    </div>
+                    <div class="resource-mini"><i class="bi bi-hdd me-1"></i>HDD: <span class="resource-val">
+                        {{ number_format(($routerResources['free-hdd-space'] ?? 0)/1048576, 1) }}MB</span>
+                    </div>
+                    <div class="resource-mini"><i class="bi bi-clock-history me-1"></i>Uptime: <span class="resource-val">{{ $routerResources['uptime'] ?? '—' }}</span></div>
+                    <div class="resource-mini ms-auto"><i class="bi bi-info-circle me-1"></i>{{ $routerResources['board-name'] ?? 'MikroTik' }} ({{ $routerResources['version'] ?? '?' }})</div>
+                </div>
+            </div>
+        </div>
+        @endif
+
         <div class="col-6 col-md-3">
             <div class="stat-card" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
                 <i class="bi bi-people-fill stat-icon"></i>
@@ -137,23 +198,33 @@
     </div>
 
     <div class="row g-3">
+        {{-- Sales Chart --}}
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-bold"><i class="bi bi-graph-up text-primary me-1"></i>Last 7 Days Sales</div>
+                <div class="card-body">
+                    <div id="salesChart" style="min-height: 200px;"></div>
+                </div>
+            </div>
+        </div>
+
         {{-- Active Sessions Mini --}}
         <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-activity text-success me-1"></i>Active Sessions</span>
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-activity text-success me-1"></i>Active Sessions</span>
                     <button class="btn btn-xs btn-outline-secondary" wire:click="refreshSessions"><i class="bi bi-arrow-clockwise"></i></button>
                 </div>
-                <div class="card-body p-0" style="max-height:300px;overflow-y:auto">
-                    <table class="table table-sm align-middle mb-0">
+                <div class="card-body p-0" style="max-height:350px;overflow-y:auto">
+                    <table class="table table-sm align-middle mb-0 hs-table">
                         <thead class="table-light"><tr><th>User</th><th>IP</th><th>MAC</th><th>Uptime</th></tr></thead>
                         <tbody>
                         @forelse($sessions as $s)
                             <tr>
-                                <td><strong>{{ $s['user'] ?? '-' }}</strong></td>
+                                <td><strong class="text-primary">{{ $s['user'] ?? '-' }}</strong></td>
                                 <td><code class="small">{{ $s['address'] ?? '-' }}</code></td>
                                 <td><code class="small">{{ $s['mac-address'] ?? '-' }}</code></td>
-                                <td><small>{{ $s['uptime'] ?? '-' }}</small></td>
+                                <td><span class="badge bg-light text-dark">{{ $s['uptime'] ?? '-' }}</span></td>
                             </tr>
                         @empty
                             <tr><td colspan="4" class="text-center text-muted py-3">No active sessions</td></tr>
@@ -164,26 +235,46 @@
             </div>
         </div>
 
-        {{-- Today Income --}}
+        {{-- Hotspot Logs --}}
         <div class="col-lg-3">
-            <div class="card h-100">
-                <div class="card-header"><i class="bi bi-cash me-1 text-success"></i>Today Income</div>
-                <div class="card-body text-center d-flex flex-column justify-content-center">
-                    <div style="font-size:2.2rem;font-weight:800;color:#16a34a">৳{{ number_format($todayIncome,2) }}</div>
-                    <small class="text-muted">{{ now()->format('d M Y') }}</small>
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-file-earmark-text text-warning me-1"></i>Live Hotspot Log</span>
+                    <button class="btn btn-xs btn-outline-secondary" wire:click="refreshLogs"><i class="bi bi-arrow-clockwise"></i></button>
+                </div>
+                <div class="card-body p-3" style="max-height:350px;overflow-y:auto">
+                    @forelse($hsLogs as $log)
+                    <div class="log-item {{ str_contains(strtolower($log['topics']), 'hotspot') ? 'hotspot' : '' }}">
+                        <div class="d-flex justify-content-between x-small text-muted mb-1">
+                            <span>{{ $log['topics'] }}</span>
+                            <span>{{ Carbon\Carbon::parse($log['time'])->format('H:i:s') }}</span>
+                        </div>
+                        <div class="small">{{ $log['message'] }}</div>
+                    </div>
+                    @empty
+                    <div class="text-center text-muted p-3 small">No logs found.</div>
+                    @endforelse
                 </div>
             </div>
         </div>
 
-        {{-- Servers --}}
+        {{-- Today Income / Stats --}}
         <div class="col-lg-3">
-            <div class="card h-100">
-                <div class="card-header"><i class="bi bi-server me-1 text-primary"></i>Hotspot Servers</div>
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white fw-bold"><i class="bi bi-cash me-1 text-success"></i>Today Income</div>
+                <div class="card-body text-center py-4">
+                    <div style="font-size:2.4rem;font-weight:900;color:#16a34a">৳{{ number_format($todayIncome,2) }}</div>
+                    <small class="text-muted">{{ now()->format('d M Y') }}</small>
+                </div>
+            </div>
+            
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-bold"><i class="bi bi-server me-1 text-primary"></i>Hotspot Servers</div>
                 <div class="card-body p-0">
                     @forelse($servers as $sv)
                     <div class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center">
                         <div><strong class="small">{{ $sv['name'] ?? '-' }}</strong><br><code class="x-small text-muted">{{ $sv['interface'] ?? '' }}</code></div>
-                        <span class="badge {{ ($sv['disabled'] ?? 'false')==='false'?'bg-success':'bg-danger' }}">{{ ($sv['disabled'] ?? 'false')==='false'?'ON':'OFF' }}</span>
+                        <span class="badge rounded-pill {{ ($sv['disabled'] ?? 'false')==='false'?'bg-success':'bg-danger' }}">{{ ($sv['disabled'] ?? 'false')==='false'?'ON':'OFF' }}</span>
                     </div>
                     @empty
                     <div class="text-center text-muted p-3 small">No servers</div>
@@ -209,62 +300,55 @@
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-sm table-hover align-middle mb-0 hs-table data-table" wire:key="tbl-hs-users-{{ $selectedRouter }}">
-                            <thead><tr>
-                                <th>#</th><th>Username / Pwd</th><th>Profile</th><th>Uptime</th><th>Data Used</th><th>Status</th><th>Comment</th><th class="no-print">Actions</th>
-                            </tr></thead>
+                        <table class="table table-sm table-hover align-middle mb-0 hs-table data-table" wire:key="tbl-users-{{ $selectedRouter }}">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Server</th>
+                                    <th>Name</th>
+                                    <th class="text-center">Print</th>
+                                    <th>Profile</th>
+                                    <th>MAC Address</th>
+                                    <th>Uptime</th>
+                                    <th>Bytes In</th>
+                                    <th>Bytes Out</th>
+                                    <th>Comment</th>
+                                    <th class="text-end no-print">Action</th>
+                                </tr>
+                            </thead>
                             <tbody>
                             @forelse($users as $u)
-                            @php
-                                $activeSession = collect($sessions)->firstWhere('user', $u['name'] ?? '');
-                                $isOnline = (bool)$activeSession;
+                            @php 
+                                $bytesInRaw = (int)($u['bytes-in'] ?? 0);
+                                $bytesOutRaw = (int)($u['bytes-out'] ?? 0);
+                                $bytesIn = $bytesInRaw > 1073741824 ? number_format($bytesInRaw/1073741824,2).'GB' : number_format($bytesInRaw/1048576,1).'MB';
+                                $bytesOut = $bytesOutRaw > 1073741824 ? number_format($bytesOutRaw/1073741824,2).'GB' : number_format($bytesOutRaw/1048576,1).'MB';
                             @endphp
-                            <tr wire:key="user-{{ $loop->index }}-{{ $u['name'] ?? $loop->index }}">
-                                <td class="small text-muted">{{ $loop->iteration }}</td>
+                            <tr wire:key="u-{{ $u['.id'] ?? $loop->index }}">
+                                <td><span class="badge bg-light text-dark shadow-sm border">{{ $u['server'] ?? 'all' }}</span></td>
                                 <td>
                                     <strong>{{ $u['name'] ?? '-' }}</strong>
-                                    @if($isOnline)<span class="online-dot ms-1" title="Online"></span>@endif
                                     @if(isset($u['password']) && $u['password']) <br><code class="text-danger small">{{ $u['password'] }}</code> @endif
                                 </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-xs btn-outline-info" wire:click="triggerPrintUserAtIndex({{ $loop->index }})" title="Print user card">
+                                        <i class="bi bi-printer"></i>
+                                    </button>
+                                </td>
                                 <td><span class="badge badge-profile">{{ $u['profile'] ?? '-' }}</span></td>
-                                <td><small>{{ $activeSession['uptime'] ?? ($u['uptime'] ?? '—') }}</small></td>
-                                <td>
-                                    @php
-                                        $bytesIn  = (int)($u['bytes-in']  ?? $activeSession['bytes-in']  ?? 0);
-                                        $bytesOut = (int)($u['bytes-out'] ?? $activeSession['bytes-out'] ?? 0);
-                                    @endphp
-                                    <small class="text-muted">↓{{ number_format($bytesIn/1048576,1) }}M / ↑{{ number_format($bytesOut/1048576,1) }}M</small>
-                                </td>
-                                <td>
-                                    @if($isOnline)
-                                        <span class="badge bg-success">Online</span>
-                                    @else
-                                        <span class="badge bg-secondary">Offline</span>
-                                    @endif
-                                    @if(($u['disabled'] ?? 'false') === 'true')
-                                        <span class="badge bg-danger ms-1">Disabled</span>
-                                    @endif
-                                </td>
-                                <td><small class="text-muted">{{ $u['comment'] ?? '' }}</small></td>
-                                <td class="no-print">
-                                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#userModal"
-                                        wire:click="editUser({{ json_encode($u) }})">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </button>
-                                    @if($isOnline)
-                                    <button class="btn btn-info btn-sm" wire:click="disconnectSession('{{ $u['name'] ?? '' }}')"
-                                        wire:confirm="Disconnect '{{ $u['name'] }}'s session?">
-                                        <i class="bi bi-x-circle"></i>
-                                    </button>
-                                    @endif
-                                    <button class="btn btn-danger btn-sm" wire:click="removeUser('{{ $u['name'] ?? '' }}')"
-                                        wire:confirm="Permanently delete user '{{ $u['name'] ?? '' }}'?">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                <td><code class="small">{{ $u['mac-address'] ?? '—' }}</code></td>
+                                <td><small class="fw-bold">{{ $u['uptime'] ?? '0s' }}</small></td>
+                                <td><small class="text-success fw-bold">{{ $bytesIn }}</small></td>
+                                <td><small class="text-danger fw-bold">{{ $bytesOut }}</small></td>
+                                <td><small class="text-muted">{{ $u['comment'] ?? '—' }}</small></td>
+                                <td class="text-end no-print">
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-warning" wire:click="editUserAtIndex({{ $loop->index }})" data-bs-toggle="modal" data-bs-target="#userModal"><i class="bi bi-pencil"></i></button>
+                                        <button type="button" class="btn btn-outline-danger" wire:click="removeUserAtIndex({{ $loop->index }})" wire:confirm="Permanently delete this hotspot user?"><i class="bi bi-trash"></i></button>
+                                    </div>
                                 </td>
                             </tr>
                             @empty
-                            <tr><td colspan="8" class="text-center text-muted py-4">No hotspot users found.</td></tr>
+                            <tr><td colspan="10" class="text-center text-muted py-5">No hotspot users found on this router.</td></tr>
                             @endforelse
                             </tbody>
                         </table>
@@ -282,8 +366,8 @@
                     <h5 class="modal-title"><i class="bi bi-{{ $editUserId ? 'pencil-square' : 'person-plus' }} me-1"></i>{{ $editUserId ? 'Edit User' : 'Add Hotspot User' }}</h5>
                     <button type="button" class="btn-close {{ $editUserId ? '' : 'btn-close-white' }}" data-bs-dismiss="modal"></button>
                 </div>
+                <form wire:submit.prevent="addUser" id="user-form">
                 <div class="modal-body">
-                    <form wire:submit.prevent="addUser" id="user-form">
                         <div class="row g-2">
                             <div class="col-6">
                                 <label class="form-label">Username <span class="text-danger">*</span></label>
@@ -318,7 +402,6 @@
                                 <input type="text" class="form-control form-control-sm" wire:model.defer="u_comment" placeholder="Note...">
                             </div>
                         </div>
-                    </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
@@ -327,6 +410,7 @@
                         <span wire:loading wire:target="addUser"><span class="spinner-border spinner-border-sm me-1"></span>Saving...</span>
                     </button>
                 </div>
+                </form>
             </div>
         </div>
     </div>
@@ -398,6 +482,12 @@
                                 @endforeach
                             </select>
                             @error('v_profile')<div class="text-danger small">{{ $message }}</div>@enderror
+                            @if($v_profile)
+                                @php $localPkg = collect($hotspotPackages)->firstWhere('package', $v_profile); @endphp
+                                @if($localPkg)
+                                    <div class="x-small text-success mt-1"><i class="bi bi-check-circle"></i> Linked to DB Package: ৳{{ $localPkg->price }}</div>
+                                @endif
+                            @endif
                         </div>
                         <div class="row g-2 mb-2">
                             <div class="col-6">
@@ -444,7 +534,21 @@
                             </div>
                             <div class="col-6">
                                 <label class="form-label">Limit Uptime</label>
-                                <input type="text" class="form-control form-control-sm" wire:model.defer="v_limit_uptime" placeholder="1h">
+                                <select class="form-select form-select-sm" wire:model.defer="v_limit_uptime">
+                                    <option value="">No Limit</option>
+                                    <option value="1h">1 Hour</option>
+                                    <option value="2h">2 Hours</option>
+                                    <option value="3h">3 Hours</option>
+                                    <option value="4h">4 Hours</option>
+                                    <option value="5h">5 Hours</option>
+                                    <option value="6h">6 Hours</option>
+                                    <option value="12h">12 Hours</option>
+                                    <option value="1d">1 Day</option>
+                                    <option value="2d">2 Days</option>
+                                    <option value="3d">3 Days</option>
+                                    <option value="7d">7 Days</option>
+                                    <option value="30d">30 Days</option>
+                                </select>
                             </div>
                         </div>
                         <div class="mb-2">
@@ -538,6 +642,10 @@
                     @endforeach
                 </div>
                 <input type="text" class="form-control form-control-sm w-auto ms-auto" wire:model.live.debounce.300ms="voucherSearch" placeholder="🔍 Search code / batch...">
+                <button class="btn btn-sm btn-outline-primary" wire:click="forceSyncVouchers" wire:loading.attr="disabled" title="Sync DB with Router">
+                    <span wire:loading.remove wire:target="forceSyncVouchers"><i class="bi bi-arrow-repeat me-1"></i>Sync Vouchers</span>
+                    <span wire:loading wire:target="forceSyncVouchers" class="spinner-border spinner-border-sm"></span>
+                </button>
                 <button class="btn btn-sm btn-outline-success" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print All</button>
             </div>
 
@@ -545,30 +653,87 @@
             <div class="card">
                 <div class="card-body p-0">
                     <div class="table-responsive" style="max-height:420px;overflow-y:auto">
-                        <table class="table table-sm table-hover align-middle mb-0 hs-table">
-                            <thead><tr><th>Code</th><th>Profile</th><th>Price</th><th>Status</th><th>Used By</th><th>Batch</th><th class="no-print">Del</th></tr></thead>
+                        <table class="table table-sm align-middle mb-0 hs-table" wire:key="tbl-vouchers-{{ $selectedRouter }}">
+                            <thead>
+                                <tr>
+                                    <th width="60"></th>
+                                    <th>Server</th>
+                                    <th>Name</th>
+                                    <th class="text-center">Print</th>
+                                    <th>Profile</th>
+                                    <th>Mac Address</th>
+                                    <th>Uptime</th>
+                                    <th>Bytes In</th>
+                                    <th>Bytes Out</th>
+                                    <th>Comment</th>
+                                </tr>
+                            </thead>
                             <tbody>
                             @forelse($vouchers as $v)
+                            @php 
+                                $rUser = collect($users)->firstWhere('name', $v->username);
+                                $uptime = $rUser['uptime'] ?? '00:00:00';
+                                $bIn = (int)($rUser['bytes-in'] ?? 0);
+                                $bOut = (int)($rUser['bytes-out'] ?? 0);
+                                
+                                $formatBytes = function($b) {
+                                    if ($b == 0) return '0 Byte';
+                                    if ($b < 1024) return $b . ' Byte';
+                                    if ($b < 1048576) return number_format($b/1024, 0) . ' KiB';
+                                    if ($b < 1073741824) return number_format($b/1048576, 0) . ' MiB';
+                                    return number_format($b/1073741824, 1) . ' GiB';
+                                };
+                            @endphp
                             <tr wire:key="vc-{{ $v->id }}">
-                                <td><code class="fw-bold text-primary">{{ $v->code }}</code></td>
-                                <td><span class="badge badge-profile small">{{ $v->profile }}</span></td>
-                                <td><small>৳{{ number_format($v->price,0) }}</small></td>
                                 <td>
-                                    @if($v->status === 'unused')<span class="badge bg-success">Unused</span>
-                                    @elseif($v->status === 'used')<span class="badge bg-secondary">Used</span>
-                                    @else<span class="badge bg-danger">Expired</span>@endif
+                                    <div class="d-flex gap-1 justify-content-center no-print">
+                                        <button type="button" class="btn btn-link p-1 text-danger border-0" 
+                                                wire:click="deleteSingleVoucher({{ $v->id }})" 
+                                                wire:confirm="Permanent delete voucher {{ $v->username }}?" title="Remove">
+                                            <i class="bi bi-dash-square-fill icon-action"></i>
+                                        </button>
+                                        
+                                        @php $isUserDisabled = collect($users)->firstWhere('name', $v->username)['disabled'] ?? 'false'; @endphp
+                                        <button type="button" class="btn btn-link p-1 border-0" 
+                                                wire:click="toggleUserStatus('{{ $v->username }}', '{{ $isUserDisabled }}')"
+                                                title="{{ $isUserDisabled === 'true' ? 'Enable' : 'Disable' }}">
+                                            <i class="bi bi-{{ $isUserDisabled === 'true' ? 'lock-fill text-danger' : 'unlock-fill text-success' }} icon-action"></i>
+                                        </button>
+                                    </div>
                                 </td>
-                                <td><small class="text-muted">{{ $v->used_by ?? '—' }}</small></td>
-                                <td><small>{{ $v->batch_name }}</small></td>
-                                <td class="no-print">
-                                    @if($v->status === 'unused')
-                                    <button class="btn btn-xs btn-outline-danger" wire:click="deleteSingleVoucher({{ $v->id }})"
-                                        wire:confirm="Delete this voucher?"><i class="bi bi-trash"></i></button>
-                                    @endif
+                                <td>all</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <strong>{{ $v->username }}</strong>
+                                        <button type="button" class="btn btn-link p-1 ms-1 border-0" wire:click="editVoucher({{ $v->id }})" title="Edit">
+                                            <i class="bi bi-pencil-square icon-edit icon-action"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-flex justify-content-center gap-1 no-print">
+                                        <button type="button" class="btn btn-link p-1 border-0" wire:click="triggerPrintSingle({{ $v->id }})" title="Print card">
+                                            <i class="bi bi-printer icon-print icon-action"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-link p-1 border-0" wire:click="triggerPrintSingle({{ $v->id }})" title="Print QR only">
+                                            <i class="bi bi-qr-code icon-qr icon-action"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td><span class="badge-profile">{{ $v->profile }}</span></td>
+                                <td><small>{{ $v->mac_address ?: '' }}</small></td>
+                                <td><small>{{ $uptime }}</small></td>
+                                <td><small>{{ $formatBytes($bIn) }}</small></td>
+                                <td><small>{{ $formatBytes($bOut) }}</small></td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-search icon-comment"></i>
+                                        <small class="text-muted text-truncate" style="max-width: 150px;">{{ $v->batch_name }} {{ $v->note }}</small>
+                                    </div>
                                 </td>
                             </tr>
                             @empty
-                            <tr><td colspan="7" class="text-center text-muted py-4">No vouchers found.</td></tr>
+                            <tr><td colspan="10" class="text-center text-muted py-4">No vouchers found.</td></tr>
                             @endforelse
                             </tbody>
                         </table>
@@ -589,26 +754,106 @@
     @push('scripts')
     <script>
         document.addEventListener('livewire:init', () => {
+            let salesChart = null;
+
+            const initChart = () => {
+                const el = document.getElementById('salesChart');
+                if (!el) return;
+                
+                if (salesChart) salesChart.destroy();
+
+                const chartData = @json($chartData);
+                const options = {
+                    series: [{
+                        name: 'Daily Sales',
+                        data: chartData.data
+                    }],
+                    chart: {
+                        height: 200,
+                        type: 'area',
+                        toolbar: { show: false },
+                        zoom: { enabled: false },
+                        sparkline: { enabled: false }
+                    },
+                    colors: ['#6366f1'],
+                    dataLabels: { enabled: false },
+                    stroke: { curve: 'smooth', width: 3 },
+                    fill: {
+                        type: 'gradient',
+                        gradient: {
+                            shadeIntensity: 1,
+                            opacityFrom: 0.45,
+                            opacityTo: 0.05,
+                            stops: [20, 100]
+                        }
+                    },
+                    xaxis: {
+                        categories: chartData.labels,
+                        axisBorder: { show: false },
+                        axisTicks: { show: false }
+                    },
+                    yaxis: { show: false },
+                    grid: { show: false }
+                };
+
+                salesChart = new ApexCharts(el, options);
+                salesChart.render();
+            };
+
+            initChart();
+            Livewire.on('reinit-chart', () => { setTimeout(initChart, 100); });
+            
             Livewire.on('print-vouchers', (data) => {
                 const payload = data[0] || data;
                 let cards = '';
-                payload.vouchers.forEach(v => {
-                    const pwdDisplay = v.username === v.password ? '' : `<div style="font-size:.8rem;color:#374151">Pwd: <b style="font-family:monospace;letter-spacing:1px">${v.password}</b></div>`;
-                    cards += `<div class="voucher-card" style="border:2px dashed #6366f1;border-radius:10px;padding:12px 16px;background:linear-gradient(135deg,#f8f9ff 0%,#eef2ff 100%);text-align:center;min-width:160px;break-inside:avoid">
-                        <div style="font-size:.7rem;color:#6b7280;margin-bottom:2px">🛜 HOTSPOT VOUCHER</div>
-                        <div style="font-family:monospace;font-size:1.2rem;font-weight:800;letter-spacing:3px;color:#3730a3;margin:4px 0">${v.username}</div>
-                        ${pwdDisplay}
-                        <div style="font-size:.75rem;color:#374151">Profile: <b>${v.profile}</b></div>
-                        <div style="font-size:.75rem;color:#374151">Price: <b>৳${v.price}</b></div>
-                        <div style="font-size:.65rem;color:#9ca3af;margin-top:4px">${payload.router}</div>
-                    </div>`;
+                
+                const container = document.getElementById('voucher-cards-container');
+                container.innerHTML = ''; // Clear
+
+                payload.vouchers.forEach((v, index) => {
+                    const id = `qr-${index}`;
+                    const pwdDisplay = v.username === v.password ? '' : `<span>PWD: <b>${v.password}</b></span>`;
+                    
+                    const cardHtml = `
+                        <div class="voucher-premium" style="break-inside: avoid; margin-bottom: 5px;">
+                            <div class="voucher-header">🛜 Hotspot Voucher</div>
+                            <div class="voucher-body">
+                                <canvas id="${id}" class="voucher-qr" style="width:80px;height:80px;"></canvas>
+                                <div class="voucher-user">${v.username}</div>
+                                <div class="voucher-pass">${v.username === v.password ? 'PIN Only' : 'Password: ' + v.password}</div>
+                                <div class="voucher-info">
+                                    <span>Profile: <b>${v.profile}</b></span>
+                                    <span>Price: <b>৳${v.price}</b></span>
+                                </div>
+                                <div style="font-size: .6rem; color: #94a3b8; margin-top: 5px; text-align: center; width: 100%;">
+                                    Connecting you to the world • ${payload.router}
+                                </div>
+                            </div>
+                        </div>`;
+                    
+                    const wrapper = document.createElement('div');
+                    wrapper.innerHTML = cardHtml;
+                    container.appendChild(wrapper.firstElementChild);
+
+                    // Generate QR (NPM qrcode version)
+                    QRCode.toCanvas(document.getElementById(id), v.username, {
+                        width: 80,
+                        margin: 1,
+                        color: {
+                            dark: "#1e293b",
+                            light: "#ffffff"
+                        }
+                    }, (err) => { if(err) console.error(err); });
                 });
                 
-                document.getElementById('voucher-cards-container').innerHTML = cards;
                 const area = document.getElementById('voucher-print-area');
                 area.style.display = 'block';
-                window.print();
-                setTimeout(() => { area.style.display = 'none'; }, 1000);
+                
+                // Wait for QRs to render
+                setTimeout(() => {
+                    window.print();
+                    area.style.display = 'none';
+                }, 500);
             });
         });
     </script>
@@ -653,15 +898,27 @@
                                 <input type="text" class="form-control form-control-sm" wire:model.defer="up_idle_timeout" placeholder="30m">
                             </div>
                         </div>
-                        <div class="mb-2">
-                            <label class="form-label">Status Auto-Refresh</label>
-                            <select class="form-select form-select-sm" wire:model.defer="up_status_autorefresh">
-                                <option value="">None</option>
-                                <option value="1m">1 minute</option>
-                                <option value="3m">3 minutes</option>
-                                <option value="5m">5 minutes</option>
-                            </select>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <label class="form-label">Status Auto-Refresh</label>
+                                <select class="form-select form-select-sm" wire:model.defer="up_status_autorefresh">
+                                    <option value="">None</option>
+                                    <option value="1m">1 minute</option>
+                                    <option value="3m">3 minutes</option>
+                                    <option value="5m">5 minutes</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Address Pool</label>
+                                <select class="form-select form-select-sm" wire:model.defer="up_address_pool">
+                                    <option value="none">none</option>
+                                    @foreach($ipPools as $pool)
+                                        <option value="{{ $pool['name'] }}">{{ $pool['name'] }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
+
                         <div class="mb-3">
                             <label class="form-label">Comment</label>
                             <input type="text" class="form-control form-control-sm" wire:model.defer="up_comment">
@@ -680,11 +937,15 @@
             </div>
 
             {{-- Linked packages from billing DB --}}
-            @if($hotspotPackages->isNotEmpty())
             <div class="card mt-3 border-0 shadow-sm">
-                <div class="card-header bg-light text-dark small fw-bold"><i class="bi bi-box-seam me-1"></i>Packages in Billing DB</div>
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <span class="small fw-bold"><i class="bi bi-box-seam me-1"></i>Packages in DB</span>
+                    <button class="btn btn-xs btn-primary" wire:click="syncDatabasePackages" wire:loading.attr="disabled">
+                        <i class="bi bi-arrow-repeat me-1"></i>Sync to Router
+                    </button>
+                </div>
                 <div class="card-body p-0">
-                    @foreach($hotspotPackages as $pkg)
+                    @forelse($hotspotPackages as $pkg)
                     <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom small">
                         <div>
                             <strong>{{ $pkg->package }}</strong>
@@ -692,10 +953,11 @@
                         </div>
                         <span class="badge bg-light text-dark border">৳{{ number_format($pkg->price,0) }}</span>
                     </div>
-                    @endforeach
+                    @empty
+                    <div class="p-3 text-center text-muted x-small">No packages in database.</div>
+                    @endforelse
                 </div>
             </div>
-            @endif
         </div>
 
         <div class="col-lg-8">
@@ -1004,7 +1266,181 @@
             </div>
         </div>
     </div>
+    @endif {{-- end report tab --}}
+
+    {{-- ====================================================================== --}}
+    {{-- SETUP TAB --}}
+    {{-- ====================================================================== --}}
+    @if($activeTab==='setup')
+    <div class="row g-3">
+        {{-- ── Left Column: Server Overview + Server Profiles ── --}}
+        <div class="col-lg-6">
+            {{-- Hotspot Servers --}}
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i class="bi bi-server text-primary"></i>
+                    <strong>Hotspot Servers</strong>
+                    <span class="badge bg-secondary ms-auto">{{ count($servers) }}</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0 hs-table" wire:key="setup-srv">
+                            <thead><tr><th>Name</th><th>Interface</th><th>Address Pool</th><th>Profile</th></tr></thead>
+                            <tbody>
+                                @forelse($servers as $s)
+                                <tr wire:key="s-{{ $loop->index }}">
+                                    <td><strong>{{ $s['name'] ?? '-' }}</strong></td>
+                                    <td><span class="badge bg-secondary">{{ $s['interface'] ?? '-' }}</span></td>
+                                    <td><code>{{ $s['address-pool'] ?? 'none' }}</code></td>
+                                    <td><small>{{ $s['profile'] ?? '-' }}</small></td>
+                                </tr>
+                                @empty
+                                <tr><td colspan="4" class="text-center text-muted py-3">No hotspot servers found.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Server Profiles --}}
+            <div class="card border-0 shadow-sm">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i class="bi bi-file-earmark-text text-info"></i>
+                    <strong>Server Profiles</strong>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0 hs-table" wire:key="setup-sprof">
+                            <thead><tr><th>Name</th><th>Hotspot Address</th><th>DNS Name</th><th>Login By</th></tr></thead>
+                            <tbody>
+                                @forelse($profiles as $p)
+                                <tr wire:key="sp-{{ $loop->index }}">
+                                    <td><strong>{{ $p['name'] ?? '-' }}</strong></td>
+                                    <td><code>{{ $p['hotspot-address'] ?? '-' }}</code></td>
+                                    <td><small>{{ $p['dns-name'] ?? '-' }}</small></td>
+                                    <td><small class="text-muted">{{ $p['login-by'] ?? '-' }}</small></td>
+                                </tr>
+                                @empty
+                                <tr><td colspan="4" class="text-center text-muted py-3">No server profiles found.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- ── Right Column: User Profiles CRUD ── --}}
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header {{ $editUserProfileId ? 'bg-warning text-dark' : 'bg-info text-dark' }} d-flex align-items-center gap-2">
+                    <i class="bi bi-{{ $editUserProfileId ? 'pencil-square' : 'plus-circle' }}"></i>
+                    <strong>{{ $editUserProfileId ? 'Edit User Profile' : 'Add User Profile' }}</strong>
+                </div>
+                <div class="card-body">
+                    <form wire:submit.prevent="addUserProfile">
+                        <div class="row g-2 mb-2">
+                            <div class="col-12">
+                                <label class="form-label form-label-sm">Profile Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm" wire:model.defer="up_name" placeholder="e.g. 1hour">
+                                @error('up_name')<div class="text-danger small">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label form-label-sm">Rate Limit</label>
+                                <input type="text" class="form-control form-control-sm" wire:model.defer="up_rate_limit" placeholder="2M/2M">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label form-label-sm">Shared Users</label>
+                                <input type="number" class="form-control form-control-sm" wire:model.defer="up_shared_users" min="1">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label form-label-sm">Session Timeout</label>
+                                <input type="text" class="form-control form-control-sm" wire:model.defer="up_session_timeout" placeholder="1h / 1d">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label form-label-sm">Idle Timeout</label>
+                                <input type="text" class="form-control form-control-sm" wire:model.defer="up_idle_timeout" placeholder="5m">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label form-label-sm">Comment</label>
+                                <input type="text" class="form-control form-control-sm" wire:model.defer="up_comment">
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-sm btn-info text-dark flex-fill" wire:loading.attr="disabled" wire:target="addUserProfile">
+                                <span wire:loading.remove wire:target="addUserProfile"><i class="bi bi-{{ $editUserProfileId ? 'save' : 'plus-lg' }} me-1"></i>{{ $editUserProfileId ? 'Update Profile' : 'Save Profile' }}</span>
+                                <span wire:loading wire:target="addUserProfile"><span class="spinner-border spinner-border-sm me-1"></span>Saving...</span>
+                            </button>
+                            @if($editUserProfileId)
+                                <button type="button" class="btn btn-sm btn-secondary" wire:click="$set('editUserProfileId', null)">Cancel</button>
+                            @endif
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {{-- User Profiles Table --}}
+            <div class="card border-0 shadow-sm">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i class="bi bi-person-badge text-primary"></i>
+                    <strong>User Profiles</strong>
+                    <span class="badge bg-primary ms-auto">{{ count($userProfiles) }}</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0 hs-table" wire:key="setup-uprof">
+                            <thead><tr><th>Name</th><th>Rate Limit</th><th>Shared</th><th>Timeout</th><th class="text-end">Action</th></tr></thead>
+                            <tbody>
+                                @forelse($userProfiles as $p)
+                                <tr wire:key="up-{{ $loop->index }}">
+                                    <td><strong>{{ $p['name'] ?? '-' }}</strong></td>
+                                    <td><code class="text-danger">{{ $p['rate-limit'] ?? '—' }}</code></td>
+                                    <td><span class="badge bg-primary">{{ $p['shared-users'] ?? 1 }}</span></td>
+                                    <td><small class="text-muted">{{ $p['session-timeout'] ?? '—' }}</small></td>
+                                    <td class="text-end">
+                                        <button class="btn btn-xs btn-outline-warning me-1" wire:click="editUserProfile({{ json_encode($p) }})"><i class="bi bi-pencil-square"></i></button>
+                                        @if(($p['default'] ?? 'no') === 'no')
+                                        <button class="btn btn-xs btn-outline-danger" wire:click="removeUserProfile('{{ $p['name'] ?? '' }}')" wire:confirm="Remove profile '{{ $p['name'] ?? '' }}'?"><i class="bi bi-trash"></i></button>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr><td colspan="5" class="text-center text-muted py-3">No user profiles found.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     @endif
 
     @endif {{-- end $selectedRouter --}}
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Modal Listeners
+            window.addEventListener('open-modal', event => {
+                const modalId = event.detail;
+                const modalEl = document.getElementById(modalId);
+                if (modalEl) {
+                    const myModal = new bootstrap.Modal(modalEl);
+                    myModal.show();
+                }
+            });
+
+            window.addEventListener('close-modal', event => {
+                const modalId = event.detail;
+                const modalEl = document.getElementById(modalId);
+                if (modalEl) {
+                    const instance = bootstrap.Modal.getInstance(modalEl);
+                    if (instance) instance.hide();
+                }
+            });
+        });
+    </script>
+    @endpush
 </div>

@@ -129,7 +129,7 @@ Route::middleware([
             Route::get('/pppoe', PppoeSetup::class)->name('mikrotik-pppoe-setup');
             Route::get('/queue', QueueSetup::class)->name('mikrotik-queue-setup');
             Route::get('/firewall', FirewallSetup::class)->name('mikrotik-firewall-setup');
-            Route::get('/hotspot', HotspotSetup::class)->name('mikrotik-hotspot-setup');
+            Route::get('/hotspot', HotspotManager::class)->name('mikrotik-hotspot-setup'); // merged → HotspotManager
             Route::get('/hotspot-manager', HotspotManager::class)->name('mikrotik-hotspot-manager');
             Route::get('/radius', RadiusSetup::class)->name('mikrotik-radius-setup');
             Route::get('/vpn', VpnSetup::class)->name('mikrotik-vpn-setup');
