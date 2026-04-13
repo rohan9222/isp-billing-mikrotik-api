@@ -294,7 +294,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span><i class="bi bi-people me-1 text-primary"></i>Hotspot Users on <strong>{{ $selectedRouter }}</strong> <span class="badge bg-secondary ms-1">{{ count($users) }}</span></span>
-                    <button class="btn btn-sm btn-primary no-print" data-bs-toggle="modal" data-bs-target="#userModal">
+                    <button type="button" class="btn btn-sm btn-primary no-print" wire:click="startAddUser">
                         <i class="bi bi-plus-lg me-1"></i>Add User
                     </button>
                 </div>
@@ -305,7 +305,6 @@
                                 <tr>
                                     <th>Server</th>
                                     <th>Name</th>
-                                    <th class="text-center">Print</th>
                                     <th>Profile</th>
                                     <th>MAC Address</th>
                                     <th>Uptime</th>
@@ -329,11 +328,6 @@
                                     <strong>{{ $u['name'] ?? '-' }}</strong>
                                     @if(isset($u['password']) && $u['password']) <br><code class="text-danger small">{{ $u['password'] }}</code> @endif
                                 </td>
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-xs btn-outline-info" wire:click="triggerPrintUserAtIndex({{ $loop->index }})" title="Print user card">
-                                        <i class="bi bi-printer"></i>
-                                    </button>
-                                </td>
                                 <td><span class="badge badge-profile">{{ $u['profile'] ?? '-' }}</span></td>
                                 <td><code class="small">{{ $u['mac-address'] ?? '—' }}</code></td>
                                 <td><small class="fw-bold">{{ $u['uptime'] ?? '0s' }}</small></td>
@@ -342,8 +336,9 @@
                                 <td><small class="text-muted">{{ $u['comment'] ?? '—' }}</small></td>
                                 <td class="text-end no-print">
                                     <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-outline-warning" wire:click="editUserAtIndex({{ $loop->index }})" data-bs-toggle="modal" data-bs-target="#userModal"><i class="bi bi-pencil"></i></button>
-                                        <button type="button" class="btn btn-outline-danger" wire:click="removeUserAtIndex({{ $loop->index }})" wire:confirm="Permanently delete this hotspot user?"><i class="bi bi-trash"></i></button>
+                                        <button type="button" class="btn btn-outline-info" wire:click="printHotspotUserSlip(@js($u['name'] ?? ''))" title="Print credentials"><i class="bi bi-printer"></i></button>
+                                        <button type="button" class="btn btn-outline-warning" wire:click="editUserByName(@js($u['name'] ?? ''))"><i class="bi bi-pencil"></i></button>
+                                        <button type="button" class="btn btn-outline-danger" wire:click="removeUser(@js($u['name'] ?? ''))" wire:confirm="Permanently delete this hotspot user?"><i class="bi bi-trash"></i></button>
                                     </div>
                                 </td>
                             </tr>
@@ -357,64 +352,8 @@
             </div>
         </div>
     </div>
-
-    {{-- User Modal --}}
-    <div class="modal fade" id="userModal" tabindex="-1" wire:ignore.self>
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header {{ $editUserId ? 'bg-warning text-dark' : 'bg-primary text-white' }}">
-                    <h5 class="modal-title"><i class="bi bi-{{ $editUserId ? 'pencil-square' : 'person-plus' }} me-1"></i>{{ $editUserId ? 'Edit User' : 'Add Hotspot User' }}</h5>
-                    <button type="button" class="btn-close {{ $editUserId ? '' : 'btn-close-white' }}" data-bs-dismiss="modal"></button>
-                </div>
-                <form wire:submit.prevent="addUser" id="user-form">
-                <div class="modal-body">
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <label class="form-label">Username <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-sm" wire:model.defer="u_name" id="u_name" placeholder="username">
-                                @error('u_name')<div class="text-danger small">{{ $message }}</div>@enderror
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label">Password <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-sm" wire:model.defer="u_password" id="u_password" placeholder="password">
-                                @error('u_password')<div class="text-danger small">{{ $message }}</div>@enderror
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Profile <span class="text-danger">*</span></label>
-                                <select class="form-select form-select-sm" wire:model.defer="u_profile" id="u_profile">
-                                    @forelse($userProfiles as $p)
-                                        <option value="{{ $p['name'] }}">{{ $p['name'] }}</option>
-                                    @empty
-                                        <option value="default">default</option>
-                                    @endforelse
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label">Limit Uptime</label>
-                                <input type="text" class="form-control form-control-sm" wire:model.defer="u_limit_uptime" placeholder="1h / 1d">
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label">Limit Bytes (Total)</label>
-                                <input type="text" class="form-control form-control-sm" wire:model.defer="u_limit_bytes" placeholder="100000000">
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Comment</label>
-                                <input type="text" class="form-control form-control-sm" wire:model.defer="u_comment" placeholder="Note...">
-                            </div>
-                        </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" form="user-form" class="btn btn-primary btn-sm" wire:loading.attr="disabled" wire:target="addUser">
-                        <span wire:loading.remove wire:target="addUser"><i class="bi bi-{{ $editUserId ? 'save' : 'plus-lg' }} me-1"></i>{{ $editUserId ? 'Update' : 'Add User' }}</span>
-                        <span wire:loading wire:target="addUser"><span class="spinner-border spinner-border-sm me-1"></span>Saving...</span>
-                    </button>
-                </div>
-                </form>
-            </div>
-        </div>
-    </div>
     @endif
+
 
     {{-- ====================================================================== --}}
     {{-- SESSIONS TAB --}}
@@ -446,8 +385,8 @@
                         <td><small>{{ number_format((int)($s['bytes-out'] ?? 0)/1048576,2) }} MB</small></td>
                         <td><span class="badge bg-info text-dark small">{{ $s['server'] ?? '-' }}</span></td>
                         <td class="no-print">
-                            <button class="btn btn-danger btn-sm" wire:click="disconnectSession('{{ $s['user'] ?? '' }}')"
-                                wire:confirm="Disconnect {{ $s['user'] ?? 'this' }}'s session?">
+                            <button type="button" class="btn btn-danger btn-sm" wire:click="disconnectSession(@js($s['user'] ?? ''))"
+                                wire:confirm="Disconnect this user's session?">
                                 <i class="bi bi-x-circle me-1"></i>Kick
                             </button>
                         </td>
@@ -646,7 +585,10 @@
                     <span wire:loading.remove wire:target="forceSyncVouchers"><i class="bi bi-arrow-repeat me-1"></i>Sync Vouchers</span>
                     <span wire:loading wire:target="forceSyncVouchers" class="spinner-border spinner-border-sm"></span>
                 </button>
-                <button class="btn btn-sm btn-outline-success" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print All</button>
+                <button class="btn btn-sm btn-outline-success" wire:click="triggerPrintAll" wire:loading.attr="disabled">
+                    <span wire:loading.remove wire:target="triggerPrintAll"><i class="bi bi-printer me-1"></i>Print All</span>
+                    <span wire:loading wire:target="triggerPrintAll" class="spinner-border spinner-border-sm"></span>
+                </button>
             </div>
 
             {{-- Voucher Table --}}
@@ -712,10 +654,10 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="d-flex justify-content-center gap-1 no-print">
-                                        <button type="button" class="btn btn-link p-1 border-0" wire:click="triggerPrintSingle({{ $v->id }})" title="Print card">
+                                        <button type="button" class="btn btn-link p-1 border-0" wire:click="triggerPrintSingle({{ $v->id }}, 'no' )" title="Print card">
                                             <i class="bi bi-printer icon-print icon-action"></i>
                                         </button>
-                                        <button type="button" class="btn btn-link p-1 border-0" wire:click="triggerPrintSingle({{ $v->id }})" title="Print QR only">
+                                        <button type="button" class="btn btn-link p-1 border-0" wire:click="triggerPrintSingle({{ $v->id }}, 'yes' )" title="Print QR only">
                                             <i class="bi bi-qr-code icon-qr icon-action"></i>
                                         </button>
                                     </div>
@@ -744,120 +686,6 @@
         </div>
     </div>
 
-    {{-- Print area for vouchers --}}
-    <div id="voucher-print-area" style="display:none">
-        <div style="text-align:center;margin-bottom:12px;font-size:1.1rem;font-weight:700">🛜 Hotspot Vouchers — {{ $selectedRouter }}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start" id="voucher-cards-container">
-        </div>
-    </div>
-
-    @push('scripts')
-    <script>
-        document.addEventListener('livewire:init', () => {
-            let salesChart = null;
-
-            const initChart = () => {
-                const el = document.getElementById('salesChart');
-                if (!el) return;
-                
-                if (salesChart) salesChart.destroy();
-
-                const chartData = @json($chartData);
-                const options = {
-                    series: [{
-                        name: 'Daily Sales',
-                        data: chartData.data
-                    }],
-                    chart: {
-                        height: 200,
-                        type: 'area',
-                        toolbar: { show: false },
-                        zoom: { enabled: false },
-                        sparkline: { enabled: false }
-                    },
-                    colors: ['#6366f1'],
-                    dataLabels: { enabled: false },
-                    stroke: { curve: 'smooth', width: 3 },
-                    fill: {
-                        type: 'gradient',
-                        gradient: {
-                            shadeIntensity: 1,
-                            opacityFrom: 0.45,
-                            opacityTo: 0.05,
-                            stops: [20, 100]
-                        }
-                    },
-                    xaxis: {
-                        categories: chartData.labels,
-                        axisBorder: { show: false },
-                        axisTicks: { show: false }
-                    },
-                    yaxis: { show: false },
-                    grid: { show: false }
-                };
-
-                salesChart = new ApexCharts(el, options);
-                salesChart.render();
-            };
-
-            initChart();
-            Livewire.on('reinit-chart', () => { setTimeout(initChart, 100); });
-            
-            Livewire.on('print-vouchers', (data) => {
-                const payload = data[0] || data;
-                let cards = '';
-                
-                const container = document.getElementById('voucher-cards-container');
-                container.innerHTML = ''; // Clear
-
-                payload.vouchers.forEach((v, index) => {
-                    const id = `qr-${index}`;
-                    const pwdDisplay = v.username === v.password ? '' : `<span>PWD: <b>${v.password}</b></span>`;
-                    
-                    const cardHtml = `
-                        <div class="voucher-premium" style="break-inside: avoid; margin-bottom: 5px;">
-                            <div class="voucher-header">🛜 Hotspot Voucher</div>
-                            <div class="voucher-body">
-                                <canvas id="${id}" class="voucher-qr" style="width:80px;height:80px;"></canvas>
-                                <div class="voucher-user">${v.username}</div>
-                                <div class="voucher-pass">${v.username === v.password ? 'PIN Only' : 'Password: ' + v.password}</div>
-                                <div class="voucher-info">
-                                    <span>Profile: <b>${v.profile}</b></span>
-                                    <span>Price: <b>৳${v.price}</b></span>
-                                </div>
-                                <div style="font-size: .6rem; color: #94a3b8; margin-top: 5px; text-align: center; width: 100%;">
-                                    Connecting you to the world • ${payload.router}
-                                </div>
-                            </div>
-                        </div>`;
-                    
-                    const wrapper = document.createElement('div');
-                    wrapper.innerHTML = cardHtml;
-                    container.appendChild(wrapper.firstElementChild);
-
-                    // Generate QR (NPM qrcode version)
-                    QRCode.toCanvas(document.getElementById(id), v.username, {
-                        width: 80,
-                        margin: 1,
-                        color: {
-                            dark: "#1e293b",
-                            light: "#ffffff"
-                        }
-                    }, (err) => { if(err) console.error(err); });
-                });
-                
-                const area = document.getElementById('voucher-print-area');
-                area.style.display = 'block';
-                
-                // Wait for QRs to render
-                setTimeout(() => {
-                    window.print();
-                    area.style.display = 'none';
-                }, 500);
-            });
-        });
-    </script>
-    @endpush
     @endif
 
     {{-- ====================================================================== --}}
@@ -867,41 +695,48 @@
     <div class="row g-3">
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm">
-                <div class="card-header {{ $editUserProfileId ? 'bg-warning text-dark' : 'bg-info text-dark' }}">
-                    <i class="bi bi-{{ $editUserProfileId ? 'pencil-square' : 'plus-circle' }} me-1"></i>
-                    {{ $editUserProfileId ? 'Edit User Profile' : 'Add User Profile' }}
+                <div class="card-header {{ $editUserProfileId ? 'bg-warning text-dark' : 'bg-info text-dark' }} d-flex justify-content-between align-items-center">
+                    <span>
+                        <i class="bi bi-{{ $editUserProfileId ? 'pencil-square' : 'plus-circle' }} me-1"></i>
+                        {{ $editUserProfileId ? 'Edit User Profile' : 'Add User Profile' }}
+                    </span>
+                    @if($editUserProfileId)
+                    <button type="button" class="btn btn-sm btn-outline-dark" wire:click="startAddUserProfile" title="Clear form / Add new">
+                        <i class="bi bi-plus-lg me-1"></i>New
+                    </button>
+                    @endif
                 </div>
                 <div class="card-body">
                     <form wire:submit.prevent="addUserProfile">
                         <div class="mb-2">
                             <label class="form-label">Profile Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-sm" wire:model.defer="up_name" placeholder="1Hour / 1Day">
+                            <input type="text" class="form-control form-control-sm" wire:model="up_name" placeholder="1Hour / 1Day">
                             @error('up_name')<div class="text-danger small">{{ $message }}</div>@enderror
                         </div>
                         <div class="row g-2 mb-2">
                             <div class="col-6">
                                 <label class="form-label">Shared Users</label>
-                                <input type="number" class="form-control form-control-sm" wire:model.defer="up_shared_users" min="1">
+                                <input type="number" class="form-control form-control-sm" wire:model="up_shared_users" min="1">
                             </div>
                             <div class="col-6">
                                 <label class="form-label">Rate Limit</label>
-                                <input type="text" class="form-control form-control-sm" wire:model.defer="up_rate_limit" placeholder="2M/2M">
+                                <input type="text" class="form-control form-control-sm" wire:model="up_rate_limit" placeholder="2M/2M">
                             </div>
                         </div>
                         <div class="row g-2 mb-2">
                             <div class="col-6">
-                                <label class="form-label">Session Timeout</label>
-                                <input type="text" class="form-control form-control-sm" wire:model.defer="up_session_timeout" placeholder="1h">
+                                <label class="form-label">Session Timeout <small class="text-muted">(ex: 60m,24h,1d,1d1h1m)</small></label>
+                                <input type="text" class="form-control form-control-sm" wire:model="up_session_timeout" placeholder="60m">
                             </div>
                             <div class="col-6">
-                                <label class="form-label">Idle Timeout</label>
-                                <input type="text" class="form-control form-control-sm" wire:model.defer="up_idle_timeout" placeholder="30m">
+                                <label class="form-label">Idle Timeout <small class="text-muted">(ex: 60m,24h,1d,1d1h1m)</small></label>
+                                <input type="text" class="form-control form-control-sm" wire:model="up_idle_timeout" placeholder="30m">
                             </div>
                         </div>
                         <div class="row g-2 mb-2">
                             <div class="col-6">
                                 <label class="form-label">Status Auto-Refresh</label>
-                                <select class="form-select form-select-sm" wire:model.defer="up_status_autorefresh">
+                                <select class="form-select form-select-sm" wire:model.live="up_status_autorefresh">
                                     <option value="">None</option>
                                     <option value="1m">1 minute</option>
                                     <option value="3m">3 minutes</option>
@@ -910,7 +745,7 @@
                             </div>
                             <div class="col-6">
                                 <label class="form-label">Address Pool</label>
-                                <select class="form-select form-select-sm" wire:model.defer="up_address_pool">
+                                <select class="form-select form-select-sm" wire:model.live="up_address_pool">
                                     <option value="none">none</option>
                                     @foreach($ipPools as $pool)
                                         <option value="{{ $pool['name'] }}">{{ $pool['name'] }}</option>
@@ -918,18 +753,13 @@
                                 </select>
                             </div>
                         </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Comment</label>
-                            <input type="text" class="form-control form-control-sm" wire:model.defer="up_comment">
-                        </div>
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-info btn-sm flex-fill text-dark" wire:loading.attr="disabled" wire:target="addUserProfile">
                                 <span wire:loading.remove wire:target="addUserProfile"><i class="bi bi-{{ $editUserProfileId ? 'save' : 'plus-lg' }} me-1"></i>{{ $editUserProfileId ? 'Update' : 'Add Profile' }}</span>
                                 <span wire:loading wire:target="addUserProfile"><span class="spinner-border spinner-border-sm me-1"></span>Saving...</span>
                             </button>
                             @if($editUserProfileId)
-                            <button type="button" class="btn btn-secondary btn-sm" wire:click="$set('editUserProfileId', null)">Cancel</button>
+                            <button type="button" class="btn btn-secondary btn-sm" wire:click="cancelEditUserProfile">Cancel</button>
                             @endif
                         </div>
                     </form>
@@ -962,22 +792,58 @@
 
         <div class="col-lg-8">
             <div class="card mb-3">
-                <div class="card-header"><i class="bi bi-person-badge me-1 text-info"></i>User Profiles on <strong>{{ $selectedRouter }}</strong></div>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-person-badge me-1 text-info"></i>User Profiles on <strong>{{ $selectedRouter }}</strong>
+                        <span class="badge bg-secondary ms-1">{{ count($userProfiles) }}</span>
+                    </span>
+                    <button type="button" class="btn btn-sm btn-info text-dark" wire:click="startAddUserProfile">
+                        <i class="bi bi-plus-lg me-1"></i>Add Profile
+                    </button>
+                </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-sm table-hover align-middle mb-0 hs-table data-table" wire:key="tbl-up-{{ $selectedRouter }}">
-                            <thead><tr><th>Name</th><th>Rate Limit</th><th>Shared</th><th>Session Timeout</th><th>Idle Timeout</th><th>Comment</th><th class="no-print">Actions</th></tr></thead>
+                            <thead><tr>
+                                <th>Name</th>
+                                <th>Rate Limit</th>
+                                <th>Shared</th>
+                                <th>Session TO</th>
+                                <th>Idle TO</th>
+                                <th>Address Pool</th>
+                                <th class="no-print">Actions</th>
+                            </tr></thead>
                             <tbody>
                             @forelse($userProfiles as $p)
                             <tr wire:key="up-{{ $loop->index }}">
                                 <td><strong class="text-primary">{{ $p['name'] ?? '-' }}</strong></td>
-                                <td><code class="text-danger small">{{ $p['rate-limit'] ?? '—' }}</code></td>
+                                <td>
+                                    @if($p['rate-limit'] ?? '')
+                                        <code class="text-danger small">{{ $p['rate-limit'] }}</code>
+                                    @else
+                                        <span class="text-muted small">—</span>
+                                    @endif
+                                </td>
                                 <td><span class="badge bg-primary">{{ $p['shared-users'] ?? '1' }}</span></td>
-                                <td><small>{{ $p['session-timeout'] ?? '—' }}</small></td>
-                                <td><small>{{ $p['idle-timeout'] ?? '—' }}</small></td>
-                                <td><small class="text-muted">{{ $p['comment'] ?? '' }}</small></td>
+                                <td>
+                                    @php $st = $p['session-timeout'] ?? ''; @endphp
+                                    <span class="badge {{ $st && $st !== '0s' ? 'bg-success' : 'bg-light text-muted border' }}">
+                                        {{ ($st && $st !== '0s') ? $st : '∞' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    @php $it = $p['idle-timeout'] ?? ''; @endphp
+                                    <span class="badge {{ $it && $it !== '0s' ? 'bg-warning text-dark' : 'bg-light text-muted border' }}">
+                                        {{ ($it && $it !== '0s') ? $it : '∞' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    @php $pool = $p['address-pool'] ?? 'none'; @endphp
+                                    <span class="badge {{ $pool !== 'none' && $pool !== '' ? 'bg-info text-dark' : 'bg-light text-muted border' }}">
+                                        {{ $pool ?: 'none' }}
+                                    </span>
+                                </td>
                                 <td class="no-print">
-                                    <button class="btn btn-warning btn-sm" wire:click="editUserProfile({{ json_encode($p) }})"><i class="bi bi-pencil-square"></i></button>
+                                    <button class="btn btn-warning btn-sm" wire:click="editUserProfileByName(@js($p['name'] ?? ''))" title="Edit"><i class="bi bi-pencil-square"></i></button>
                                     @if(($p['default'] ?? 'no') === 'no')
                                     <button class="btn btn-danger btn-sm" wire:click="removeUserProfile('{{ $p['name'] ?? '' }}')"
                                         wire:confirm="Remove profile '{{ $p['name'] ?? '' }}'?"><i class="bi bi-trash"></i></button>
@@ -985,7 +851,7 @@
                                 </td>
                             </tr>
                             @empty
-                            <tr><td colspan="7" class="text-center text-muted py-4">No user profiles found.</td></tr>
+                            <tr><td colspan="8" class="text-center text-muted py-4">No user profiles found.</td></tr>
                             @endforelse
                             </tbody>
                         </table>
@@ -993,29 +859,7 @@
                 </div>
             </div>
 
-            {{-- Server Profiles (read-only) --}}
-            <div class="card">
-                <div class="card-header"><i class="bi bi-file-earmark-text me-1"></i>Server Profiles</div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover align-middle mb-0 hs-table" wire:key="tbl-sp-{{ $selectedRouter }}">
-                            <thead><tr><th>Name</th><th>Hotspot Address</th><th>DNS Name</th><th>Login By</th></tr></thead>
-                            <tbody>
-                            @forelse($profiles as $p)
-                            <tr>
-                                <td><strong>{{ $p['name'] ?? '-' }}</strong></td>
-                                <td><code>{{ $p['hotspot-address'] ?? '-' }}</code></td>
-                                <td><small>{{ $p['dns-name'] ?? '-' }}</small></td>
-                                <td><small class="text-muted">{{ $p['login-by'] ?? '-' }}</small></td>
-                            </tr>
-                            @empty
-                            <tr><td colspan="4" class="text-center text-muted py-3">No server profiles.</td></tr>
-                            @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+
         </div>
     </div>
     @endif
@@ -1331,82 +1175,65 @@
             </div>
         </div>
 
-        {{-- ── Right Column: User Profiles CRUD ── --}}
+        {{-- ── Right Column: Quick Stats + Link to Profiles Tab ── --}}
         <div class="col-lg-6">
+            {{-- Active Sessions Summary --}}
             <div class="card border-0 shadow-sm mb-3">
-                <div class="card-header {{ $editUserProfileId ? 'bg-warning text-dark' : 'bg-info text-dark' }} d-flex align-items-center gap-2">
-                    <i class="bi bi-{{ $editUserProfileId ? 'pencil-square' : 'plus-circle' }}"></i>
-                    <strong>{{ $editUserProfileId ? 'Edit User Profile' : 'Add User Profile' }}</strong>
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i class="bi bi-activity text-success"></i>
+                    <strong>Live Status</strong>
+                    <button class="btn btn-xs btn-outline-success ms-auto" wire:click="refreshSessions">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
                 </div>
                 <div class="card-body">
-                    <form wire:submit.prevent="addUserProfile">
-                        <div class="row g-2 mb-2">
-                            <div class="col-12">
-                                <label class="form-label form-label-sm">Profile Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-sm" wire:model.defer="up_name" placeholder="e.g. 1hour">
-                                @error('up_name')<div class="text-danger small">{{ $message }}</div>@enderror
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label form-label-sm">Rate Limit</label>
-                                <input type="text" class="form-control form-control-sm" wire:model.defer="up_rate_limit" placeholder="2M/2M">
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label form-label-sm">Shared Users</label>
-                                <input type="number" class="form-control form-control-sm" wire:model.defer="up_shared_users" min="1">
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label form-label-sm">Session Timeout</label>
-                                <input type="text" class="form-control form-control-sm" wire:model.defer="up_session_timeout" placeholder="1h / 1d">
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label form-label-sm">Idle Timeout</label>
-                                <input type="text" class="form-control form-control-sm" wire:model.defer="up_idle_timeout" placeholder="5m">
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label form-label-sm">Comment</label>
-                                <input type="text" class="form-control form-control-sm" wire:model.defer="up_comment">
+                    <div class="row g-2 text-center">
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <div class="fs-4 fw-bold text-success">{{ $onlineCount }}</div>
+                                <small class="text-muted">Online</small>
                             </div>
                         </div>
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-sm btn-info text-dark flex-fill" wire:loading.attr="disabled" wire:target="addUserProfile">
-                                <span wire:loading.remove wire:target="addUserProfile"><i class="bi bi-{{ $editUserProfileId ? 'save' : 'plus-lg' }} me-1"></i>{{ $editUserProfileId ? 'Update Profile' : 'Save Profile' }}</span>
-                                <span wire:loading wire:target="addUserProfile"><span class="spinner-border spinner-border-sm me-1"></span>Saving...</span>
-                            </button>
-                            @if($editUserProfileId)
-                                <button type="button" class="btn btn-sm btn-secondary" wire:click="$set('editUserProfileId', null)">Cancel</button>
-                            @endif
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <div class="fs-4 fw-bold text-primary">{{ count($users) }}</div>
+                                <small class="text-muted">Total Users</small>
+                            </div>
                         </div>
-                    </form>
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <div class="fs-4 fw-bold text-info">{{ count($userProfiles) }}</div>
+                                <small class="text-muted">Profiles</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {{-- User Profiles Table --}}
+            {{-- User Profiles Quick View (Read-only, manage in Profiles tab) --}}
             <div class="card border-0 shadow-sm">
                 <div class="card-header d-flex align-items-center gap-2">
-                    <i class="bi bi-person-badge text-primary"></i>
+                    <i class="bi bi-person-badge text-info"></i>
                     <strong>User Profiles</strong>
-                    <span class="badge bg-primary ms-auto">{{ count($userProfiles) }}</span>
+                    <span class="badge bg-info text-dark ms-auto">{{ count($userProfiles) }}</span>
+                    <button class="btn btn-xs btn-outline-primary" wire:click="$set('activeTab','profiles')">
+                        <i class="bi bi-pencil-square me-1"></i>Manage
+                    </button>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover align-middle mb-0 hs-table" wire:key="setup-uprof">
-                            <thead><tr><th>Name</th><th>Rate Limit</th><th>Shared</th><th>Timeout</th><th class="text-end">Action</th></tr></thead>
+                    <div class="table-responsive" style="max-height:300px;overflow-y:auto">
+                        <table class="table table-sm align-middle mb-0 hs-table" wire:key="setup-uprof-ro">
+                            <thead><tr><th>Name</th><th>Rate Limit</th><th>Shared</th><th>Session Timeout</th></tr></thead>
                             <tbody>
                                 @forelse($userProfiles as $p)
-                                <tr wire:key="up-{{ $loop->index }}">
+                                <tr wire:key="up-ro-{{ $loop->index }}">
                                     <td><strong>{{ $p['name'] ?? '-' }}</strong></td>
-                                    <td><code class="text-danger">{{ $p['rate-limit'] ?? '—' }}</code></td>
+                                    <td><code class="text-danger small">{{ $p['rate-limit'] ?? '—' }}</code></td>
                                     <td><span class="badge bg-primary">{{ $p['shared-users'] ?? 1 }}</span></td>
                                     <td><small class="text-muted">{{ $p['session-timeout'] ?? '—' }}</small></td>
-                                    <td class="text-end">
-                                        <button class="btn btn-xs btn-outline-warning me-1" wire:click="editUserProfile({{ json_encode($p) }})"><i class="bi bi-pencil-square"></i></button>
-                                        @if(($p['default'] ?? 'no') === 'no')
-                                        <button class="btn btn-xs btn-outline-danger" wire:click="removeUserProfile('{{ $p['name'] ?? '' }}')" wire:confirm="Remove profile '{{ $p['name'] ?? '' }}'?"><i class="bi bi-trash"></i></button>
-                                        @endif
-                                    </td>
                                 </tr>
                                 @empty
-                                <tr><td colspan="5" class="text-center text-muted py-3">No user profiles found.</td></tr>
+                                <tr><td colspan="4" class="text-center text-muted py-3 small">No profiles. Go to <strong>Profiles</strong> tab to add.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -1417,18 +1244,203 @@
     </div>
     @endif
 
+    {{-- ====================================================================== --}}
+    {{-- USER MODAL — lives outside all tab conditionals so it works from any tab --}}
+    {{-- (editVoucher, editUserByName, startAddUser all dispatch open-modal) --}}
+    {{-- ====================================================================== --}}
+    <div class="modal fade" id="userModal" tabindex="-1" wire:ignore.self>
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header {{ $editUserId ? 'bg-warning text-dark' : 'bg-primary text-white' }}">
+                    <h5 class="modal-title">
+                        <i class="bi bi-{{ $editUserId ? 'pencil-square' : 'person-plus' }} me-1"></i>
+                        {{ $editUserId ? 'Edit Hotspot User' : 'Add Hotspot User' }}
+                    </h5>
+                    <button type="button" class="btn-close {{ $editUserId ? '' : 'btn-close-white' }}" data-bs-dismiss="modal"></button>
+                </div>
+                <form wire:submit.prevent="addUser" id="user-form">
+                    <div class="modal-body">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm @error('u_name') is-invalid @enderror"
+                                       wire:model="u_name" id="u_name" placeholder="e.g. john123">
+                                @error('u_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm @error('u_password') is-invalid @enderror"
+                                       wire:model="u_password" id="u_password" placeholder="password">
+                                @error('u_password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Profile <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-sm @error('u_profile') is-invalid @enderror"
+                                        wire:model="u_profile" id="u_profile">
+                                    @forelse($userProfiles as $p)
+                                        <option value="{{ $p['name'] }}">{{ $p['name'] }}</option>
+                                    @empty
+                                        <option value="default">default</option>
+                                    @endforelse
+                                </select>
+                                @error('u_profile')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Limit Uptime <small class="text-muted">(ex: 60m)</small></label>
+                                <input type="text" class="form-control form-control-sm"
+                                       wire:model="u_limit_uptime" placeholder="60m">
+                                <div class="form-text">Leave blank for unlimited.</div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Limit Bytes (Total)</label>
+                                <input type="text" class="form-control form-control-sm"
+                                       wire:model="u_limit_bytes" placeholder="e.g. 1073741824 (1GB)">
+                                <div class="form-text">Bytes. Leave blank for unlimited.</div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Comment</label>
+                                <input type="text" class="form-control form-control-sm"
+                                       wire:model="u_comment" placeholder="Optional note...">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" form="user-form" class="btn {{ $editUserId ? 'btn-warning' : 'btn-primary' }} btn-sm"
+                                wire:loading.attr="disabled" wire:target="addUser">
+                            <span wire:loading.remove wire:target="addUser">
+                                <i class="bi bi-{{ $editUserId ? 'save' : 'plus-lg' }} me-1"></i>
+                                {{ $editUserId ? 'Update User' : 'Add User' }}
+                            </span>
+                            <span wire:loading wire:target="addUser">
+                                <span class="spinner-border spinner-border-sm me-1"></span>Saving...
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Print area: inside router branch so Users + Vouchers tabs can print from any active tab --}}
+    <div id="voucher-print-area" style="display:none">
+        <div style="text-align:center;margin-bottom:12px;font-size:1.1rem;font-weight:700">🛜 Hotspot Vouchers — {{ $selectedRouter }}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start" id="voucher-cards-container">
+        </div>
+    </div>
+
     @endif {{-- end $selectedRouter --}}
 
     @push('scripts')
     <script>
+        document.addEventListener('livewire:init', () => {
+            let salesChart = null;
+
+            const initChart = () => {
+                const el = document.getElementById('salesChart');
+                if (!el) return;
+
+                if (salesChart) salesChart.destroy();
+
+                const chartData = @json($chartData ?? ['labels' => [], 'data' => []]);
+                const options = {
+                    series: [{
+                        name: 'Daily Sales',
+                        data: chartData.data
+                    }],
+                    chart: {
+                        height: 200,
+                        type: 'area',
+                        toolbar: { show: false },
+                        zoom: { enabled: false },
+                        sparkline: { enabled: false }
+                    },
+                    colors: ['#6366f1'],
+                    dataLabels: { enabled: false },
+                    stroke: { curve: 'smooth', width: 3 },
+                    fill: {
+                        type: 'gradient',
+                        gradient: {
+                            shadeIntensity: 1,
+                            opacityFrom: 0.45,
+                            opacityTo: 0.05,
+                            stops: [20, 100]
+                        }
+                    },
+                    xaxis: {
+                        categories: chartData.labels,
+                        axisBorder: { show: false },
+                        axisTicks: { show: false }
+                    },
+                    yaxis: { show: false },
+                    grid: { show: false }
+                };
+
+                salesChart = new ApexCharts(el, options);
+                salesChart.render();
+            };
+
+            initChart();
+            Livewire.on('reinit-chart', () => { setTimeout(initChart, 100); });
+
+            Livewire.on('print-vouchers', (data) => {
+                const payload = data[0] || data;
+                const container = document.getElementById('voucher-cards-container');
+                const area = document.getElementById('voucher-print-area');
+                if (!container || !area || !payload.vouchers?.length) {
+                    console.warn('print-vouchers: missing DOM or empty vouchers');
+                    return;
+                }
+
+                container.innerHTML = '';
+
+                payload.vouchers.forEach((v, index) => {
+                    const id = 'qr-' + index;
+                    const cardHtml = `
+                        <div class="voucher-premium" style="break-inside: avoid; margin-bottom: 5px;">
+                            <div class="voucher-header">🛜 Hotspot Voucher</div>
+                            <div class="voucher-body">
+                                ${v.qr_code === 'yes' ? `<canvas id="${id}" class="voucher-qr" style="width:80px;height:80px;"></canvas>` : ''}
+                                <div class="voucher-user">${v.username}</div>
+                                <div class="voucher-pass">${v.username === v.password ? 'PIN Only' : 'Password: ' + v.password}</div>
+                                <div class="voucher-info">
+                                    <span>Profile: <b>${v.profile}</b></span>
+                                    <span>Price: <b>৳${v.price}</b></span>
+                                </div>
+                                <div style="font-size: .6rem; color: #94a3b8; margin-top: 5px; text-align: center; width: 100%;">
+                                    Connecting you to the world • ${payload.router}
+                                </div>
+                            </div>
+                        </div>`;
+
+                    const wrapper = document.createElement('div');
+                    wrapper.innerHTML = cardHtml;
+                    container.appendChild(wrapper.firstElementChild);
+
+                    QRCode.toCanvas(document.getElementById(id), v.username, {
+                        width: 80,
+                        margin: 1,
+                        color: {
+                            dark: "#1e293b",
+                            light: "#ffffff"
+                        }
+                    }, (err) => { if (err) console.error(err); });
+                });
+
+                area.style.display = 'block';
+                setTimeout(() => {
+                    window.print();
+                    area.style.display = 'none';
+                }, 500);
+            });
+        });
+
         document.addEventListener('DOMContentLoaded', function() {
-            // Modal Listeners
             window.addEventListener('open-modal', event => {
                 const modalId = event.detail;
                 const modalEl = document.getElementById(modalId);
                 if (modalEl) {
-                    const myModal = new bootstrap.Modal(modalEl);
-                    myModal.show();
+                    bootstrap.Modal.getOrCreateInstance(modalEl).show();
                 }
             });
 

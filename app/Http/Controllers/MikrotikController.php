@@ -230,8 +230,17 @@ class MikrotikController extends Controller
         // Priority 1: Authoritative SSH (Required for reliable actions/side-effects)
         if ($router->ssh_port) {
             try {
+                // Construct the full SSH command by appending params
+                $sshCmd = $command;
+                foreach ($apiParams as $k => $v) {
+                    if ($k === '.id') continue; // .id is API-specific
+                    if (!str_contains($sshCmd, " {$k}=") && !str_contains($sshCmd, "{$k}=")) {
+                        $sshCmd .= " {$k}=" . $this->mtQuote((string)$v);
+                    }
+                }
+
                 $ssh = new MikrotikSSHService($router->ip_address, $router->ssh_port, $router->username, $router->password);
-                $res = (string)$ssh->executeCommand($command);
+                $res = (string)$ssh->executeCommand($sshCmd);
                 
                 // Basic error detection for SSH
                 $lowered = strtolower($res);
@@ -241,7 +250,7 @@ class MikrotikController extends Controller
                 return $res ?: "OK";
             } catch (\Exception $e) {
                 if (!$router->api_port) throw $e;
-                \Log::debug("Mikrotik [{$routerName}] SSH Write failed. Falling back to API.");
+                \Log::debug("Mikrotik [{$routerName}] SSH Write failed. Falling back to API. " . $e->getMessage());
             }
         }
 
@@ -251,30 +260,49 @@ class MikrotikController extends Controller
                 $api = new MikrotikApiService($router->ip_address, $router->api_port, $router->username, $router->password);
                 $lcmd = ltrim($command, '/');
                 
-                // Optimized Atomic mapping logic
+                // Atomic [find ...] mapping: resolve name-based selector to internal .id for API
+                // Supports BOTH orderings: "set [find k=v] props" (correct SSH) and "set props [find k=v]" (legacy)
                 if (str_contains($lcmd, '[find ')) {
-                    if (preg_match('/^(\/?[^\s]+(?:\s+[^\s]+)*?)\s+(set|remove|add|enable|disable|print)\s+(.*?)\s*\[find\s+(.*)\]$/i', $lcmd, $m)) {
-                        $pa = trim($m[1]);
-                        $path = '/' . str_replace(' ', '/', $pa);
+                    $findPattern = '/^(\/?[^\s]+(?:\s+[^\s]+)*?)\s+(set|remove|enable|disable|print)\s+(.+)$/i';
+                    if (preg_match($findPattern, $lcmd, $m) && str_contains($m[3], '[find ')) {
+                        $pa     = trim($m[1]);
+                        $path   = '/' . str_replace(' ', '/', $pa);
                         $action = strtolower($m[2]);
-                        $props = $m[3];
-                        $finder = $m[4];
-                        $fparts = explode('=', $finder, 2);
-                        $fk = trim($fparts[0]);
-                        $fv = trim($fparts[1] ?? '', '"\'');
-                        
-                        $printResult = $api->executeCommand($path . "/print", [], [$fk => $fv]);
-                        if (!empty($printResult) && isset($printResult[0]['.id'])) {
-                            $id = $printResult[0]['.id'];
-                            $finalParams = array_merge(['.id' => $id], $apiParams);
-                            if (!empty($props)) {
-                                preg_match_all('/([^\s=]+)=(".*?"|[^\s"]+)/', $props, $pm, PREG_SET_ORDER);
-                                foreach ($pm as $match) {
-                                    $finalParams[trim($match[1])] = trim($match[2], '"\'');
+                        $rest   = trim($m[3]);
+
+                        // [find ...] BEFORE props (correct RouterOS order)
+                        if (preg_match('/^\[find\s+(.*?)\]\s*(.*)$/s', $rest, $fm)) {
+                            $finder = trim($fm[1]);
+                            $props  = trim($fm[2]);
+                        // [find ...] AFTER props (legacy/backward-compat order)
+                        } elseif (preg_match('/^(.*?)\s*\[find\s+(.*?)\]\s*$/s', $rest, $fm)) {
+                            $props  = trim($fm[1]);
+                            $finder = trim($fm[2]);
+                        } else {
+                            $finder = null;
+                            $props  = $rest;
+                        }
+
+                        if ($finder) {
+                            $fparts = explode('=', $finder, 2);
+                            $fk     = trim($fparts[0]);
+                            $fv     = trim($fparts[1] ?? '', '"\'');
+
+                            $printResult = $api->executeCommand($path . '/print', [], [$fk => $fv]);
+                            if (!empty($printResult) && isset($printResult[0]['.id'])) {
+                                $id          = $printResult[0]['.id'];
+                                $finalParams = array_merge(['.id' => $id], $apiParams);
+                                if (!empty($props)) {
+                                    preg_match_all('/([^\s=]+)=(".*?"|[^\s"]+)/', $props, $pm, PREG_SET_ORDER);
+                                    foreach ($pm as $match) {
+                                        $finalParams[trim($match[1])] = trim($match[2], '"\'');
+                                    }
+                                }
+                                $res = $api->executeCommand($path . '/' . $action, $finalParams);
+                                if (!is_array($res) || !isset($res['!trap'])) {
+                                    return is_array($res) ? 'OK' : (string) $res;
                                 }
                             }
-                            $res = $api->executeCommand($path . "/" . $action, $finalParams);
-                            if (!is_array($res) || !isset($res['!trap'])) return is_array($res) ? 'OK' : (string)$res;
                         }
                     }
                 }
@@ -917,20 +945,28 @@ class MikrotikController extends Controller
 
     public function addHotspotUser(string $routerName, array $p, ?string $oldName = null): string
     {
-        $base = "name=" . $this->mtQuote($p['name'] ?? '') . " profile=" . $this->mtQuote($p['profile'] ?? 'default');
-        
-        if (isset($p['password'])) $base .= " password=" . $this->mtQuote($p['password']);
-        if (isset($p['disabled'])) $base .= " disabled=" . ($p['disabled'] === 'true' ? 'yes' : 'no');
-        if (isset($p['limit-uptime'])) $base .= " limit-uptime=" . $this->mtQuote($p['limit-uptime']);
-        if (isset($p['limit-bytes-total'])) $base .= " limit-bytes-total=" . $this->mtQuote($p['limit-bytes-total']);
-        
-        if ($p['comment'] ?? '') {
-            $base .= " comment=" . $this->mtQuote($p['comment']);
-        }
+        $name    = $p['name'] ?? '';
+        $profile = $p['profile'] ?? 'default';
 
-        $cmd = $oldName
-            ? "/ip hotspot user set {$base} [find name=" . $this->mtQuote($oldName) . "]"
-            : "/ip hotspot user add server=all {$base}";
+        $kv   = [];
+        $kv[] = "profile=" . $this->mtQuote($profile);
+
+        if (!empty($p['password']))          $kv[] = "password="           . $this->mtQuote($p['password']);
+        if (isset($p['disabled']))           $kv[] = "disabled="           . (($p['disabled'] === 'true') ? 'yes' : 'no');
+        if (!empty($p['limit-uptime']))      $kv[] = "limit-uptime="       . $p['limit-uptime']; // time, unquoted
+        if (!empty($p['limit-bytes-total'])) $kv[] = "limit-bytes-total="  . $p['limit-bytes-total']; // number, unquoted
+        if (!empty($p['comment']))           $kv[] = "comment="            . $this->mtQuote($p['comment']);
+
+        $kvStr = implode(' ', $kv);
+
+        if ($oldName) {
+            $cmd = "/ip hotspot user set [find name=" . $this->mtQuote($oldName) . "] {$kvStr}";
+            if ($name && $name !== $oldName) {
+                $cmd .= " name=" . $this->mtQuote($name);
+            }
+        } else {
+            $cmd = "/ip hotspot user add name=" . $this->mtQuote($name) . " server=all {$kvStr}";
+        }
 
         return $this->singleWrite($routerName, $cmd);
     }
@@ -951,26 +987,39 @@ class MikrotikController extends Controller
 
     public function addHotspotUserProfile(string $routerName, array $p, ?string $oldName = null): string
     {
-        $rateLimit   = $p['rate_limit'] ?? '';
-        $sharedUsers = $p['shared_users'] ?? 1;
-        $sessionTime = $p['session_timeout'] ?? '';
-        $idleTime    = $p['idle_timeout'] ?? '';
-        $refresh     = $p['status_autorefresh'] ?? '';
-        $pool        = $p['address_pool'] ?? '';
+        $name        = trim($p['name'] ?? '');
+        $sharedUsers = max(1, (int)($p['shared_users'] ?? 1));
+        $addrPool    = (!empty($p['address_pool']) && $p['address_pool'] !== 'none')
+                       ? $p['address_pool'] : 'none';
 
-        $base = "name=" . $this->mtQuote($p['name'] ?? '') . " shared-users={$sharedUsers}";
-            
-        if ($rateLimit) $base .= " rate-limit=" . $this->mtQuote($rateLimit);
-        if ($sessionTime) $base .= " session-timeout={$sessionTime}";
-        if ($idleTime) $base .= " idle-timeout={$idleTime}";
-        if ($refresh) $base .= " status-autorefresh={$refresh}";
-        if ($pool && $pool !== 'none') $base .= " address-pool=" . $this->mtQuote($pool);
-        if ($p['comment'] ?? '') $base .= " comment=" . $this->mtQuote($p['comment']);
+        // Build ALL key=value pairs. Time/rate variables are unquoted. Comment is quoted.
+        $kv   = [];
+        $kv[] = "shared-users={$sharedUsers}";
+        $kv[] = "address-pool=" . $this->mtQuote($addrPool);
 
-        $cmd = $oldName
-            ? "/ip hotspot user profile set {$base} [find name=" . $this->mtQuote($oldName) . "]"
-            : "/ip hotspot user profile add {$base}";
+        if (!empty($p['rate_limit']))         $kv[] = "rate-limit="         . $p['rate_limit'];
+        if (!empty($p['session_timeout']))    $kv[] = "session-timeout="    . $p['session_timeout'];
+        if (!empty($p['idle_timeout']))       $kv[] = "idle-timeout="       . $p['idle_timeout'];
+        if (!empty($p['status_autorefresh'])) $kv[] = "status-autorefresh=" . $p['status_autorefresh'];
+        if (!empty($p['comment']))            $kv[] = "comment="            . $this->mtQuote($p['comment']);
 
+        $kvStr = implode(' ', $kv);
+
+        if ($oldName) {
+            // UPDATE: [find name=X] + all fields inline in one atomic command
+            $cmd = "/ip hotspot user profile set [find name=" . $this->mtQuote($oldName) . "] {$kvStr}";
+            if ($name && $name !== $oldName) {
+                $cmd .= " name=" . $this->mtQuote($name);
+            }
+        } else {
+            // ADD: name= first, then all fields inline
+            $cmd = "/ip hotspot user profile add name=" . $this->mtQuote($name) . " {$kvStr}";
+        }
+
+        \Log::debug("HotspotUserProfile " . ($oldName ? "SET[{$oldName}]" : "ADD") . " CMD: {$cmd}");
+
+        // Pass the complete command with NO extra apiParams.
+        // singleWrite SSH runs it verbatim; API fallback parses kv pairs inline.
         return $this->singleWrite($routerName, $cmd);
     }
 
@@ -982,6 +1031,10 @@ class MikrotikController extends Controller
     /**
      * Sync local Database Packages to Router Hotspot User Profiles
      */
+    /**
+     * Sync local Database Packages to Router Hotspot User Profiles.
+     * Uses same robust exists-check pattern as pushProfileToRouters.
+     */
     public function syncHotspotProfilesToRouter(string $routerName, $packages): array
     {
         $results = [];
@@ -989,19 +1042,27 @@ class MikrotikController extends Controller
             try {
                 $p = [
                     'name'               => $pkg->package,
-                    'rate_limit'         => $pkg->mikrotik_rate_limit,
+                    'rate_limit'         => $pkg->mikrotik_rate_limit ?? '',
                     'shared_users'       => 1,
                     'status_autorefresh' => '1m',
-                    'comment'            => 'Synced from local DB (ID: '.$pkg->id.')',
+                    'comment'            => 'Synced from DB (ID: ' . $pkg->id . ')',
                 ];
-                
-                // Check if profile exists
-                $check = $this->singleRead($routerName, "/ip/hotspot/user/profile/print", "ip hotspot user profile print without-paging terse where name=" . $this->mtQuote($pkg->package), [], false);
+
+                // Robust existence check: API filter + SSH fallback
+                $check = $this->singleRead(
+                    $routerName,
+                    '/ip/hotspot/user/profile/print',
+                    'ip hotspot user profile print without-paging terse where name=' . $this->mtQuote($pkg->package),
+                    ['name' => $pkg->package],
+                    false
+                );
                 $exists = is_array($check) && count($check) > 0;
 
+                \Log::info("HotspotSync [{$routerName}]: Profile '{$pkg->package}' " . ($exists ? 'EXISTS → update' : 'MISSING → add'));
                 $this->addHotspotUserProfile($routerName, $p, $exists ? $pkg->package : null);
-                $results[$pkg->package] = 'Synced';
+                $results[$pkg->package] = $exists ? 'Updated' : 'Created';
             } catch (\Exception $e) {
+                \Log::error("HotspotSync [{$routerName}]: Error on '{$pkg->package}': " . $e->getMessage());
                 $results[$pkg->package] = 'Error: ' . $e->getMessage();
             }
         }
@@ -1024,7 +1085,7 @@ class MikrotikController extends Controller
     public function disconnectHotspotUser(string $routerName, string $user): string
     {
         try {
-            return $this->singleWrite($routerName, "/ip hotspot active remove [find user=\"{$user}\"]");
+            return $this->singleWrite($routerName, '/ip hotspot active remove [find user=' . $this->mtQuote($user) . ']');
         } catch (\Exception $e) {
             return 'Error: ' . $e->getMessage();
         }
