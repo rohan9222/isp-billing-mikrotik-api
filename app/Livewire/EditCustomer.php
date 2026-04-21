@@ -707,9 +707,13 @@ class EditCustomer extends Component
             ->first();
 
         // Validate the specific field being updated
+        $validation = Validator::make([], []); // initialize to prevent undefined variable error
         if (str_contains($field, '.')) {
             [$relation, $attribute] = explode('.', $field, 2);
-            if ($relation && $customer->$relation) {
+            // status lives on customers_info directly, not on official relation
+            if ($attribute === 'status') {
+                $validation = Validator::make(['status' => $value], ['status' => 'required'], $this->messages);
+            } elseif ($relation && $customer->$relation) {
                 $validation = Validator::make([$attribute => $value], [
                     $attribute => $rules[$attribute] ?? 'nullable', // Apply the rule if it exists, otherwise allow nullable
                 ], $this->messages);

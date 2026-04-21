@@ -57,6 +57,9 @@
             <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-firewall-setup') }}">
                 <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Firewall</span></div>
             </a></li>
+            <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-walled-garden') }}">
+                <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Walled Garden</span><span class="badge rounded-pill ms-2 badge-subtle-info">New</span></div>
+            </a></li>
             <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-queue-setup') }}">
                 <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Queues</span></div>
             </a></li>

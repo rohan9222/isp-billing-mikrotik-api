@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\CollectionReportController;
-use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\MainSiteController;
@@ -24,6 +23,7 @@ use App\Livewire\Mikrotik\RadiusSetup;
 use App\Livewire\Mikrotik\RouterLogViewer;
 use App\Livewire\Mikrotik\TrafficMonitor;
 use App\Livewire\Mikrotik\VpnSetup;
+use App\Livewire\Mikrotik\WalledGardenSetup;
 use App\Livewire\MikrotikSync;
 use App\Livewire\NewCustomer;
 use App\Livewire\NotificationListAll;
@@ -44,6 +44,11 @@ $baseDomain = parse_url(config('app.url'), PHP_URL_HOST) ?: config('app.url');
 Route::domain($baseDomain)->group(function () {
     Route::get('/', [MainSiteController::class, 'index'])->name('welcome');
     Route::get('/all-packages', [MainSiteController::class, 'allPackages'])->name('all-packages');
+    
+    // Warning / Recharge page for expired users
+    Route::get('/warning', function () {
+        return view('warning');
+    })->name('warning');
 
     Route::get('/portal', function () {
         $host = request()->getHost();
@@ -108,13 +113,15 @@ Route::middleware([
 
         Route::redirect('/', '/dashboard');
 
-        Route::post('customers/enable/{id}', [CustomersController::class, 'customerEnable'])->name('customers.enable');
-
         Route::resources([
             'dashboard' => DashboardController::class,
-            'customers' => CustomersController::class,
             'collection-report' => CollectionReportController::class,
         ]);
+        Route::get('customers/data', [CustomerList::class, 'getData'])->name('customers.data');
+        Route::get('customers/{id}/edit', [CustomerList::class, 'edit'])->name('customers.edit');
+        Route::get('customers/{id}', [CustomerList::class, 'show'])->name('customers.show');
+        Route::patch('customers/{id}', [CustomerList::class, 'update'])->name('customers.update');
+        Route::get('customers', CustomerList::class)->name('customers.index');
 
         Route::get('/new/customers', CustomerList::class)->name('customers-new');
         Route::get('/admin-users', ManageUser::class)->name('admin-users');
@@ -135,6 +142,7 @@ Route::middleware([
             Route::get('/traffic', TrafficMonitor::class)->name('mikrotik-traffic-monitor');
             Route::get('/logs', RouterLogViewer::class)->name('mikrotik-log-viewer');
             Route::get('/backup', BackupManager::class)->name('mikrotik-backup-setup');
+            Route::get('/walled-garden', WalledGardenSetup::class)->name('mikrotik-walled-garden');
         });
 
         Route::get('/address', AddressSetup::class)->name('address-setup');

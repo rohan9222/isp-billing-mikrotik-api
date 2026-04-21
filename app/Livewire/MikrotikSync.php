@@ -216,12 +216,17 @@ class MikrotikSync extends Component
                         $lastLoggedOut = null;
                     }
 
+                    $profileFromMikrotik = $user['profile'] ?? '-';
+                    $profileToStore = ($profileFromMikrotik === 'Expired' && $existingSecret) 
+                        ? $existingSecret->profile 
+                        : $profileFromMikrotik;
+
                     $secretData = [
                         'router_name' => $routerName,
                         'username' => $username,
                         'password' => $passwordToStore,
                         'service' => $user['service'] ?? '-',
-                        'profile' => $user['profile'] ?? '-',
+                        'profile' => $profileToStore,
                         'caller_id' => $user['caller-id'] ?? '',
                         'comment' => $user['comment'] ?? '',
                         'ppp_remote_ip' => $user['ppp_remote_ip'] ?? '',

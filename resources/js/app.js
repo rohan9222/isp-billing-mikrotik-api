@@ -12,6 +12,10 @@ window.print = print;
 import QRCode from 'qrcode';
 window.QRCode = QRCode;
 
+// Moment js
+import moment from 'moment';
+window.moment = moment;
+
 // Import ApexCharts and ApexTree
 import ApexCharts from 'apexcharts';
 window.ApexCharts = ApexCharts;
@@ -44,6 +48,9 @@ import 'datatables.net-buttons/js/buttons.colVis.mjs';
 import 'datatables.net-buttons/js/buttons.html5.mjs';
 import 'datatables.net-buttons/js/buttons.print.mjs';
 import 'datatables.net-colreorder-bs5';
+import 'datatables.net-columncontrol-bs5';
+import DateTime from 'datatables.net-datetime';
+window.DateTime = DateTime;
 import 'datatables.net-fixedcolumns-bs5';
 import 'datatables.net-fixedheader-bs5';
 import 'datatables.net-keytable-bs5';
@@ -55,6 +62,9 @@ import 'datatables.net-searchbuilder-bs5';
 import 'datatables.net-searchpanes-bs5';
 import 'datatables.net-select-bs5';
 import 'datatables.net-staterestore-bs5';
+ 
+DataTable.Buttons.jszip(JSZip);
+DataTable.Buttons.pdfMake(pdfmake);
 
 // Custom JS file
 import CP from './cp';

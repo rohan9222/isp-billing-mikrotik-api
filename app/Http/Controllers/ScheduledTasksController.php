@@ -304,37 +304,33 @@ class ScheduledTasksController extends Controller
                     $router = RouterList::where('router_name', $pppUser->router_name)->first();
                     if ($router) {
                         try {
-                            $mikrotikSSHService = new MikrotikSSHService(
-                                $router->ip_address,
-                                $router->ssh_port,
-                                $router->username,
-                                $router->password
+                            // Use centralized redirection logic (Profile=Expired + Kick Session)
+                            app(MikrotikController::class)->disablePPPSecret(
+                                $customer->customer_unique_id,
+                                $router->router_name,
+                                $pppUser->username
                             );
 
-                            $response = $mikrotikSSHService->executeCommand('/ppp secret disable '.$pppUser->username);
+                            // If we reached here, it's successful
+                            $successfulID = $customer->customer_unique_id.' ('.$pppUser->username.')';
+                            $customer->update([
+                                'status' => 'disable',
+                                'disable_count' => $customer->disable_count + 1,
+                            ]);
 
-                            if (! empty($response)) {
-                                $errorIDs[] = $customer->customer_unique_id.' ('.$pppUser->username.') {Mikrotik Command Error}';
-                            } else {
-                                $successfulID = $customer->customer_unique_id.' ('.$pppUser->username.')';
-                                $customer->update([
-                                    'status' => 'disable',
-                                    'disable_count' => $customer->disable_count + 1,
-                                ]);
+                            $message = 'Dear '.$customer->customer_name.', Your ID '.$customer->customer_unique_id.'('.($customer->pppUser->username ?? '').') is temporarily disconnected, Your Due amount: '.$due.'TK. Regards, '.siteUrlSettings('site_name').', Mobile: '.siteUrlSettings('site_phone');
 
-                                $message = 'Dear '.$customer->customer_name.', Your ID '.$customer->customer_unique_id.'('.($customer->pppUser->username ?? '').') is temporarily disconnected, Your Due amount: '.$due.'TK. Regards, '.siteUrlSettings('site_name').', Mobile: '.siteUrlSettings('site_phone');
+                            // Send SMS
+                            $responseSms = SmsBridge::to($customer->mobile)
+                                ->message($message)
+                                ->send();
 
-                                // Send SMS
-                                $responseSms = SmsBridge::to($customer->mobile)
-                                    ->message($message)
-                                    ->send();
-
-                                if ($responseSms['status'] == 'success') {
-                                    $successfulSMS = '->{sms sent}';
-                                } elseif ($responseSms['status'] == 'error') {
-                                    $errorSMS = '->{sms error}';
-                                }
+                            if ($responseSms['status'] == 'success') {
+                                $successfulSMS = '->{sms sent}';
+                            } elseif ($responseSms['status'] == 'error') {
+                                $errorSMS = '->{sms error}';
                             }
+
                             if (isset($successfulID)) {
                                 $successfulIDs[] = $successfulID.' '.($successfulSMS ?? $errorSMS ?? '').' - ('.$disableFor.')';
                             }
@@ -345,6 +341,7 @@ class ScheduledTasksController extends Controller
                                 'status' => 'Error on Mikrotik Command',
                                 'type' => 'Mikrotik Command',
                             ]);
+                            $errorIDs[] = $customer->customer_unique_id.' ('.$pppUser->username.') {'.$e->getMessage().'}';
                         }
                     }
                 }

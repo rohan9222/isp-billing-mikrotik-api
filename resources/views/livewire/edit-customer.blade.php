@@ -529,13 +529,6 @@
             </div>
         </div>
     </div>
-
-    <div class="col-12 d-none d-sm-none d-md-block">
-        {{-- Buttons --}}
-        <div class="p-2 m-2 position-fixed bottom-75 end-0">
-            <button type="reset" class="btn btn-danger" @click="window.close();">Clear All</button>
-        </div>
-    </div>
 </div>
 
 @push('scripts')

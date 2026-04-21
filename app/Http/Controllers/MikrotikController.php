@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MikrotikLog;
 use App\Models\NotificationLogs;
+use App\Models\PPPSecrets;
 use App\Models\RouterList;
 use App\Services\MikrotikApiService;
 use App\Services\MikrotikSSHService;
@@ -425,8 +426,26 @@ class MikrotikController extends Controller
      */
     public function togglePPPSecret(int|string $customerID, string $routerName, string $username, string $action): void
     {
+        $quotedUser = $this->mtQuote($username);
+        
         try {
-            $this->singleWrite($routerName, "/ppp secret {$action} [find name=\"{$username}\"]");
+            if ($action === 'enable' || $action === 'disable') {
+                $status = ($action === 'enable') ? 'no' : 'yes';
+                $this->singleWrite($routerName, "/ppp secret set [find name={$quotedUser}] disabled={$status}");
+            } else {
+                // For 'remove' or other actions
+                $this->singleWrite($routerName, "/ppp secret {$action} [find name={$quotedUser}]");
+            }
+            
+            // If we are enabling, we should also ensure the profile is restored if it was 'Expired'
+            if ($action === 'enable') {
+                $secret = PPPSecrets::where('router_name', $routerName)->where('username', $username)->first();
+                if ($secret && $secret->profile) {
+                    $this->updatePPPSecret($routerName, $username, 'profile', $secret->profile);
+                }
+                // Kick session to apply enable+profile
+                $this->singleWrite($routerName, "/ppp active remove [find name={$quotedUser}]");
+            }
         } catch (\Exception $e) {
             NotificationLogs::create([
                 'title' => ucfirst($action).' User',
@@ -439,12 +458,53 @@ class MikrotikController extends Controller
 
     public function enablePPPSecret(int|string $customerID, string $routerName, string $username): void
     {
+        // First, ensure the secret is enabled
         $this->togglePPPSecret($customerID, $routerName, $username, 'enable');
     }
 
     public function disablePPPSecret(int|string $customerID, string $routerName, string $username): void
     {
-        $this->togglePPPSecret($customerID, $routerName, $username, 'disable');
+        $quotedUser = $this->mtQuote($username);
+        
+        try {
+            // Priority 1: Soft Disable (Redirect via Expired profile)
+            // We use 'set' with 'profile=Expired'. This is the standard way to change properties.
+            $this->singleWrite($routerName, "/ppp secret set [find name={$quotedUser}] profile=Expired");
+            
+            // Kick the active session to force reconnect with Expired profile
+            $this->singleWrite($routerName, "/ppp active remove [find name={$quotedUser}]");
+            
+            // Ensure the secret is enabled (disabled=no) so they can hit the Walled Garden
+            $this->singleWrite($routerName, "/ppp secret set [find name={$quotedUser}] disabled=no");
+            
+        } catch (\Exception $e) {
+            // Priority 2: Hard Disable Fallback
+            // If 'Expired' profile doesn't exist, we must ensure the user is completely cut off.
+            \Log::warning("Soft-disable failed for {$username} on {$routerName}. Falling back to hard disable. Error: " . $e->getMessage());
+
+            try {
+                // Using 'set disabled=yes' is more universal than the 'disable' command for secrets
+                $this->singleWrite($routerName, "/ppp secret set [find name={$quotedUser}] disabled=yes");
+                
+                // Authoritatively kill any current session
+                $this->singleWrite($routerName, "/ppp active remove [find name={$quotedUser}]");
+
+                NotificationLogs::create([
+                    'title' => 'Disable User (Fallback)',
+                    'message' => "{$customerID} ({$username}) profile 'Expired' not found. User was HARD DISABLED instead.",
+                    'status' => 'Hard Disabled (Fallback)',
+                    'type' => 'Mikrotik Command',
+                ]);
+            } catch (\Exception $fallbackErr) {
+                \Log::error("CRITICAL: Failed to Hard Disable user {$username} on {$routerName}. " . $fallbackErr->getMessage());
+                NotificationLogs::create([
+                    'title' => 'Disable User FAILED',
+                    'message' => "{$customerID} ({$username}) Both soft and hard disable failed on router. ERROR: " . $fallbackErr->getMessage(),
+                    'status' => 'Error',
+                    'type' => 'Mikrotik Command',
+                ]);
+            }
+        }
     }
 
     public function removePPPSecret(int|string $customerID, string $routerName, string $username): void

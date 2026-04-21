@@ -69,7 +69,43 @@ class MainSiteData extends Model
             }
 
             // Defaults in case they don't exist in DB
-            $data->is_active = $data->is_active ?? true;
+            $defaults = [
+                'is_active' => true,
+                'hero_title' => null,
+                'hero_slides' => [],
+                'about_tagline' => null,
+                'about_title' => null,
+                'about_body' => null,
+                'services' => [],
+                'gallery_items' => [],
+                'packages_section_title' => null,
+                'packages_section_subtitle' => null,
+                'registration_link' => null,
+                'team_title' => null,
+                'team_subtitle' => null,
+                'team_members' => [],
+                'blog_title' => null,
+                'blog_subtitle' => null,
+                'blog_posts' => [],
+                'testimonial_title' => null,
+                'testimonial_subtitle' => null,
+                'testimonials' => [],
+                'contact_title' => null,
+                'contact_subtitle' => null,
+                'google_map_embed' => null,
+                'footer_copyright' => null,
+                'social_facebook' => null,
+                'social_twitter' => null,
+                'social_instagram' => null,
+                'social_youtube' => null,
+                'social_whatsapp' => null,
+            ];
+
+            foreach ($defaults as $key => $defaultValue) {
+                if (!property_exists($data, $key)) {
+                    $data->$key = $defaultValue;
+                }
+            }
 
             return $data;
         });
