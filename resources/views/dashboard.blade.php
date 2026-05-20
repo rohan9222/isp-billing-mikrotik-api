@@ -114,7 +114,7 @@
 
                 $cpuLoad = (int) filter_var($info['cpu-load'] ?? 0, FILTER_SANITIZE_NUMBER_INT);
                 $cpuColor = $cpuLoad > 80 ? 'bg-danger' : ($cpuLoad > 50 ? 'bg-warning' : 'bg-success');
-                
+
                 // Memory Math
                 $memTotal = (int)($info['total-memory'] ?? 1);
                 $memFree = (int)($info['free-memory'] ?? 0);
@@ -152,6 +152,10 @@
                                     <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-25 px-2 py-1">{{ strtoupper($info['platform'] ?? 'N/A') }}</span>
                                     <span>•</span>
                                     <span class="text-white text-opacity-75">{{ $info['architecture-name'] ?? 'N/A' }}</span>
+                                    <span>•</span>
+                                    <span class="badge {{ ($routerData['type'] ?? '') === 'API' ? 'bg-success' : 'bg-warning' }} bg-opacity-25 {{ ($routerData['type'] ?? '') === 'API' ? 'text-success' : 'text-warning' }} border {{ ($routerData['type'] ?? '') === 'API' ? 'border-success' : 'border-warning' }} border-opacity-25 px-2 py-1">
+                                        {{ $routerData['type'] ?? 'N/A' }} Connection
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -162,8 +166,8 @@
                             <div class="row text-center mb-4">
                                 <div class="col">
                                     <small class="text-muted d-block mb-1 fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">Uptime</small>
-                                    <span class="fw-bold text-dark uptime-clock" 
-                                          style="font-size: 0.85rem;" 
+                                    <span class="fw-bold text-dark uptime-clock"
+                                          style="font-size: 0.85rem;"
                                           data-uptime="{{ $info['uptime'] ?? '0s' }}">
                                         {{ str_replace(['w', 'd', 'h', 'm', 's'], ['w ', 'd ', 'h ', 'm ', 's '], $info['uptime'] ?? 'N/A') }}
                                     </span>
@@ -178,7 +182,7 @@
                                 <div class="mb-3">
                                     <div class="d-flex justify-content-between text-dark mb-1" style="font-size:0.75rem; font-weight:700;">
                                         <span>CPU Usage</span>
-                                        <span class="text-info fw-bold">{{ ($info['cpu-count'] ?? '?') . ' × ' . ($info['cpu-frequency'] ?? '?') }} <span class="text-muted fw-normal">({{ $cpuLoad }}%)</span></span>
+                                        <span class="text-info fw-bold">{{ ($info['cpu-count'] ?? '?') . ' × ' . ($info['cpu-frequency'] ?? '?') }} MHz<span class="text-muted fw-normal">({{ $cpuLoad }}%)</span></span>
                                     </div>
                                     <div class="progress" style="height: 6px; border-radius:10px; background: rgba(0,0,0,0.05);">
                                         <div class="progress-bar {{ $cpuColor }}" role="progressbar" style="width: {{ $cpuLoad }}%;"></div>
@@ -207,7 +211,7 @@
 
                         <div class="flex-grow-1 overflow-auto">
                             <div class="accordion accordion-flush" id="acc_{{ $cardId }}">
-                                
+
                                 {{-- Part 1: Platform & Architecture --}}
                                 <div class="accordion-item border-0">
                                     <h2 class="accordion-header">
@@ -504,7 +508,7 @@
                             // Parse MikroTik uptime (e.g., 1w2d3h4m5s)
                             const regex = /(?:(\d+)w)?(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/;
                             const matches = uptime.match(regex);
-                            
+
                             let w = parseInt(matches[1]) || 0;
                             let d = parseInt(matches[2]) || 0;
                             let h = parseInt(matches[3]) || 0;

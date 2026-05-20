@@ -313,14 +313,15 @@ class CustomerList extends Component
                 $customer->pppUser->profile
             );
 
-            $router = RouterList::where('router_name', $customer->pppUser->router_name)->first();
-            if ($router) {
-                try {
-                    $ssh = new \App\Services\MikrotikSSHService(
-                        $router->ip_address, $router->ssh_port, $router->username, $router->password
-                    );
-                    $ssh->executeCommand('/ppp active remove [find name="' . $customer->pppUser->username . '"]');
-                } catch (\Exception $e) {}
+            // Remove active PPP session via pooled/cached controller (auto-invalidates cache)
+            try {
+                app(MikrotikController::class)->singleWrite(
+                    $customer->pppUser->router_name,
+                    '/ppp active remove [find name="' . $customer->pppUser->username . '"]'
+                );
+            } catch (\Exception $e) {
+                // Active session may not exist — not a critical error
+                \Log::debug('enableCustomer: active session removal skipped: ' . $e->getMessage());
             }
 
             if ($response !== '') {

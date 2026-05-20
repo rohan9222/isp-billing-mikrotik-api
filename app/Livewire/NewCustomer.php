@@ -11,7 +11,8 @@ use App\Models\PackageList;
 use App\Models\PPPSecrets;
 use App\Models\RouterList;
 use App\Models\User;
-use App\Services\MikrotikSSHService;
+use App\Http\Controllers\MikrotikController;
+// MikrotikSSHService removed — all router I/O routed through MikrotikController (pooled + cached)
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -225,22 +226,16 @@ class NewCustomer extends Component
             // Proceed only if service is static and router_name is set than fetch interfaces and profile
             if ($this->service == 'static' && $this->router_name) {
                 try {
-                    $router = RouterList::where('router_name', $this->router_name)->first();
-                    $mikrotikSSHService = new MikrotikSSHService(
-                        $router->ip_address,
-                        $router->ssh_port,
-                        $router->username,
-                        $router->password
-                    );
-
-                    $interfaces = $mikrotikSSHService->executeCommand('/interface print without-paging terse where type="ether" or type="vlan"');
-
-                    // Clear interfaceNames before updating
+                    // Load physical interfaces via pooled/cached controller
                     $this->interfaceNames = [];
-
-                    foreach (explode("\n", $interfaces) as $line) {
-                        if (preg_match('/name=([^\s]+)/', $line, $matches)) {
-                            $this->interfaceNames[] = $matches[1]; // Update the component's array
+                    $results = app(MikrotikController::class)->singleRead(
+                        $this->router_name,
+                        '/interface/print',
+                        '/interface print without-paging terse where type="ether" or type="vlan"'
+                    );
+                    foreach ($results as $item) {
+                        if (isset($item['name'])) {
+                            $this->interfaceNames[] = $item['name'];
                         }
                     }
                 } catch (\Exception $e) {
@@ -254,24 +249,16 @@ class NewCustomer extends Component
             } elseif ($this->service == 'pppoe' && $this->router_name) {
                 // Proceed only if service is pppoe and router_name is set
                 try {
-                    $router = RouterList::where('router_name', $this->router_name)->first();
-
-                    $mikrotikSSHService = new MikrotikSSHService(
-                        $router->ip_address,
-                        $router->ssh_port,
-                        $router->username,
-                        $router->password
-                    );
-
-                    $profiles = $mikrotikSSHService->executeCommand('/ppp profile print without-paging terse');
-                    // \dd($profiles);
-
-                    // Clear profileNames before updating
+                    // Load PPP profiles via pooled/cached controller
                     $this->profileNames = [];
-
-                    foreach (explode("\n", $profiles) as $line) {
-                        if (preg_match('/name=([^\s]+)/', $line, $matches)) {
-                            $this->profileNames[] = $matches[1]; // Update the component's array
+                    $results = app(MikrotikController::class)->singleRead(
+                        $this->router_name,
+                        '/ppp/profile/print',
+                        '/ppp profile print without-paging terse'
+                    );
+                    foreach ($results as $item) {
+                        if (isset($item['name'])) {
+                            $this->profileNames[] = $item['name'];
                         }
                     }
                 } catch (\Exception $e) {
@@ -304,44 +291,31 @@ class NewCustomer extends Component
 
             if ($this->service == 'pppoe') {
                 try {
-                    $router = RouterList::where('router_name', $this->router_name)->first();
-                    $mikrotikSSHService = new MikrotikSSHService(
-                        $router->ip_address,
-                        $router->ssh_port,
-                        $router->username,
-                        $router->password
-                    );
+                    // Add PPP secret via pooled/cached controller
                     if ($this->ppp_remote_ip != '') {
-                        $interfaces = $mikrotikSSHService->executeCommand("/ppp secret add name=\"{$this->username}\" password=\"{$this->password}\" service=\"{$this->service}\" profile=\"{$this->profile}\" comment=\"{$this->comment}\" remote-address=\"{$this->ppp_remote_ip}\" caller-id=\"{$this->caller_id}\" disabled=yes");
+                        $cmd = "/ppp secret add name=\"{$this->username}\" password=\"{$this->password}\" service=\"{$this->service}\" profile=\"{$this->profile}\" comment=\"{$this->comment}\" remote-address=\"{$this->ppp_remote_ip}\" caller-id=\"{$this->caller_id}\" disabled=yes";
                     } else {
-                        $interfaces = $mikrotikSSHService->executeCommand("/ppp secret add name=\"{$this->username}\" password=\"{$this->password}\" service=\"{$this->service}\" profile=\"{$this->profile}\" comment=\"{$this->comment}\" caller-id=\"{$this->caller_id}\" disabled=yes");
+                        $cmd = "/ppp secret add name=\"{$this->username}\" password=\"{$this->password}\" service=\"{$this->service}\" profile=\"{$this->profile}\" comment=\"{$this->comment}\" caller-id=\"{$this->caller_id}\" disabled=yes";
                     }
 
-                    if ($interfaces != '') {
-                        $this->dispatch('mikrotikError', $interfaces, 'error');
-                    } else {
-                        $this->createUser();
-                    }
+                    app(MikrotikController::class)->singleWrite($this->router_name, $cmd);
+
+                    // Router write succeeded
+                    $this->createUser();
 
                 } catch (\Exception $e) {
                     flash()->error('Router '.$e->getMessage().' is not connected!');
                 }
             } elseif ($this->service == 'static') {
                 try {
-                    $router = RouterList::where('router_name', $this->router_name)->first();
-                    $mikrotikSSHService = new MikrotikSSHService(
-                        $router->ip_address,
-                        $router->ssh_port,
-                        $router->username,
-                        $router->password
+                    // Add simple queue via pooled/cached controller
+                    app(MikrotikController::class)->singleWrite(
+                        $this->router_name,
+                        "/queue simple add name=\"{$this->queue_name}\" profile=\"{$this->profile}\" address=\"{$this->ip_address}\" max-limit=\"{$this->bandwidth}\" comment=\"{$this->comment}\" disabled=yes"
                     );
-                    $interfaces = $mikrotikSSHService->executeCommand("/queue simple add name=\"{$this->queue_name}\" profile=\"{$this->profile}\" address=\"{$this->ip_address}\" max-limit=\"{$this->bandwidth}\" comment=\"{$this->comment}\" disabled=yes");
 
-                    if ($interfaces != '') {
-                        $this->dispatch('mikrotikError', $interfaces, 'error');
-                    } else {
-                        $this->createUser();
-                    }
+                    // Router write succeeded
+                    $this->createUser();
                 } catch (\Exception $e) {
                     flash()->error('Router '.$e->getMessage().' is not connected!');
                 }

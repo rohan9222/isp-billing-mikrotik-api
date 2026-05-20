@@ -1,7 +1,7 @@
 <ul class="navbar-nav" data-top-nav-dropdowns="data-top-nav-dropdowns">
     <li class="nav-item">
         <!-- parent pages-->
-        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('dashboard.index') }}" role="button">Dashboard</a>
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('dashboard') }}" role="button">Dashboard</a>
     </li>
     <li class="nav-item">
         <a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('mikrotik-sync') }}" role="button">Mikrotik Sync</a>

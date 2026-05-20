@@ -72,6 +72,7 @@ class MainSiteData extends Model
             $defaults = [
                 'is_active' => true,
                 'hero_title' => null,
+                'hero_subtitle' => null,
                 'hero_slides' => [],
                 'about_tagline' => null,
                 'about_title' => null,

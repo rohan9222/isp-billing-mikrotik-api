@@ -1,7 +1,7 @@
 <nav id="navbar" class="navigation d-lg-none fixed-bottom bg-body-tertiary shadow-sm z-1">
     <ul class="nav nav-tabs justify-content-center">
         <li class="nav-item">
-            <a class="nav-link" wire:navigate.hover wire:current="active" href="{{ route('dashboard.index') }}">
+            <a class="nav-link" wire:navigate.hover wire:current="active" href="{{ route('dashboard') }}">
                 <span class="icon">
                     <i class="bi bi-house-door"></i>
                 </span>

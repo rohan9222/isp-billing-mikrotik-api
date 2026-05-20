@@ -113,8 +113,8 @@ Route::middleware([
 
         Route::redirect('/', '/dashboard');
 
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::resources([
-            'dashboard' => DashboardController::class,
             'collection-report' => CollectionReportController::class,
         ]);
         Route::get('customers/data', [CustomerList::class, 'getData'])->name('customers.data');

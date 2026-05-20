@@ -46,7 +46,7 @@
                                 <i class="fa-solid fa-user-gear"></i> Manage Users</a>
                         @endcanany
                         @canany(['create', 'edit', 'delete','view'])
-                            <a wire:navigate.hover wire:current="active" class="btn btn-info col-md mx-1" href="{{ route('dashboard.index') }}"><i class="fa-brands fa-squarespace"></i> {{ __('Dashboard') }}</a>
+                            <a wire:navigate.hover wire:current="active" class="btn btn-info col-md mx-1" href="{{ route('dashboard') }}"><i class="fa-brands fa-squarespace"></i> {{ __('Dashboard') }}</a>
                         @endcanany
                     </div>
                 </div>

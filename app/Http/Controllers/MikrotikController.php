@@ -11,6 +11,48 @@ use App\Services\MikrotikSSHService;
 
 class MikrotikController extends Controller
 {
+    // Static connection pools to cache connection sockets per request lifecycle
+    protected static array $apiPool = [];
+    protected static array $sshPool = [];
+
+    /**
+     * Get or create a pooled API service instance
+     */
+    protected function getPooledApiService(string $ip, int $port, string $username, string $password, int $timeout = 3): MikrotikApiService
+    {
+        $key = "{$ip}:{$port}:{$username}";
+        if (!isset(self::$apiPool[$key])) {
+            self::$apiPool[$key] = new MikrotikApiService($ip, $port, $username, $password, $timeout);
+        }
+        return self::$apiPool[$key];
+    }
+
+    /**
+     * Get or create a pooled SSH service instance
+     */
+    protected function getPooledSshService(string $ip, int $port, string $username, string $password, int $timeout = 5): MikrotikSSHService
+    {
+        $key = "{$ip}:{$port}:{$username}";
+        if (!isset(self::$sshPool[$key])) {
+            self::$sshPool[$key] = new MikrotikSSHService($ip, $port, $username, $password, $timeout);
+        }
+        return self::$sshPool[$key];
+    }
+
+    /**
+     * Invalidate all cached read queries for a specific router by incrementing its version generator.
+     */
+    public function invalidateRouterCache(string $routerName): void
+    {
+        $key = "mikrotik:cache_version:{$routerName}";
+        if (\Cache::has($key)) {
+            \Cache::increment($key);
+        } else {
+            \Cache::put($key, time(), now()->addDays(30));
+        }
+        \Log::debug("Mikrotik [{$routerName}] read cache invalidated.");
+    }
+
     // =========================================================================
     // CORE HELPERS
     // =========================================================================
@@ -56,7 +98,8 @@ class MikrotikController extends Controller
                     throw new \InvalidArgumentException('API command required');
                 }
 
-                $response = (new MikrotikApiService($ip, $apiPort, $username, $password))
+                // Short 3s timeout: if API port is unreachable we fail fast and try SSH immediately
+                $response = $this->getPooledApiService($ip, $apiPort, $username, $password, 3)
                     ->executeCommand($apiCmd, $apiParams);
 
                 if (is_string($response) && str_starts_with($response, 'Error:')) {
@@ -78,7 +121,7 @@ class MikrotikController extends Controller
 
             } catch (\Exception $e) {
                 $apiError = $e->getMessage();
-                // API failed silently — SSH fallback attempted below
+                // API failed fast — falling back to SSH immediately
             }
         }
 
@@ -88,7 +131,8 @@ class MikrotikController extends Controller
                     throw new \InvalidArgumentException('SSH command required');
                 }
 
-                $response = (new MikrotikSSHService($ip, $sshPort, $username, $password))
+                // 5s SSH timeout as authoritative fallback
+                $response = $this->getPooledSshService($ip, $sshPort, $username, $password, 5)
                     ->executeCommandParsable($sshCmd);
 
                 // For WRITE commands, if the response is not empty, check if it contains a MikroTik error
@@ -141,27 +185,27 @@ class MikrotikController extends Controller
 
         $results = [];
         foreach ($query->get() as $router) {
-            $results[$router->router_name] = $this->checkConnection(
-                $router->ip_address,
-                $router->ssh_port,
-                $router->api_port,
-                $router->username,
-                $router->password,
-                $apiCmd,
-                $sshCmd,
-                $apiParams,
-                $showErrorFlash
-            );
+            $version = \Cache::rememberForever("mikrotik:cache_version:{$router->router_name}", fn() => time());
+            $cacheKey = "mikrotik:router_list:{$router->router_name}:v{$version}:" . md5($apiCmd . serialize($apiParams) . $sshCmd);
+
+            $results[$router->router_name] = \Cache::remember($cacheKey, now()->addMinutes(10), function () use ($router, $apiCmd, $sshCmd, $apiParams, $showErrorFlash) {
+                return $this->checkConnection(
+                    $router->ip_address,
+                    $router->ssh_port,
+                    $router->api_port,
+                    $router->username,
+                    $router->password,
+                    $apiCmd,
+                    $sshCmd,
+                    $apiParams,
+                    $showErrorFlash
+                );
+            });
         }
 
         return $results;
     }
 
-    /**
-     * Run a READ on a SINGLE router by name. Returns flat array of items.
-     *
-     * @throws \Exception when the router is unreachable or returns an error
-     */
     /**
      * Optimized Hybrid READ: API for speed, SSH as fallback.
      * Returns: array of items.
@@ -174,51 +218,45 @@ class MikrotikController extends Controller
             return [];
         }
 
-        // Priority 1: High-Speed API
-        if ($router->api_port) {
-            try {
-                $service = new MikrotikApiService($router->ip_address, $router->api_port, $router->username, $router->password);
-                $res = $service->executeCommand($apiCmd, [], $apiParams);
-                
-                if (is_array($res) && !isset($res['!trap'])) {
-                    return $res;
-                }
-                
-                if (isset($res['!trap'])) {
-                    \Log::debug("Mikrotik [{$routerName}] API Read Trap: " . ($res['!trap'][0]['message'] ?? 'Unknown Error'));
-                }
-            } catch (\Exception $e) {
-                \Log::debug("Mikrotik [{$routerName}] API Read Fail: " . $e->getMessage());
-                if (!$router->ssh_port) throw $e;
-            }
-        }
+        // Generational Caching
+        $version = \Cache::rememberForever("mikrotik:cache_version:{$routerName}", fn() => time());
+        $cacheKey = "mikrotik:read:{$routerName}:v{$version}:" . md5($apiCmd . serialize($apiParams) . $sshCmd);
 
-        // Priority 2: Authoritative SSH Fallback
-        if ($router->ssh_port) {
-            try {
-                $ssh = new MikrotikSSHService($router->ip_address, $router->ssh_port, $router->username, $router->password);
-                return $ssh->executeCommandParsable($sshCmd);
-            } catch (\Exception $e) {
-                \Log::error("Mikrotik [{$routerName}] SSH Read Fail: " . $e->getMessage());
-                if ($showErrorFlash) throw $e;
+        return \Cache::remember($cacheKey, now()->addMinutes(10), function () use ($router, $routerName, $apiCmd, $sshCmd, $apiParams, $showErrorFlash) {
+            // Priority 1: High-Speed API (3s timeout — fail fast so SSH fallback is immediate)
+            if ($router->api_port) {
+                try {
+                    $service = $this->getPooledApiService($router->ip_address, $router->api_port, $router->username, $router->password, 3);
+                    $res = $service->executeCommand($apiCmd, [], $apiParams);
+                    
+                    if (is_array($res) && !isset($res['!trap'])) {
+                        return $res;
+                    }
+                    
+                    if (isset($res['!trap'])) {
+                        \Log::debug("Mikrotik [{$routerName}] API Read Trap: " . ($res['!trap'][0]['message'] ?? 'Unknown Error'));
+                    }
+                } catch (\Exception $e) {
+                    \Log::debug("Mikrotik [{$routerName}] API Read Fail (falling back to SSH): " . $e->getMessage());
+                    if (!$router->ssh_port) throw $e;
+                }
             }
-        }
 
-        return [];
+            // Priority 2: Authoritative SSH Fallback (5s timeout)
+            if ($router->ssh_port) {
+                try {
+                    $ssh = $this->getPooledSshService($router->ip_address, $router->ssh_port, $router->username, $router->password, 5);
+                    return $ssh->executeCommandParsable($sshCmd);
+                } catch (\Exception $e) {
+                    \Log::error("Mikrotik [{$routerName}] SSH Read Fail: " . $e->getMessage());
+                    if ($showErrorFlash) throw $e;
+                }
+            }
+
+            return [];
+        });
     }
 
-    /**
-     * Run a WRITE/ACTION command on a single router.
-     *
-     * SSH is always used first for write commands — the RouterOS API
-     * silently "succeeds" for action commands (like /system backup save)
-     * without actually executing them. SSH is the authoritative protocol
-     * for any command that has a side-effect on the router.
-     *
-     * Falls back to API only if SSH port is not configured.
-     *
-     * @throws \Exception if router not found or all connections fail
-     */
     /**
      * Optimized Hybrid WRITE: Atomic commands with [find ...] and API ID mapping.
      */
@@ -228,7 +266,7 @@ class MikrotikController extends Controller
         if (!$router) throw new \Exception("Router '{$routerName}' not connected.");
 
 
-        // Priority 1: Authoritative SSH (Required for reliable actions/side-effects)
+        // Priority 1: Authoritative SSH for write commands (5s timeout)
         if ($router->ssh_port) {
             try {
                 // Construct the full SSH command by appending params
@@ -240,7 +278,7 @@ class MikrotikController extends Controller
                     }
                 }
 
-                $ssh = new MikrotikSSHService($router->ip_address, $router->ssh_port, $router->username, $router->password);
+                $ssh = $this->getPooledSshService($router->ip_address, $router->ssh_port, $router->username, $router->password, 5);
                 $res = (string)$ssh->executeCommand($sshCmd);
                 
                 // Basic error detection for SSH
@@ -248,6 +286,8 @@ class MikrotikController extends Controller
                 if (str_contains($lowered, 'failure') || str_contains($lowered, 'error') || str_contains($lowered, 'invalid') || str_contains($lowered, 'no such')) {
                     throw new \Exception("MikroTik SSH Error: " . $res);
                 }
+                
+                $this->invalidateRouterCache($routerName);
                 return $res ?: "OK";
             } catch (\Exception $e) {
                 if (!$router->api_port) throw $e;
@@ -255,10 +295,10 @@ class MikrotikController extends Controller
             }
         }
 
-        // Priority 2: API fallback
+        // Priority 2: API fallback for write commands (3s timeout)
         if ($router->api_port) {
             try {
-                $api = new MikrotikApiService($router->ip_address, $router->api_port, $router->username, $router->password);
+                $api = $this->getPooledApiService($router->ip_address, $router->api_port, $router->username, $router->password, 3);
                 $lcmd = ltrim($command, '/');
                 
                 // Atomic [find ...] mapping: resolve name-based selector to internal .id for API
@@ -301,6 +341,7 @@ class MikrotikController extends Controller
                                 }
                                 $res = $api->executeCommand($path . '/' . $action, $finalParams);
                                 if (!is_array($res) || !isset($res['!trap'])) {
+                                    $this->invalidateRouterCache($routerName);
                                     return is_array($res) ? 'OK' : (string) $res;
                                 }
                             }
@@ -331,7 +372,10 @@ class MikrotikController extends Controller
                     $res = $api->executeCommand($baseCmd, $params);
                 }
 
-                if (!is_array($res) || !isset($res['!trap'])) return is_array($res) ? 'OK' : (string)$res;
+                if (!is_array($res) || !isset($res['!trap'])) {
+                    $this->invalidateRouterCache($routerName);
+                    return is_array($res) ? 'OK' : (string)$res;
+                }
                 if (isset($res['!trap'])) throw new \Exception($res['!trap'][0]['message'] ?? 'API Trap');
                 
             } catch (\Exception $e) {
@@ -1680,6 +1724,7 @@ class MikrotikController extends Controller
 
         if ($router->api_port) {
             try {
+                // Use a fresh API instance with extended 30s timeout for the backup operation
                 $api = new MikrotikApiService(
                     $router->ip_address,
                     $router->api_port,
@@ -1713,11 +1758,12 @@ class MikrotikController extends Controller
 
         if (! $backupCreated && $router->ssh_port) {
             try {
-                $saveSsh = new MikrotikSSHService(
+                $saveSsh = $this->getPooledSshService(
                     $router->ip_address,
                     $router->ssh_port,
                     $router->username,
-                    $router->password
+                    $router->password,
+                    5
                 );
 
                 $rawOutput = $saveSsh->executePtyCommand(
@@ -1755,11 +1801,12 @@ class MikrotikController extends Controller
 
         if ($router->ssh_port) {
             try {
-                $exportSsh = new MikrotikSSHService(
+                $exportSsh = $this->getPooledSshService(
                     $router->ip_address,
                     $router->ssh_port,
                     $router->username,
-                    $router->password
+                    $router->password,
+                    5
                 );
 
                 $configText = trim($exportSsh->executeCommand('/export'));
@@ -1779,6 +1826,9 @@ class MikrotikController extends Controller
         } else {
             $warnings[] = '.rsc mirror skipped — requires SSH. Only .backup was created on router.';
         }
+
+        // Invalidate cached file lists so BackupManager sees fresh data immediately
+        $this->invalidateRouterCache($routerName);
 
         $msg = "✓ {$backupName}.backup saved on router.";
         if ($localFileName) {

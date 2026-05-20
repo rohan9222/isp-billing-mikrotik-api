@@ -8,7 +8,7 @@
             </div>
         </div>
         <!-- parent pages-->
-        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('dashboard.index') }}" role="button">
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('dashboard') }}" role="button">
             <div class="d-flex align-items-center">
                 <span class="nav-link-icon">
                     <i class="bi bi-speedometer2 me-2"></i>

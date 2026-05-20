@@ -37,7 +37,7 @@ class PortalPanelProvider extends PanelProvider
             ->id('portal')
             ->path('')
             ->domain('portal.'.$baseDomain)
-            ->favicon(siteUrlSettings('site_favicon') ?? asset('images/favicon.png'))
+            ->favicon(fn () => siteUrlSettings('site_favicon') ?? asset('images/favicon.png'))
             ->brandLogo(fn () => view('filament.application-logo'))
             ->brandLogoHeight('3.5rem')
             ->login(Login::class)

@@ -12,7 +12,7 @@ use App\Models\PackageList;
 use App\Models\PPPSecrets;
 use App\Models\RouterList;
 use App\Models\User;
-use App\Services\MikrotikSSHService;
+// MikrotikSSHService removed — all router I/O routed through MikrotikController (pooled + cached)
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -116,21 +116,18 @@ class EditCustomer extends Component
             $router = RouterList::where('router_name', $routerName)->first();
 
             if ($router && $router->action === 'connected') {
-                $mikrotikSSHService = new MikrotikSSHService(
-                    $router->ip_address,
-                    $router->ssh_port,
-                    $router->username,
-                    $router->password
-                );
-                $profiles = $mikrotikSSHService->executeCommand('/ppp profile print without-paging terse');
-                // \dd($profiles);
-
-                // Clear profileNames before updating
+                // Clear profileNames before updating (fix: was incorrectly writing to interfaceNames)
                 $this->profileNames = [];
 
-                foreach (explode("\n", $profiles) as $line) {
-                    if (preg_match('/name=([^\s]+)/', $line, $matches)) {
-                        $this->interfaceNames[] = $matches[1]; // Update the component's array
+                $results = app(MikrotikController::class)->singleRead(
+                    $routerName,
+                    '/ppp/profile/print',
+                    '/ppp profile print without-paging terse'
+                );
+
+                foreach ($results as $item) {
+                    if (isset($item['name'])) {
+                        $this->profileNames[] = $item['name'];
                     }
                 }
             }
@@ -252,40 +249,25 @@ class EditCustomer extends Component
     public function deletePPPUser()
     {
         $customer = CustomersInfo::where('customer_unique_id', decrypt($this->customerId))->with('pppUser')->first();
+
+        // Remove PPP secret from router using the correct [find name=...] selector
         try {
-            $router = RouterList::where('router_name', $customer->pppUser->router_name)->first();
-            $mikrotikSSHService = new MikrotikSSHService(
-                $router->ip_address,
-                $router->ssh_port,
-                $router->username,
-                $router->password
+            app(MikrotikController::class)->singleWrite(
+                $customer->pppUser->router_name,
+                '/ppp secret remove [find name="' . $customer->pppUser->username . '"]'
             );
-            // dd($customer->pppUser->username);
-            // ব্যবহারকারী ID পাওয়ার জন্য প্রথমে তার তথ্য বের করুন
-            $removeUser = $mikrotikSSHService->executeCommand('/ppp secret remove '.$customer->pppUser->username);
-            if ($removeUser != '') {
-                flash()->error($removeUser);
-                $pppUser = PPPSecrets::where('id', $this->ppp_user_id)->first()->delete();
-                $customer->update([
-                    'status' => 'inactive',
-                ]);
-                flash()->warning('Customer PPP User deleted successfully!');
-                $this->ppp_user_id = null;
-                $this->loadCustomerData($this->customerId);
-            } else {
-                // Router Property [$customer] not found on component: [edit-customer] is not connected!
-                $pppUser = PPPSecrets::where('id', $this->ppp_user_id)->first()->delete();
-                $customer->update([
-                    'status' => 'inactive',
-                ]);
-                flash()->warning('Customer PPP User deleted successfully!');
-                $this->ppp_user_id = null;
-                $this->loadCustomerData($this->customerId);
-            }
-        } catch (\Exception $e) {
-            // Handle any connection or execution errors
-            flash()->error('Router '.$e->getMessage().' is not connected!');
+        } catch (\Exception $routerEx) {
+            // Log but continue — user may have already been removed from router
+            \Log::warning('deletePPPUser router error: ' . $routerEx->getMessage());
+            flash()->warning('Router warning: ' . $routerEx->getMessage() . '. Cleaning up database record.');
         }
+
+        // Always clean up the database record regardless of router outcome
+        PPPSecrets::where('id', $this->ppp_user_id)->first()->delete();
+        $customer->update(['status' => 'inactive']);
+        flash()->warning('Customer PPP User deleted successfully!');
+        $this->ppp_user_id = null;
+        $this->loadCustomerData($this->customerId);
     }
 
     public function getInterface($propertyName)
@@ -308,26 +290,19 @@ class EditCustomer extends Component
             // Proceed only if service is static and router_name is set than fetch interfaces and profile
             if ($this->service == 'static' && $normalizedRouterName) {
                 try {
-                    $router = RouterList::where('router_name', $normalizedRouterName)->first();
-                    $mikrotikSSHService = new MikrotikSSHService(
-                        $router->ip_address,
-                        $router->ssh_port,
-                        $router->username,
-                        $router->password
-                    );
-
-                    $interfaces = $mikrotikSSHService->executeCommand('/interface print without-paging terse where type="ether" or type="vlan"');
-
-                    // Clear interfaceNames before updating
+                    // Load physical interfaces via pooled/cached controller
                     $this->interfaceNames = [];
-
-                    foreach (explode("\n", $interfaces) as $line) {
-                        if (preg_match('/name=([^\s]+)/', $line, $matches)) {
-                            $this->interfaceNames[] = $matches[1]; // Update the component's array
+                    $results = app(MikrotikController::class)->singleRead(
+                        $normalizedRouterName,
+                        '/interface/print',
+                        '/interface print without-paging terse where type="ether" or type="vlan"'
+                    );
+                    foreach ($results as $item) {
+                        if (isset($item['name'])) {
+                            $this->interfaceNames[] = $item['name'];
                         }
                     }
                 } catch (\Exception $e) {
-                    // Handle any connection or execution errors
                     flash()->error('Router '.$e->getMessage().' is not connected!');
                 }
 
@@ -338,28 +313,19 @@ class EditCustomer extends Component
             } elseif ($this->service == 'pppoe' && $normalizedRouterName) {
                 // Proceed only if service is pppoe and router_name is set
                 try {
-                    $router = RouterList::where('router_name', $normalizedRouterName)->first();
-
-                    $mikrotikSSHService = new MikrotikSSHService(
-                        $router->ip_address,
-                        $router->ssh_port,
-                        $router->username,
-                        $router->password
-                    );
-
-                    $profiles = $mikrotikSSHService->executeCommand('/ppp profile print without-paging terse');
-                    // \dd($profiles);
-
-                    // Clear profileNames before updating
+                    // Load PPP profiles via pooled/cached controller
                     $this->profileNames = [];
-
-                    foreach (explode("\n", $profiles) as $line) {
-                        if (preg_match('/name=([^\s]+)/', $line, $matches)) {
-                            $this->profileNames[] = $matches[1]; // Update the component's array
+                    $results = app(MikrotikController::class)->singleRead(
+                        $normalizedRouterName,
+                        '/ppp/profile/print',
+                        '/ppp profile print without-paging terse'
+                    );
+                    foreach ($results as $item) {
+                        if (isset($item['name'])) {
+                            $this->profileNames[] = $item['name'];
                         }
                     }
                 } catch (\Exception $e) {
-                    // Handle any connection or execution errors
                     flash()->error('Router '.$e->getMessage().' is not connected!');
                 }
 
@@ -437,64 +403,56 @@ class EditCustomer extends Component
                         }
                     }
 
-                    $router = RouterList::where('router_name', $this->router_name)->first();
-                    $mikrotikSSHService = new MikrotikSSHService(
-                        $router->ip_address,
-                        $router->ssh_port,
-                        $router->username,
-                        $router->password
-                    );
+                    // Build and execute PPP secret add via pooled/cached controller
                     if ($this->ppp_remote_ip != '') {
-                        $interfaces = $mikrotikSSHService->executeCommand("/ppp secret add name=\"{$this->username}\" password=\"{$this->password}\" service=\"{$this->service}\" profile=\"{$this->profile}\" comment=\"{$this->comment}\" remote-address=\"{$this->ppp_remote_ip}\" caller-id=\"{$this->caller_id}\"");
+                        $cmd = "/ppp secret add name=\"{$this->username}\" password=\"{$this->password}\" service=\"{$this->service}\" profile=\"{$this->profile}\" comment=\"{$this->comment}\" remote-address=\"{$this->ppp_remote_ip}\" caller-id=\"{$this->caller_id}\"";
                     } else {
-                        $interfaces = $mikrotikSSHService->executeCommand("/ppp secret add name=\"{$this->username}\" password=\"{$this->password}\" service=\"{$this->service}\" profile=\"{$this->profile}\" comment=\"{$this->comment}\" caller-id=\"{$this->caller_id}\"");
+                        $cmd = "/ppp secret add name=\"{$this->username}\" password=\"{$this->password}\" service=\"{$this->service}\" profile=\"{$this->profile}\" comment=\"{$this->comment}\" caller-id=\"{$this->caller_id}\"";
                     }
 
-                    if ($interfaces != '') {
-                        flash()->error($interfaces.' on Mikrotik for router '.$this->router_name.' !');
-                        $this->dispatch('mikrotikError', $interfaces, 'error');
-                    } else {
-                        try {
-                            $customerId = decrypt($this->customerId);
-                        } catch (\Exception $e) {
-                            flash()->error('Invalid Customer ID!');
+                    app(MikrotikController::class)->singleWrite($this->router_name, $cmd);
 
-                            return;
-                        }
+                    // Router write succeeded — persist to database
+                    try {
+                        $customerId = decrypt($this->customerId);
+                    } catch (\Exception $e) {
+                        flash()->error('Invalid Customer ID!');
 
-                        // Create or fetch the PPP User record
-                        $pppUser = PPPSecrets::firstOrCreate(
-                            ['router_name' => $this->router_name, 'username' => $this->username],
-                            [
-                                'password' => $this->password,
-                                'service' => $this->service,
-                                'profile' => $this->profile,
-                                'comment' => $this->comment,
-                                'caller_id' => $this->caller_id,
-                                'status' => 'active',
-                                'ppp_remote_ip' => ! empty($this->ppp_remote_ip) ? $this->ppp_remote_ip : $this->ip_address,
-                            ]
-                        );
+                        return;
+                    }
 
-                        // Update Billing Info
-                        BillingInfo::where('customer_bill_unique_id', $customerId)->update([
-                            'auto_disable_date' => $this->auto_disable_date ? Carbon::parse($this->auto_disable_date) : Carbon::now()->addDays(30),
+                    // Create or fetch the PPP User record
+                    $pppUser = PPPSecrets::firstOrCreate(
+                        ['router_name' => $this->router_name, 'username' => $this->username],
+                        [
+                            'password' => $this->password,
+                            'service' => $this->service,
+                            'profile' => $this->profile,
+                            'comment' => $this->comment,
+                            'caller_id' => $this->caller_id,
+                            'status' => 'active',
+                            'ppp_remote_ip' => ! empty($this->ppp_remote_ip) ? $this->ppp_remote_ip : $this->ip_address,
+                        ]
+                    );
+
+                    // Update Billing Info
+                    BillingInfo::where('customer_bill_unique_id', $customerId)->update([
+                        'auto_disable_date' => $this->auto_disable_date ? Carbon::parse($this->auto_disable_date) : Carbon::now()->addDays(30),
+                    ]);
+
+                    // Update Customer Info if PPP user is created successfully
+                    if ($pppUser->exists) {
+                        CustomersInfo::where('customer_unique_id', $customerId)->update([
+                            'status' => 'active',
+                            'ppp_user_id' => $pppUser->id,
                         ]);
-
-                        // Update Customer Info if PPP user is created successfully
-                        if ($pppUser->exists) {
-                            CustomersInfo::where('customer_unique_id', $customerId)->update([
-                                'status' => 'active',
-                                'ppp_user_id' => $pppUser->id,
-                            ]);
-                        }
-
-                        flash()->success('Customer PPP User created successfully!');
-
-                        // Reload customer data and reset form
-                        $this->loadCustomerData($this->customerId);
-                        $this->resetPPPUser();
                     }
+
+                    flash()->success('Customer PPP User created successfully!');
+
+                    // Reload customer data and reset form
+                    $this->loadCustomerData($this->customerId);
+                    $this->resetPPPUser();
 
                 } catch (\Exception $e) {
                     // Handle any connection or execution errors
@@ -502,36 +460,30 @@ class EditCustomer extends Component
                 }
             } elseif ($this->service == 'static') {
                 try {
-                    $router = RouterList::where('router_name', $this->router_name)->first();
-                    $mikrotikSSHService = new MikrotikSSHService(
-                        $router->ip_address,
-                        $router->ssh_port,
-                        $router->username,
-                        $router->password
+                    // Add simple queue via pooled/cached controller
+                    app(MikrotikController::class)->singleWrite(
+                        $this->router_name,
+                        "/queue simple add name=\"{$this->queue_name}\" profile=\"{$this->profile}\" address=\"{$this->ip_address}\" max-limit=\"{$this->bandwidth}\" comment=\"{$this->comment}\" disabled=yes"
                     );
-                    $interfaces = $mikrotikSSHService->executeCommand("/queue simple add name=\"{$this->queue_name}\" profile=\"{$this->profile}\" address=\"{$this->ip_address}\" max-limit=\"{$this->bandwidth}\" comment=\"{$this->comment}\" disabled=yes");
 
-                    if ($interfaces != '') {
-                        $this->dispatch('mikrotikError', $interfaces, 'error');
-                    } else {
-                        $pppUser = new PPPSecrets;
-                        $pppUser->router_name = $this->router_name;
-                        $pppUser->username = ($this->username != '') ? $this->username : $this->queue_name;
-                        $pppUser->password = $this->password;
-                        $pppUser->service = $this->service;
-                        $pppUser->profile = ($this->profile != '') ? $this->profile : $this->interface;
-                        $pppUser->bandwidth = $this->bandwidth;
-                        $pppUser->comment = $this->comment;
-                        $pppUser->caller_id = $this->caller_id;
-                        $pppUser->ppp_remote_ip = ($this->ppp_remote_ip != '') ? $this->ppp_remote_ip : $this->ip_address;
-                        $pppUser->save();
-                        CustomersInfo::where('customer_unique_id', decrypt($this->customerId))->update([
-                            'status' => 'active',
-                        ]);
-                        flash()->success('Customer PPP User created successfully!');
-                        $this->loadCustomerData($this->customerId);
-                        $this->resetPPPUser();
-                    }
+                    // Router write succeeded — persist to database
+                    $pppUser = new PPPSecrets;
+                    $pppUser->router_name = $this->router_name;
+                    $pppUser->username = ($this->username != '') ? $this->username : $this->queue_name;
+                    $pppUser->password = $this->password;
+                    $pppUser->service = $this->service;
+                    $pppUser->profile = ($this->profile != '') ? $this->profile : $this->interface;
+                    $pppUser->bandwidth = $this->bandwidth;
+                    $pppUser->comment = $this->comment;
+                    $pppUser->caller_id = $this->caller_id;
+                    $pppUser->ppp_remote_ip = ($this->ppp_remote_ip != '') ? $this->ppp_remote_ip : $this->ip_address;
+                    $pppUser->save();
+                    CustomersInfo::where('customer_unique_id', decrypt($this->customerId))->update([
+                        'status' => 'active',
+                    ]);
+                    flash()->success('Customer PPP User created successfully!');
+                    $this->loadCustomerData($this->customerId);
+                    $this->resetPPPUser();
                 } catch (\Exception $e) {
                     // Handle any connection or execution errors
                     flash()->error('Router '.$e->getMessage().' is not connected!');

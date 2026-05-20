@@ -9,9 +9,9 @@ class MikrotikSSHService
 {
     protected SSH2 $ssh;
 
-    public function __construct(string $host, int $port, string $username, string $password)
+    public function __construct(string $host, int $port, string $username, string $password, int $timeout = 5)
     {
-        $this->ssh = new SSH2($host, $port);
+        $this->ssh = new SSH2($host, $port, $timeout);
 
         if (! $this->ssh->login($username, $password)) {
             throw new Exception("SSH login failed for {$host}");
@@ -101,13 +101,86 @@ class MikrotikSSHService
 
     // ─── Format Parsers ───────────────────────────────────────────────────────
 
+    /**
+     * Normalize parsed values to match the API data types and units.
+     */
+    protected function normalizeValue(string $key, string $value): mixed
+    {
+        $value = trim($value);
+
+        // Normalize memory and hdd size keys to bytes
+        $sizeKeys = [
+            'free-memory', 'total-memory', 'free-hdd-space', 'total-hdd-space',
+            'memory-size', 'hdd-size', 'active-flow-bytes', 'inactive-flow-bytes'
+        ];
+        if (in_array($key, $sizeKeys, true)) {
+            if (preg_match('/^([\d\.]+)\s*(?:(GiB|MiB|KiB|B|GB|MB|KB)|(g|m|k))?$/i', $value, $matches)) {
+                $number = (float)$matches[1];
+                $unit = strtolower($matches[2] ?? $matches[3] ?? '');
+                
+                switch ($unit) {
+                    case 'gib':
+                    case 'gb':
+                    case 'g':
+                        return (int)($number * 1024 * 1024 * 1024);
+                    case 'mib':
+                    case 'mb':
+                    case 'm':
+                        return (int)($number * 1024 * 1024);
+                    case 'kib':
+                    case 'kb':
+                    case 'k':
+                        return (int)($number * 1024);
+                    case 'b':
+                    default:
+                        return (int)$number;
+                }
+            }
+        }
+
+        // Normalize CPU frequency
+        if ($key === 'cpu-frequency') {
+            if (preg_match('/^(\d+)\s*(?:MHz)?$/i', $value, $matches)) {
+                return (int)$matches[1];
+            }
+        }
+
+        // Normalize CPU load and bad-blocks percentage
+        if ($key === 'cpu-load' || $key === 'bad-blocks') {
+            if (preg_match('/^([\d\.]+)\s*%?$/', $value, $matches)) {
+                return str_contains($matches[1], '.') ? (float)$matches[1] : (int)$matches[1];
+            }
+        }
+
+        // Normalize CPU count and other integer fields
+        if ($key === 'cpu-count' || $key === 'write-sect-since-reboot' || $key === 'write-sect-total') {
+            if (ctype_digit($value)) {
+                return (int)$value;
+            }
+        }
+
+        // Normalize temperature (e.g. 35C -> 35) and voltage (e.g. 12.1V -> 12.1)
+        if ($key === 'temperature') {
+            if (preg_match('/^([\d\.]+)\s*C?$/i', $value, $matches)) {
+                return str_contains($matches[1], '.') ? (float)$matches[1] : (int)$matches[1];
+            }
+        }
+        if ($key === 'voltage') {
+            if (preg_match('/^([\d\.]+)\s*V?$/i', $value, $matches)) {
+                return str_contains($matches[1], '.') ? (float)$matches[1] : (int)$matches[1];
+            }
+        }
+
+        return $value;
+    }
+
     protected function parseColonFormat(string $output): array
     {
         $data = [];
         foreach (explode("\n", $output) as $line) {
             if (str_contains($line, ':')) {
                 [$key, $value] = array_map('trim', explode(':', $line, 2));
-                $data[$key] = $value;
+                $data[$key] = $this->normalizeValue($key, $value);
             }
         }
 
@@ -133,7 +206,9 @@ class MikrotikSSHService
 
             preg_match_all('/([^\s=]+)=("([^"]*)"|[^\s"].*?(?=\s+[^\s=]+=|$))/', $line, $matches, PREG_SET_ORDER);
             foreach ($matches as $kv) {
-                $entry[$kv[1]] = isset($kv[3]) && $kv[3] !== '' ? $kv[3] : trim($kv[2], '"');
+                $key = $kv[1];
+                $value = isset($kv[3]) && $kv[3] !== '' ? $kv[3] : trim($kv[2], '"');
+                $entry[$key] = $this->normalizeValue($key, $value);
             }
 
             $entries[] = $entry;
