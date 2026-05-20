@@ -48,6 +48,7 @@ class MainSiteSetup extends Component implements HasActions, HasForms
         $this->form->fill([
             // Identity & Status
             'site_name' => MainSiteData::getValue('site_name', config('app.name')),
+            'portal_name' => MainSiteData::getValue('portal_name', 'Code Pagol Ltd'),
             'site_title' => MainSiteData::getValue('site_title'),
             'site_status' => MainSiteData::getValue('site_status', 'active'),
             'site_maintenance' => (bool) MainSiteData::getValue('site_maintenance', false),
@@ -119,6 +120,7 @@ class MainSiteSetup extends Component implements HasActions, HasForms
             'services' => MainSiteData::getValue('services', []),
             'testimonials' => MainSiteData::getValue('testimonials', []),
             'gallery_items' => MainSiteData::getValue('gallery_items', []),
+            'valuable_clients' => MainSiteData::getValue('valuable_clients', []),
             'all_data' => MainSiteData::all()->toArray(),
         ]);
     }
@@ -129,151 +131,323 @@ class MainSiteSetup extends Component implements HasActions, HasForms
             Tabs::make('Master Setup')
                 ->tabs([
                     Tab::make('Identity & SEO')
+                        ->icon('heroicon-m-globe-alt')
                         ->components([
                             Section::make('Core Brand Identity')
+                                ->icon('heroicon-m-identification')
+                                ->description('Define your application\'s basic identity and operational status.')
                                 ->components([
-                                    TextInput::make('site_name')->label('App Name')->required(),
-                                    TextInput::make('site_title')->label('Browser Title Tag'),
-                                    Select::make('site_status')->options(['active' => 'Active', 'disabled' => 'Disabled'])->default('active'),
-                                    Toggle::make('site_maintenance')->label('Maintenance Mode'),
-                                    Textarea::make('site_message')->placeholder('Short tagline or notice...')->rows(2),
+                                    TextInput::make('site_name')
+                                        ->label('App Name')
+                                        ->placeholder('e.g., CodePagol/CP')
+                                        ->required()
+                                        ->prefixIcon('heroicon-m-computer-desktop'),
+                                    TextInput::make('portal_name')
+                                        ->label('Portal Name')
+                                        ->placeholder('e.g., Code Pagol Ltd')
+                                        ->required()
+                                        ->prefixIcon('heroicon-m-user'),
+                                    TextInput::make('site_title')
+                                        ->label('Browser Title Tag')
+                                        ->placeholder('e.g., Best Broadband in Town')
+                                        ->helperText('This appears in the browser tab and search results.')
+                                        ->prefixIcon('heroicon-m-bookmark'),
+                                    Select::make('site_status')
+                                        ->options([
+                                            'active' => 'Active (Live)',
+                                            'disabled' => 'Disabled (Offline)'
+                                        ])
+                                        ->default('active')
+                                        ->prefixIcon('heroicon-m-check-circle'),
+                                    Toggle::make('site_maintenance')
+                                        ->label('Enable Maintenance Mode')
+                                        ->onColor('danger')
+                                        ->offColor('success'),
+                                    Textarea::make('site_message')
+                                        ->label('System Announcement')
+                                        ->placeholder('Short tagline or notice to display to all users...')
+                                        ->rows(2),
                                 ])->columns(2),
                             Section::make('Assets & Media')
+                                ->icon('heroicon-m-photo')
+                                ->description('Upload your branding assets. High-quality PNGs or SVGs recommended.')
                                 ->components([
-                                    FileUpload::make('site_logo')->image()->directory('brand'),
-                                    FileUpload::make('site_icon')->label('App Icon/Logo Square')->image()->directory('brand'),
-                                    FileUpload::make('site_favicon')->image()->directory('brand'),
+                                    FileUpload::make('site_logo')
+                                        ->label('Main Site Logo')
+                                        ->image()
+                                        ->directory('brand')
+                                        ->helperText('Recommended: 190x53px transparent PNG'),
+                                    FileUpload::make('site_icon')
+                                        ->label('Square App Icon')
+                                        ->image()
+                                        ->directory('brand')
+                                        ->helperText('Used for smaller UI elements (1:1 ratio)'),
+                                    FileUpload::make('site_favicon')
+                                        ->label('Browser Favicon')
+                                        ->image()
+                                        ->directory('brand')
+                                        ->helperText('Standard browser tab icon (16x16 or 32x32)'),
                                 ])->columns(3),
                             Section::make('Search Engine Optimization (SEO)')
+                                ->icon('heroicon-m-magnifying-glass')
+                                ->description('Configure how search engines index and display your website.')
                                 ->components([
-                                    TextInput::make('site_author'),
-                                    TextInput::make('site_keywords')->placeholder('fiber, internet, broadband...'),
-                                    Textarea::make('site_description')->rows(3),
+                                    TextInput::make('site_author')
+                                        ->label('Meta Author')
+                                        ->placeholder('Your Company Name')
+                                        ->prefixIcon('heroicon-m-user'),
+                                    TextInput::make('site_keywords')
+                                        ->label('Meta Keywords')
+                                        ->placeholder('fiber, internet, broadband, ISP...')
+                                        ->helperText('Separate keywords with commas.')
+                                        ->prefixIcon('heroicon-m-tag'),
+                                    Textarea::make('site_description')
+                                        ->label('Meta Description')
+                                        ->placeholder('Enter a short description for search engines...')
+                                        ->rows(3),
                                 ])->columns(2),
                         ]),
 
                     Tab::make('Contact & Social')
+                        ->icon('heroicon-m-phone')
                         ->components([
                             Section::make('Office Contact Information')
+                                ->icon('heroicon-m-building-office')
+                                ->description('Displayed on the contact page and website footer.')
                                 ->components([
-                                    TextInput::make('site_email')->email(),
-                                    TextInput::make('site_phone'),
-                                    TextInput::make('site_address'),
-                                    Textarea::make('site_map')->label('Map Embed Link')->rows(2),
+                                    TextInput::make('site_email')
+                                        ->label('Public Support Email')
+                                        ->email()
+                                        ->prefixIcon('heroicon-m-envelope'),
+                                    TextInput::make('site_phone')
+                                        ->label('Helpline Number')
+                                        ->tel()
+                                        ->prefixIcon('heroicon-m-phone'),
+                                    TextInput::make('site_address')
+                                        ->label('Physical Office Address')
+                                        ->prefixIcon('heroicon-m-map-pin'),
+                                    Textarea::make('site_map')
+                                        ->label('Google Maps Embed URL')
+                                        ->placeholder('https://www.google.com/maps/embed?pb=...')
+                                        ->helperText('Paste only the src URL from the Google Maps iframe embed code.')
+                                        ->rows(2),
                                 ])->columns(2),
                             Section::make('Social Media Presence')
+                                ->icon('heroicon-m-share')
+                                ->description('Connect your social profiles for better customer engagement.')
                                 ->components([
-                                    TextInput::make('site_facebook')->prefix('fb.com/'),
-                                    TextInput::make('site_twitter')->prefix('@'),
-                                    TextInput::make('site_instagram')->prefix('ig.me/'),
-                                    TextInput::make('site_whatsapp')->prefix('wa.me/'),
-                                    TextInput::make('site_linkedin'),
-                                    TextInput::make('site_youtube'),
-                                    TextInput::make('site_pinterest'),
+                                    TextInput::make('site_facebook')->label('Facebook')->prefix('facebook.com/')->prefixIcon('heroicon-m-link'),
+                                    TextInput::make('site_twitter')->label('Twitter/X')->prefix('@')->prefixIcon('heroicon-m-link'),
+                                    TextInput::make('site_instagram')->label('Instagram')->prefix('instagram.com/')->prefixIcon('heroicon-m-link'),
+                                    TextInput::make('site_whatsapp')->label('WhatsApp Number')->placeholder('88017xxxxxxxx')->prefixIcon('heroicon-m-chat-bubble-left-ellipsis'),
+                                    TextInput::make('site_linkedin')->label('LinkedIn')->prefixIcon('heroicon-m-link'),
+                                    TextInput::make('site_youtube')->label('YouTube Channel')->prefixIcon('heroicon-m-play-circle'),
+                                    TextInput::make('site_pinterest')->label('Pinterest')->prefixIcon('heroicon-m-link'),
                                 ])->columns(3),
                         ]),
 
                     Tab::make('Billing & Invoicing')
+                        ->icon('heroicon-m-credit-card')
                         ->components([
                             Section::make('Currency & Global Controls')
+                                ->icon('heroicon-m-currency-dollar')
+                                ->description('Global settings for billing currency and grace periods.')
                                 ->components([
-                                    TextInput::make('site_currency')->default('BDT'),
-                                    TextInput::make('site_invoice_prefix')->default('INV-'),
-                                    TextInput::make('disable_check_no')->label('Grace Limit Amount')->numeric(),
-                                    TextInput::make('disable_check_days')->label('Grace Limit Days')->numeric(),
+                                    TextInput::make('site_currency')->default('BDT')->prefixIcon('heroicon-m-banknotes'),
+                                    TextInput::make('site_invoice_prefix')->default('INV-')->prefixIcon('heroicon-m-hashtag'),
+                                    TextInput::make('disable_check_no')
+                                        ->label('Grace Limit Amount')
+                                        ->numeric()
+                                        ->helperText('Maximum outstanding balance allowed before auto-disabling.')
+                                        ->prefixIcon('heroicon-m-no-symbol'),
+                                    TextInput::make('disable_check_days')
+                                        ->label('Grace Limit Days')
+                                        ->numeric()
+                                        ->helperText('Number of days past due before auto-disabling.')
+                                        ->prefixIcon('heroicon-m-clock'),
                                 ])->columns(2),
                             Section::make('Invoice Design')
+                                ->icon('heroicon-m-paint-brush')
+                                ->description('Customize the look and feel of your generated PDF invoices.')
                                 ->components([
-                                    FileUpload::make('site_invoice_logo')->image()->directory('invoices'),
-                                    ColorPicker::make('site_invoice_color')->default('#000000'),
-                                    TextInput::make('site_invoice_footer'),
-                                    Textarea::make('site_invoice_notes')->rows(2),
-                                    Textarea::make('site_invoice_terms')->rows(2),
-                                    FileUpload::make('site_invoice_signature')->image()->directory('invoices'),
+                                    FileUpload::make('site_invoice_logo')
+                                        ->label('Invoice Logo')
+                                        ->image()
+                                        ->directory('invoices')
+                                        ->helperText('Logo displayed specifically on invoices.'),
+                                    ColorPicker::make('site_invoice_color')
+                                        ->label('Theme Color')
+                                        ->default('#000000'),
+                                    TextInput::make('site_invoice_footer')
+                                        ->label('Footer Text')
+                                        ->placeholder('e.g., Thank you for choosing us!'),
+                                    Textarea::make('site_invoice_notes')
+                                        ->label('Default Notes')
+                                        ->rows(2),
+                                    Textarea::make('site_invoice_terms')
+                                        ->label('Terms & Conditions')
+                                        ->rows(2),
+                                    FileUpload::make('site_invoice_signature')
+                                        ->label('Authorized Signature')
+                                        ->image()
+                                        ->directory('invoices'),
                                 ])->columns(2),
                         ]),
 
                     Tab::make('Security & Tech')
+                        ->icon('heroicon-m-shield-check')
                         ->components([
                             Section::make('Site Secret Credentials')
+                                ->icon('heroicon-m-key')
+                                ->description('Sensitive credentials for internal system features and API integrations.')
                                 ->components([
-                                    TextInput::make('site_secret_key'),
-                                    TextInput::make('site_secret_value'),
-                                    TextInput::make('site_secret_validity'),
-                                    TextInput::make('site_secret_url'),
-                                    TextInput::make('site_secret_email'),
+                                    TextInput::make('site_secret_key')->password()->revealable(),
+                                    TextInput::make('site_secret_value')->password()->revealable(),
+                                    TextInput::make('site_secret_validity')->placeholder('365 days'),
+                                    TextInput::make('site_secret_url')->url(),
+                                    TextInput::make('site_secret_email')->email(),
                                 ])->columns(2),
                             Section::make('Database Configuration')
+                                ->icon('heroicon-m-server')
+                                ->description('System paths required for database operations like backups and restores.')
                                 ->components([
                                     TextInput::make('mysql_binary_path')
-                                        ->label('MySQL Binary Folder Path')
+                                        ->label('MySQL/MariaDB Binary Folder Path')
                                         ->placeholder('e.g., C:\laragon\bin\mysql\mysql-x.x\bin\\')
-                                        ->helperText('Required if the backup feature fails due to mysqldump missing from PATH. Must include trailing slash!'),
+                                        ->helperText('Required if the backup feature fails due to mysqldump missing from PATH. Must include trailing slash!')
+                                        ->prefixIcon('heroicon-m-folder-open'),
                                 ])->columns(1),
                             Section::make('Log Server Operations')
+                                ->icon('heroicon-m-document-text')
+                                ->description('Configure real-time log streaming from your MikroTik routers to this server.')
                                 ->components([
-                                    Toggle::make('log_server_enabled')->label('Stream Router Logs'),
+                                    Toggle::make('log_server_enabled')
+                                        ->label('Enable Remote Log Streaming')
+                                        ->helperText('Enables the background listener for incoming router logs.'),
                                     Select::make('log_server_routers')
                                         ->multiple()
                                         ->options(RouterList::pluck('router_name', 'router_name'))
-                                        ->label('Log and archive for:'),
-                                    TextInput::make('log_retention_days')->numeric()->label('Retention Policy (Days)'),
+                                        ->label('Capture logs for:')
+                                        ->searchable(),
+                                    TextInput::make('log_retention_days')
+                                        ->label('Auto-Delete Logs After (Days)')
+                                        ->numeric()
+                                        ->prefixIcon('heroicon-m-trash'),
                                     ViewField::make('log_stats')->view('livewire.mikrotik.log-stats-embed'),
                                 ])->columns(2),
                         ]),
 
                     Tab::make('Website Content')
+                        ->icon('heroicon-m-window')
                         ->components([
                             Section::make('Landing Page Hero')
+                                ->icon('heroicon-m-star')
+                                ->description('Manage the main slider and call-to-action area of your homepage.')
                                 ->components([
-                                    TextInput::make('hero_title'),
-                                    TextInput::make('hero_subtitle'),
-                                    TextInput::make('hero_button_text'),
-                                    TextInput::make('registration_link'),
-                                    Repeater::make('hero_slides')
-                                        ->schema([
-                                            FileUpload::make('image')->image()->required(),
-                                            TextInput::make('caption'),
-                                        ])->columns(2)->grid(2),
+                                    TextInput::make('hero_title')
+                                        ->label('Main Headline')
+                                        ->placeholder('e.g., Ultra Fast Fiber Internet'),
+                                    TextInput::make('hero_subtitle')
+                                        ->label('Sub-headline')
+                                        ->placeholder('e.g., Experience the best connectivity in the city.'),
+                                    TextInput::make('hero_button_text')
+                                        ->label('Action Button Label')
+                                        ->placeholder('e.g., View Packages'),
+                                    TextInput::make('registration_link')
+                                        ->label('Customer Portal Link')
+                                        ->url(),
                                 ])->columns(2),
-                            Section::make('Dynamic Modules')
+                            Section::make('Hero Slider Images')
+                                ->icon('heroicon-m-star')
+                                ->description('Add images for your hero slider. These will be displayed in a carousel on the homepage.')
                                 ->components([
-                                    TextInput::make('about_title'),
-                                    Textarea::make('about_body')->rows(3),
-                                    Repeater::make('services')
+                                    Repeater::make('hero_slides')
+                                        ->label('Hero Slider Images')
                                         ->schema([
-                                            TextInput::make('icon')->default('wifi'),
-                                            TextInput::make('title')->required(),
-                                            TextInput::make('description'),
-                                        ])->columns(3),
+                                            FileUpload::make('image')
+                                                ->image()
+                                                ->imageEditor()
+                                                ->imageAspectRatio('8:3')
+                                                ->automaticallyOpenImageEditorForAspectRatio()
+                                                ->automaticallyResizeImagesMode('cover')
+                                                ->automaticallyResizeImagesToWidth('1920')
+                                                ->automaticallyResizeImagesToHeight('720')
+                                                ->rules(['image','max:20480'])
+                                                ->required()
+                                                ->directory('hero'),
+                                            TextInput::make('caption')->placeholder('Slide caption...'),
+                                        ])->grid(3),
                                 ]),
-                            Section::make('Footer')
+                            Section::make('Dynamic Modules')
+                                ->icon('heroicon-m-square-3-stack-3d')
+                                ->description('Edit information about your company and highlight your key services.')
                                 ->components([
-                                    TextInput::make('footer_copyright'),
-                                    Toggle::make('is_active')->label('Site Active Status'),
+                                    TextInput::make('about_title')->label('About Section Title'),
+                                    Textarea::make('about_body')->label('About Company Content')->rows(3),
+                                    Repeater::make('services')
+                                        ->label('Our Services')
+                                        ->schema([
+                                            TextInput::make('icon')
+                                                ->label('Bootstrap Icon Class')
+                                                ->placeholder('e.g., bi bi-wifi, bi bi-shield-check, bi bi-speedometer')
+                                                ->default('bi bi-wifi'),
+                                            TextInput::make('title')->label('Service Title')->required(),
+                                            TextInput::make('description')->label('Short Description'),
+                                        ])->columns(3),
+                                    Repeater::make('valuable_clients')
+                                        ->label('Valuable Clients')
+                                        ->schema([
+                                            TextInput::make('name')
+                                                ->label('Client Name')
+                                                ->required(),
+                                            FileUpload::make('logo')
+                                                ->label('Client Logo')
+                                                ->image()
+                                                ->directory('clients')
+                                                ->helperText('If uploaded, the logo will be shown. If not, the name will be used.'),
+                                            TextInput::make('link')
+                                                ->label('Client Website/Link')
+                                                ->url()
+                                                ->placeholder('https://...'),
+                                        ])->columns(3)->grid(3),
+                                ]),
+                            Section::make('Footer & Global')
+                                ->icon('heroicon-m-bars-3')
+                                ->components([
+                                    TextInput::make('footer_copyright')
+                                        ->label('Copyright Text')
+                                        ->placeholder('e.g., © 2024 Your Company. All rights reserved.'),
+                                    Toggle::make('is_active')
+                                        ->label('Public Website Visible')
+                                        ->helperText('Turn off to hide the public website while keeping the admin panel active.'),
                                 ])->columns(2),
                         ]),
 
                     Tab::make('Stored Logs')
+                        ->icon('heroicon-m-list-bullet')
                         ->components([
                             ViewField::make('logs_table')->view('livewire.mikrotik.log-table-master-embed'),
                         ]),
 
                     Tab::make('System Utilities')
+                        ->icon('heroicon-m-wrench-screwdriver')
                         ->components([
                             ViewField::make('system_utilities')->view('livewire.mikrotik.system-utilities-embed'),
                         ]),
-
                     Tab::make('Data Review')
+                        ->icon('heroicon-m-circle-stack')
                         ->components([
                             Section::make('Full Key-Value Store Persistence')
+                                ->icon('heroicon-m-table-cells')
+                                ->description('Advanced view of all site configuration keys stored in the database. Use with caution.')
                                 ->components([
                                     Repeater::make('all_data')
+                                        ->label('Raw Data Store')
                                         ->schema([
-                                            TextInput::make('type')->required(),
-                                            Textarea::make('value')->rows(1),
+                                            TextInput::make('type')->label('Key Name')->required(),
+                                            Textarea::make('value')->label('Stored Value')->rows(1),
                                         ])->columns(2)->collapsed(),
-                                ]),
+                                 ]),
                         ]),
                 ]),
         ])->statePath('data');
@@ -285,7 +459,7 @@ class MainSiteSetup extends Component implements HasActions, HasForms
 
         // All keys from both migrations
         $keys = [
-            'site_name', 'site_title', 'site_status', 'site_maintenance', 'site_message',
+            'site_name', 'portal_name', 'site_title', 'site_status', 'site_maintenance', 'site_message',
             'site_logo', 'site_icon', 'site_favicon',
             'site_description', 'site_keywords', 'site_author',
             'site_email', 'site_phone', 'site_address', 'site_map',
@@ -296,7 +470,7 @@ class MainSiteSetup extends Component implements HasActions, HasForms
             'mysql_binary_path', 'log_server_enabled', 'log_server_routers', 'log_retention_days',
             'hero_title', 'hero_subtitle', 'hero_button_text', 'hero_button_link', 'registration_link',
             'about_title', 'about_body', 'packages_section_title', 'testimonial_title', 'footer_copyright', 'is_active',
-            'hero_slides', 'services', 'testimonials', 'gallery_items',
+            'hero_slides', 'services', 'testimonials', 'gallery_items', 'valuable_clients',
         ];
 
         foreach ($keys as $key) {
@@ -308,6 +482,10 @@ class MainSiteSetup extends Component implements HasActions, HasForms
         if (isset($state['all_data'])) {
             foreach ($state['all_data'] as $item) {
                 if (empty($item['type'])) {
+                    continue;
+                }
+                // Don't overwrite keys that were already handled above
+                if (in_array($item['type'], $keys)) {
                     continue;
                 }
                 MainSiteData::setValue($item['type'], $item['value']);

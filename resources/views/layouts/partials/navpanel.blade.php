@@ -88,6 +88,9 @@
                 <a wire:navigate.hover wire:current="active" class="dropdown-item link-600 fw-medium" href="{{route('sms-setup') }}">
                     SMS Setup
                 </a>
+                <a wire:navigate.hover wire:current="active" class="dropdown-item link-600 fw-medium" href="{{route('sms-bridge.index') }}">
+                    SMS Bridge
+                </a>
             </div>
         </div>
     </li>

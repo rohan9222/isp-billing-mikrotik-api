@@ -87,7 +87,7 @@
                     <span class="input-group-text">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803a7.5 7.5 0 0010.607 10.607z"/></svg>
                     </span>
-                    <input type="text" class="form-control" placeholder="Search message…" wire:model.live.debounce.400ms="searchMessage">
+                    <input type="text" class="form-control" placeholder="Search message…" wire:model.live.debounce.500ms="searchMessage">
                 </div>
             </div>
         </div>
@@ -202,7 +202,7 @@
 
         {{-- Auto-poll --}}
         @if($autoRefresh && $selectedRouter)
-        <div wire:poll.5000ms="pollLogs" class="d-none"></div>
+        <div wire:poll.10000ms="pollLogs" class="d-none"></div>
         @endif
     </div>
 </div>

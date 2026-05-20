@@ -26,6 +26,13 @@ Schedule::call(function () {
     app(MikrotikSync::class)->allSync();
 })->daily()->timezone('Asia/Dhaka');
 
+Schedule::command('app:poll-router-logs')->everyMinute();
+
+Schedule::call(function () {
+    $days = (int) \App\Models\MainSiteData::getValue('log_retention_days', 30);
+    app(\App\Http\Controllers\MikrotikController::class)->pruneOldLogs($days);
+})->dailyAt('04:00');
+
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote')->hourly();

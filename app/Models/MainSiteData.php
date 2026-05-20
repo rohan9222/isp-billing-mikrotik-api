@@ -99,6 +99,7 @@ class MainSiteData extends Model
                 'social_instagram' => null,
                 'social_youtube' => null,
                 'social_whatsapp' => null,
+                'valuable_clients' => [],
             ];
 
             foreach ($defaults as $key => $defaultValue) {

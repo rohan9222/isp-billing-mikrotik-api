@@ -178,7 +178,7 @@
                                 <div class="mb-3">
                                     <div class="d-flex justify-content-between text-dark mb-1" style="font-size:0.75rem; font-weight:700;">
                                         <span>CPU Usage</span>
-                                        <span class="text-info fw-bold">{{ ($info['cpu-count'] ?? '?') . ' × ' . ($info['cpu-frequency'] ?? '?') }}MHz <span class="text-muted fw-normal">({{ $cpuLoad }}%)</span></span>
+                                        <span class="text-info fw-bold">{{ ($info['cpu-count'] ?? '?') . ' × ' . ($info['cpu-frequency'] ?? '?') }} <span class="text-muted fw-normal">({{ $cpuLoad }}%)</span></span>
                                     </div>
                                     <div class="progress" style="height: 6px; border-radius:10px; background: rgba(0,0,0,0.05);">
                                         <div class="progress-bar {{ $cpuColor }}" role="progressbar" style="width: {{ $cpuLoad }}%;"></div>

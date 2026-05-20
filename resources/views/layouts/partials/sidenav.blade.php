@@ -9,15 +9,12 @@
             </button>
             <a class="navbar-brand me-1 me-sm-3" href="{{url('/')}}">
                 <div class="d-flex align-items-center">
+                    {{-- Check if site logo exists and display it, otherwise show site icon or name --}}
                     @if (siteUrlSettings('site_logo'))
-                        @if (file_exists(public_path(siteUrlSettings('site_logo'))))
-                            <img class="me-2" style="width: 190px; height: 53px;" src="{{ asset(siteUrlSettings('site_logo')) }}" alt="logo"/>
-                        @else
-                            <img class="me-2" style="width: 190px; height: 53px;" src="{{ asset('images/logo.png') }}" alt="logo"/>
-                        @endif
+                        <img class="me-2" style="width: 190px; height: 53px;" src="{{ site_image(siteUrlSettings('site_logo')) }}" alt="logo"/>
                     @else
                         @if (siteUrlSettings('site_icon'))
-                            <img class="me-2" src="{{ asset(siteUrlSettings('site_icon')) }}" alt="" width="40" />
+                            <img class="me-2" src="{{ site_image(siteUrlSettings('site_icon')) }}" alt="" width="40" />
                             <span class="font-sans-serif text-success">{{ siteUrlSettings('site_name') ?? 'Code Pagol' }}</span>
                         @else
                             <span class="font-sans-serif text-success">{{ siteUrlSettings('site_name') ?? 'Code Pagol' }}</span>
@@ -46,14 +43,10 @@
     <a class="navbar-brand me-1 me-sm-3" href="{{url('/')}}">
         <div class="d-flex align-items-center">
             @if (siteUrlSettings('site_logo'))
-                @if (file_exists(public_path(siteUrlSettings('site_logo'))))
-                    <img class="me-2" style="width: 190px; height: 53px;" src="{{ siteUrlSettings('site_logo') }}" alt="logo"/>
-                @else
-                    <img class="me-2" style="width: 190px; height: 53px;" src="{{ asset('images/logo.png') }}" alt="logo"/>
-                @endif
+                <img class="me-2" style="width: 190px; height: 53px;" src="{{ site_image(siteUrlSettings('site_logo')) }}" alt="logo"/>
             @else
                 @if (siteUrlSettings('site_icon'))
-                    <img class="me-2" src="{{ siteUrlSettings('site_icon') }}" alt="" width="40" />
+                    <img class="me-2" src="{{ site_image(siteUrlSettings('site_icon')) }}" alt="" width="40" />
                     <span class="font-sans-serif text-success">{{ siteUrlSettings('site_name') ?? 'Code Pagol' }}</span>
                 @else
                     <span class="font-sans-serif text-success">{{ siteUrlSettings('site_name') ?? 'Code Pagol' }}</span>
@@ -84,16 +77,11 @@
         </div>
         <a class="navbar-brand" href="{{url('/')}}">
             <div class="d-flex align-items-center {{ siteUrlSettings('site_logo') ? 'py-1' : 'py-3' }}">
-                {{-- Check if site logo exists and display it, otherwise show site icon or name --}}
                 @if (siteUrlSettings('site_logo'))
-                    @if (file_exists(public_path(siteUrlSettings('site_logo'))))
-                        <img class="me-2" style="width: 190px; height: 60px;" src="{{ asset(siteUrlSettings('site_logo')) }}" alt="logo"/>
-                    @else
-                        <img class="me-2" style="width: 190px; height: 60px;" src="{{ asset('images/logo.png') }}" alt="logo"/>
-                    @endif
+                    <img class="me-2" style="width: 190px; height: 60px;" src="{{ site_image(siteUrlSettings('site_logo')) }}" alt="logo"/>
                 @else
                     @if (siteUrlSettings('site_icon'))
-                        <img class="me-2" src="{{ siteUrlSettings('site_icon') }}" alt="" width="40" />
+                        <img class="me-2" src="{{ site_image(siteUrlSettings('site_icon')) }}" alt="" width="40" />
                         <span class="font-sans-serif text-success">{{ siteUrlSettings('site_name') ?? 'Code Pagol' }}</span>
                     @else
                         <span class="font-sans-serif text-success">{{ siteUrlSettings('site_name') ?? 'Code Pagol' }}</span>

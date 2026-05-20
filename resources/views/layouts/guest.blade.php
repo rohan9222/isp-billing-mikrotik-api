@@ -10,7 +10,7 @@
         <!-- ===============================================-->
         <title>{{ siteUrlSettings('site_title') ?? config('app.name') }}</title>
 
-        <link rel="shortcut icon" href="{{ siteUrlSettings('site_favicon') ?? asset('images/favicon.png') }}" type="image/x-icon">
+        <link rel="shortcut icon" href="{{ site_image(siteUrlSettings('site_favicon'), 'images/favicon.png') }}" type="image/x-icon">
 
         <!-- Scripts -->
         @vite(['resources/sass/guest.scss'])

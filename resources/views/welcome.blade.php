@@ -37,14 +37,10 @@
 			<!-- site logo or Site brand name -->
 			<a class="navbar-brand" href="">
                 @if (siteUrlSettings('site_logo'))
-                    @if (file_exists(public_path(siteUrlSettings('site_logo'))))
-                        <img class="d-inline-block align-text-top" style="width: 190px; height: 53px;" src="{{ asset(siteUrlSettings('site_logo')) }}" alt="logo"/>
-                    @else
-                        <img class="d-inline-block align-text-top" style="width: 190px; height: 53px;" src="{{ asset('images/logo.png') }}" alt="logo"/>
-                    @endif
+                    <img class="d-inline-block align-text-top" style="width: 190px; height: 53px;" src="{{ site_image(siteUrlSettings('site_logo')) }}" alt="logo"/>
                 @else
                     @if (siteUrlSettings('site_icon'))
-                        <img class="d-inline-block align-text-top" src="{{ asset(siteUrlSettings('site_icon')) }}" alt="" width="40" />
+                        <img class="d-inline-block align-text-top" src="{{ site_image(siteUrlSettings('site_icon')) }}" alt="" width="40" />
                         <span class="font-sans-serif text-success">{{ siteUrlSettings('site_name') ?? 'Code Pagol' }}</span>
                     @else
                         <span class="font-sans-serif text-success">{{ siteUrlSettings('site_name') ?? 'Code Pagol' }}</span>

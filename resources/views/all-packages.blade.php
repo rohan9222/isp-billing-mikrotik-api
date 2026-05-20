@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <title>All Packages - {{ siteUrlSettings('site_name') ?? config('app.name') }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="shortcut icon" href="{{ siteUrlSettings('site_favicon') ? asset(siteUrlSettings('site_favicon')) : 'https://fcnetwork24.com/img/icon.png' }}" type="image/x-icon">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://fcnetwork24.com/style.css">
+    <link rel="shortcut icon" href="{{ site_image(siteUrlSettings('site_favicon')) }}" type="image/x-icon">
+    @vite(['resources/sass/main-site.scss', 'resources/js/main-site.js'])
     <style>
         .all-packages-header { padding: 60px 0; background: #28a745; color: #fff; text-align: center; }
         .pricing-section { padding: 80px 0; background: #f8f9fa; min-height: 80vh; }
@@ -84,6 +83,7 @@
     <footer style="padding: 30px 0; background: #333; color: #ccc; text-align: center;">
         <div class="container">
             <p>&copy; {{ date('Y') }} {{ siteUrlSettings('site_name') ?? config('app.name') }}. All rights reserved.</p>
+            <p class="small">{{ siteUrlSettings('site_phone') }} | {{ siteUrlSettings('site_email') }}</p>
         </div>
     </footer>
 

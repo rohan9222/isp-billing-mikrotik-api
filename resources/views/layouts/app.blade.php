@@ -13,7 +13,7 @@
     <!-- ===============================================-->
     <title>{{ siteUrlSettings('site_title') ?? config('app.name') }}</title>
 
-    <link rel="shortcut icon" href="{{ siteUrlSettings('site_favicon') ?? asset('images/favicon.png') }}" type="image/x-icon">
+    <link rel="shortcut icon" href="{{ site_image(siteUrlSettings('site_favicon'), 'images/favicon.png') }}" type="image/x-icon">
 
     <!-- ===============================================-->
     <!--    Favicon-->
@@ -79,6 +79,7 @@
             @include('layouts.partials.sidenav')
             <div class="content">
                 @include('layouts.partials.mobile-button-nav')
+
 
                 @include('layouts.partials.topnav')
                 @if (isset($header))

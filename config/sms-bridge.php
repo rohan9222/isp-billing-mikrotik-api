@@ -12,7 +12,7 @@ return [
     |
     */
 
-    'default' => env('SMS_BRIDGE_GATEWAY', 'adnsms'),
+    'default' => env('SMS_BRIDGE_GATEWAY', 'log'),
 
     /*
     |--------------------------------------------------------------------------
@@ -28,6 +28,9 @@ return [
 
     'credentials' => [
         'url' => env('SMS_BRIDGE_URL', ''),
+        'api_send_url' => env('SMS_BRIDGE_SEND_URL', ''),
+        'api_balance_url' => env('SMS_BRIDGE_BALANCE_URL', ''),
+        'api_profile_url' => env('SMS_BRIDGE_PROFILE_URL', ''),
         'api_key' => env('SMS_BRIDGE_API_KEY', ''),
         'api_secret' => env('SMS_BRIDGE_API_SECRET', ''),
         'sender_id' => env('SMS_BRIDGE_SENDER_ID', ''),

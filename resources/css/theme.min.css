@@ -21881,17 +21881,6 @@ code {
   -moz-osx-font-smoothing: auto;
 }
 
-section {
-  position: relative;
-  padding-top: 4rem;
-  padding-bottom: 4rem;
-}
-@media (min-width: 992px) {
-  section {
-    padding-top: 7.5rem;
-    padding-bottom: 7.5rem;
-  }
-}
 
 input,
 button,

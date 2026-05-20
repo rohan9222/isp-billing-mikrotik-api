@@ -205,13 +205,26 @@
             </div>
         </a>
         <!-- parent pages-->
-        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('sms-setup') }}" role="button">
+        <!-- SMS Management Dropdown -->
+        <a class="nav-link dropdown-indicator collapsed" href="#smsSetupDropdown" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="smsSetupDropdown">
             <div class="d-flex align-items-center">
                 <span class="nav-link-icon">
                     <i class="bi bi-envelope-check"></i>
                 </span>
-                <span class="nav-link-text ps-1">SMS Setup</span>
+                <span class="nav-link-text ps-1">SMS Management</span>
             </div>
         </a>
+        <ul class="nav collapse" id="smsSetupDropdown">
+            <li class="nav-item">
+                <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('sms-setup') }}">
+                    <div class="d-flex align-items-center"><span class="nav-link-text ps-1">SMS Setup</span></div>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('sms-bridge.index') }}">
+                    <div class="d-flex align-items-center"><span class="nav-link-text ps-1">SMS Bridge</span></div>
+                </a>
+            </li>
+        </ul>
     </li>
 </ul>

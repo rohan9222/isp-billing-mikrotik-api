@@ -8,10 +8,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ siteUrlSettings('site_description') ?? '' }}">
 
-    <link rel="shortcut icon" href="{{ siteUrlSettings('site_favicon') ? asset(siteUrlSettings('site_favicon')) : 'https://fcnetwork24.com/img/icon.png' }}" type="image/x-icon">
+    <link rel="shortcut icon" href="{{ site_image(siteUrlSettings('site_favicon')) }}" type="image/x-icon">
 
-    <link rel="stylesheet" href="https://fcnetwork24.com/css/lightbox.css">
-    <link rel="stylesheet" href="https://fcnetwork24.com/style.css">
+    @vite(['resources/sass/main-site.scss', 'resources/js/main-site.js'])
+
+    {{-- <link rel="stylesheet" href="https://fcnetwork24.com/css/lightbox.css"> --}}
+    {{-- <link rel="stylesheet" href="https://fcnetwork24.com/style.css"> --}}
 </head>
 
 <body id="top" class="container-fluid m-0 p-0">
@@ -24,17 +26,12 @@
             {{-- Logo / Brand --}}
             <a class="navbar-brand" href="#top">
                 @if (siteUrlSettings('site_logo'))
-                    @if (file_exists(public_path(siteUrlSettings('site_logo'))))
-                        <img class="d-inline-block align-text-top" style="width:190px;height:53px;"
-                             src="{{ asset(siteUrlSettings('site_logo')) }}" alt="logo" />
-                    @else
-                        <img class="d-inline-block align-text-top" style="width:190px;height:53px;"
-                             src="{{ asset('images/logo.png') }}" alt="logo" />
-                    @endif
+                    <img class="d-inline-block align-text-top" style="width:190px;height:53px;"
+                         src="{{ site_image(siteUrlSettings('site_logo')) }}" alt="logo" />
                 @else
                     @if (siteUrlSettings('site_icon'))
                         <img class="d-inline-block align-text-top"
-                             src="{{ asset(siteUrlSettings('site_icon')) }}" alt="" width="40" />
+                             src="{{ site_image(siteUrlSettings('site_icon')) }}" alt="" width="40" />
                         <span class="font-sans-serif text-success">{{ siteUrlSettings('site_name') ?? config('app.name') }}</span>
                     @else
                         <span class="font-sans-serif text-success">{{ siteUrlSettings('site_name') ?? config('app.name') }}</span>
@@ -93,11 +90,11 @@
                     @if(count($slides) > 0)
                         @foreach($slides as $index => $slide)
                             <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
-                                <img src="{{ isset($slide['image']) ? asset($slide['image']) : '' }}"
-                                     class="img-fluid" alt="{{ $slide['caption'] ?? 'Slide '.($index+1) }}">
+                                <img src="{{ isset($slide['image']) ? site_image($slide['image']) : '' }}"
+                                     class="img-fluid" style="width: 100%; height: auto; object-fit: cover;" alt="{{ $slide['caption'] ?? 'Slide '.($index+1) }}">
                                 @if(!empty($slide['caption']))
                                     <div class="carousel-caption d-none d-md-block">
-                                        <h5>{{ $slide['caption'] }}</h5>
+                                        <h2 class="display-4 fw-bold">{{ $slide['caption'] }}</h2>
                                     </div>
                                 @endif
                             </div>
@@ -138,14 +135,16 @@
                 <div class="row">
                     <div class="col-md-12">
                         <div class="title">
-                            @if($siteData?->about_tagline)
-                                <h6 class="text-success">{{ $siteData->about_tagline }}</h6>
+                            @if($siteData?->about_title)
+                                <h6 class="text-success">{{ $siteData->about_title }}</h6>
                             @else
-                                <h6 class="text-success">Welcome to {{ siteUrlSettings('site_name') ?? config('app.name') }}</h6>
+                                <h6 class="text-success">Welcome to {{ siteUrlSettings('portal_name') ?? siteUrlSettings('site_name') }}</h6>
                             @endif
-                            <h2>{{ $siteData?->about_title ?? 'We are always Faster & Reliable' }}</h2>
+                            <h2>{{ $siteData?->hero_title ?? 'We are always Faster & Reliable' }}</h2>
                             @if($siteData?->about_body)
                                 <p>{!! nl2br(e($siteData->about_body)) !!}</p>
+                            @elseif($siteData?->hero_subtitle)
+                                <p>{{ $siteData->hero_subtitle }}</p>
                             @endif
                             <p>Our Services are</p>
                         </div>
@@ -160,7 +159,7 @@
                             <div class="col-md-4 col-xs-6 col-sm-6">
                                 <div class="feature-block text-center">
                                     <div class="icon-box">
-                                        <i class="{{ $service['icon'] ?? 'fa-solid fa-wifi' }}"></i>
+                                        <i class="{{ $service['icon'] ?? 'bi bi-wifi' }}"></i>
                                     </div>
                                     <h4 class="wow fadeInUp" data-wow-delay=".3s">{{ $service['title'] ?? '' }}</h4>
                                     <p class="wow fadeInUp" data-wow-delay=".5s">{{ $service['description'] ?? '' }}</p>
@@ -197,6 +196,62 @@
             </div>
         </section>
 
+        {{-- =========================================================
+            Valuable Clint
+        ========================================================== --}}
+        <section id="client-logo">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="title p-0">
+                            <h2 class="text-success">Our Valuable Clients</h2>
+                        </div>
+                    </div>
+                </div>
+                <div id="ClientCarousel" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-inner">
+                        @php
+                            $clients = $siteData?->valuable_clients ?? [];
+                            // If empty, use some dummy data for demo
+                            if(count($clients) === 0) {
+                                $clients = [
+                                    ['name' => 'Google'], ['name' => 'Microsoft'], ['name' => 'Amazon'],
+                                    ['name' => 'Facebook'], ['name' => 'Twitter'], ['name' => 'Apple'],
+                                    ['name' => 'Intel'], ['name' => 'IBM'], ['name' => 'Oracle']
+                                ];
+                            }
+                            $chunks = array_chunk($clients, 6);
+                        @endphp
+
+                        @foreach($chunks as $index => $chunk)
+                            <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
+                                <div class="d-flex justify-content-center flex-wrap gap-3 p-4">
+                                    @foreach($chunk as $client)
+                                        <div class="client-item" style="flex: 0 0 180px;">
+                                            @if(!empty($client['link']))
+                                                <a href="{{ $client['link'] }}" target="_blank" title="{{ $client['name'] }}">
+                                            @endif
+                                            
+                                            @if(!empty($client['logo']))
+                                                <img class="img-thumbnail client-logo-img" src="{{ site_image($client['logo']) }}" alt="{{ $client['name'] }}">
+                                            @else
+                                                <div class="client-name-design img-thumbnail">
+                                                    <span>{{ $client['name'] }}</span>
+                                                </div>
+                                            @endif
+
+                                            @if(!empty($client['link']))
+                                                </a>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </section>
 
         {{-- =========================================================
              GALLERY
@@ -226,10 +281,10 @@
                                         <li class="mix {{ $item['category'] ?? 'category-1' }} col-md-2 col-sm-3 col-6"
                                             data-my-order="{{ $index + 1 }}">
                                             <a class="gallery-items-link"
-                                               href="{{ asset($item['image']) }}"
+                                               href="{{ site_image($item['image']) }}"
                                                data-lightbox="gallery-set"
                                                data-title="{{ $item['caption'] ?? '' }}">
-                                                <img class="img-thumbnail" src="{{ asset($item['image']) }}"
+                                                <img class="img-thumbnail" src="{{ site_image($item['image']) }}"
                                                      alt="{{ $item['caption'] ?? '' }}">
                                                 <div class="overlay">
                                                     <h3>{{ $item['caption'] ?? 'View' }}</h3>
@@ -379,7 +434,7 @@
                                 @foreach($teamMembers as $member)
                                     <div>
                                         <div class="block wow fadeInLeft" data-wow-delay=".9s">
-                                            <img src="{{ isset($member['image']) && $member['image'] ? asset($member['image']) : asset('img/team-demo.png') }}" alt="{{ $member['name'] ?? '' }}">
+                                            <img src="{{ isset($member['image']) && $member['image'] ? site_image($member['image']) : asset('img/team-demo.png') }}" alt="{{ $member['name'] ?? '' }}">
                                             <div class="team-overlay">
                                                 <h3>{{ strtoupper($member['name'] ?? '') }}
                                                     <span>{{ $member['role'] ?? '' }}</span>
@@ -433,7 +488,7 @@
                                     <div>
                                         <div class="block">
                                             @if(!empty($post['image']))
-                                                <img src="{{ asset($post['image']) }}" alt="{{ $post['title'] ?? '' }}" class="img-thumbnail">
+                                                <img src="{{ site_image($post['image']) }}" alt="{{ $post['title'] ?? '' }}" class="img-thumbnail">
                                             @else
                                                 <img src="{{ asset('img/blog/blog-1.jpg') }}" alt="{{ $post['title'] ?? '' }}" class="img-thumbnail">
                                             @endif
@@ -495,7 +550,7 @@
                                 <div class="media wow fadeInLeft" data-wow-delay=".3s">
                                     <div class="media-left">
                                         <a href="#">
-                                            <img src="{{ !empty($testimonial['image']) ? asset($testimonial['image']) : asset('img/service-img.png') }}" alt="{{ $testimonial['name'] ?? '' }}">
+                                            <img src="{{ !empty($testimonial['image']) ? site_image($testimonial['image']) : asset('img/service-img.png') }}" alt="{{ $testimonial['name'] ?? '' }}">
                                         </a>
                                     </div>
                                     <div class="media-body">
@@ -576,30 +631,29 @@
         <footer>
             <div class="container">
                 <div class="row">
-                    <div class="col-10">
+                    <div class="col-md-6">
                         <div>
                             <a href="#top">
                                 @if (siteUrlSettings('site_logo'))
-                                    @if (file_exists(public_path(siteUrlSettings('site_logo'))))
-                                        <img class="d-inline-block align-text-top"
-                                             src="{{ asset(siteUrlSettings('site_logo')) }}" alt="logo" />
-                                    @else
-                                        <img class="d-inline-block align-text-top"
-                                             src="{{ asset('images/logo.png') }}" alt="logo" />
-                                    @endif
+                                    <img class="d-inline-block align-text-top mb-3" style="max-width: 190px;"
+                                         src="{{ site_image(siteUrlSettings('site_logo')) }}" alt="logo" />
                                 @else
-                                    <span class="font-sans-serif text-success">{{ siteUrlSettings('site_name') ?? config('app.name') }}</span>
+                                    <h3 class="text-success fw-bold">{{ siteUrlSettings('site_name') ?? config('app.name') }}</h3>
                                 @endif
                             </a>
-                            <p>{{ $siteData?->footer_copyright ?? 'All rights reserved © ' . date('Y') }}</p>
+                            <p class="mb-1"><i class="fa-solid fa-location-dot me-2"></i>{{ siteUrlSettings('site_address') ?? 'Our Head Office' }}</p>
+                            <p class="mb-1"><i class="fa-solid fa-phone me-2"></i>{{ siteUrlSettings('site_phone') ?? '01700000000' }}</p>
+                            <p class="mb-3"><i class="fa-solid fa-envelope me-2"></i>{{ siteUrlSettings('site_email') ?? 'support@example.com' }}</p>
+                            
+                            <p class="text-muted small">{{ $siteData?->footer_copyright ?? 'All rights reserved © ' . date('Y') }}</p>
 
                             {{-- Social Links --}}
                             @php
-                                $fb = $siteData?->social_facebook ?? siteUrlSettings('site_facebook');
-                                $tw = $siteData?->social_twitter  ?? siteUrlSettings('site_twitter');
-                                $ig = $siteData?->social_instagram ?? siteUrlSettings('site_instagram');
-                                $yt = $siteData?->social_youtube  ?? siteUrlSettings('site_youtube');
-                                $wa = $siteData?->social_whatsapp ?? siteUrlSettings('site_whatsapp');
+                                $fb = siteUrlSettings('site_facebook');
+                                $tw = siteUrlSettings('site_twitter');
+                                $ig = siteUrlSettings('site_instagram');
+                                $yt = siteUrlSettings('site_youtube');
+                                $wa = siteUrlSettings('site_whatsapp');
                             @endphp
                             <div class="mt-2 d-flex gap-3">
                                 @if($fb)   <a href="{{ $fb }}" target="_blank" class="text-success"><i class="fa-brands fa-facebook-f fa-lg"></i></a> @endif
@@ -631,12 +685,18 @@
     </button>
 
     {{-- Scripts --}}
-    <script src="https://fcnetwork24.com/js/jquery.js"></script>
+    {{-- <script src="https://fcnetwork24.com/js/jquery.js"></script>
     <script src="https://fcnetwork24.com/js/bootstrap.js"></script>
     <script src="https://fcnetwork24.com/js/slick.js"></script>
     <script src="https://fcnetwork24.com/js/jquery.mixitup.js"></script>
     <script src="https://fcnetwork24.com/js/lightbox.js"></script>
-    <script src="https://fcnetwork24.com/js/script.js"></script>
+    <script src="https://fcnetwork24.com/js/script.js"></script> --}}
 
+    <script>
+        $(document).ready(function(){
+            // Bootstrap carousel is auto-initialized by data-bs-ride="carousel"
+            // But we can ensure it's running smoothly here if needed.
+        });
+    </script>
 </body>
 </html>
