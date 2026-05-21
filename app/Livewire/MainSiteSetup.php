@@ -5,7 +5,6 @@ namespace App\Livewire;
 use App\Http\Controllers\MikrotikController;
 use App\Models\MainSiteData;
 use App\Models\RouterList;
-use App\Models\SiteSetting;
 use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -16,7 +15,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Components\ViewField;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -157,12 +156,14 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                                             'active' => 'Active (Live)',
                                             'disabled' => 'Disabled (Offline)'
                                         ])
+                                        ->required()
                                         ->default('active')
                                         ->prefixIcon('heroicon-m-check-circle'),
-                                    Toggle::make('site_maintenance')
+                                    ToggleButtons::make('site_maintenance')
                                         ->label('Enable Maintenance Mode')
-                                        ->onColor('danger')
-                                        ->offColor('success'),
+                                        ->boolean()
+                                        ->grouped()
+                                        ->default('disabled'),
                                     Textarea::make('site_message')
                                         ->label('System Announcement')
                                         ->placeholder('Short tagline or notice to display to all users...')
@@ -321,8 +322,10 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                                 ->icon('heroicon-m-document-text')
                                 ->description('Configure real-time log streaming from your MikroTik routers to this server.')
                                 ->components([
-                                    Toggle::make('log_server_enabled')
+                                    ToggleButtons::make('log_server_enabled')
                                         ->label('Enable Remote Log Streaming')
+                                        ->boolean()
+                                        ->grouped()
                                         ->helperText('Enables the background listener for incoming router logs.'),
                                     Select::make('log_server_routers')
                                         ->multiple()
@@ -417,7 +420,9 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                                     TextInput::make('footer_copyright')
                                         ->label('Copyright Text')
                                         ->placeholder('e.g., © 2024 Your Company. All rights reserved.'),
-                                    Toggle::make('is_active')
+                                    ToggleButtons::make('is_active')
+                                        ->boolean()
+                                        ->grouped()
                                         ->label('Public Website Visible')
                                         ->helperText('Turn off to hide the public website while keeping the admin panel active.'),
                                 ])->columns(2),
@@ -433,21 +438,6 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                         ->icon('heroicon-m-wrench-screwdriver')
                         ->components([
                             ViewField::make('system_utilities')->view('livewire.mikrotik.system-utilities-embed'),
-                        ]),
-                    Tab::make('Data Review')
-                        ->icon('heroicon-m-circle-stack')
-                        ->components([
-                            Section::make('Full Key-Value Store Persistence')
-                                ->icon('heroicon-m-table-cells')
-                                ->description('Advanced view of all site configuration keys stored in the database. Use with caution.')
-                                ->components([
-                                    Repeater::make('all_data')
-                                        ->label('Raw Data Store')
-                                        ->schema([
-                                            TextInput::make('type')->label('Key Name')->required(),
-                                            Textarea::make('value')->label('Stored Value')->rows(1),
-                                        ])->columns(2)->collapsed(),
-                                 ]),
                         ]),
                 ]),
         ])->statePath('data');

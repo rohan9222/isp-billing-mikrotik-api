@@ -33,7 +33,6 @@ use App\Livewire\PaymentCollection;
 use App\Livewire\Report\DisReport;
 use App\Livewire\SMSSetup;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
@@ -44,7 +43,7 @@ $baseDomain = parse_url(config('app.url'), PHP_URL_HOST) ?: config('app.url');
 Route::domain($baseDomain)->group(function () {
     Route::get('/', [MainSiteController::class, 'index'])->name('welcome');
     Route::get('/all-packages', [MainSiteController::class, 'allPackages'])->name('all-packages');
-    
+
     // Warning / Recharge page for expired users
     Route::get('/warning', function () {
         return view('warning');
@@ -66,31 +65,6 @@ Route::domain($baseDomain)->group(function () {
         }
 
         return redirect()->away('https://billing.'.$host);
-    });
-
-    Route::get('/php-artisan-optimize', function () {
-        $commands = [
-            'config:cache',
-            'route:cache',
-            'view:cache',
-            'cache:clear',
-            'event:cache',
-            'compiled:clear',
-            'storage:link',
-            // Add more commands as needed
-        ];
-
-        $output = [];
-        foreach ($commands as $command) {
-            try {
-                Artisan::call($command);
-                $output[$command] = Artisan::output();
-            } catch (Exception $e) {
-                $output[$command] = $e->getMessage();
-            }
-        }
-
-        return response()->json($output);
     });
 });
 

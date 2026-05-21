@@ -175,25 +175,6 @@ class CustomersController extends Controller
             ]);
         }
 
-        // ১. যদি এই মাসের Payment Summary না থাকে, তাহলে তৈরি করো
-        $summaryExists = PaymentSummary::where('customer_payment_unique_id', $unique_id)
-            ->where('summary_date', Carbon::now()->firstOfMonth()->format('Y-m-d'))
-            ->exists();
-
-        if (! $summaryExists) {
-            PaymentSummary::create([
-                'customer_payment_unique_id' => $unique_id,
-                'summary_date' => Carbon::now()->firstOfMonth()->format('Y-m-d'),
-                'monthly_rent' => $bill->monthly_rent,
-                'additional_charge' => $bill->additional_charge,
-                'vat' => $bill->vat,
-                'previous_due' => $bill->previous_due,
-                'advance' => $bill->advance,
-                'discount' => $bill->discount,
-            ]);
-        }
-
-        // ২. গ্রাহক তথ্য ও PPP ইউজার লোড করো
         $customer = CustomersInfo::where('customer_unique_id', $unique_id)
             ->with('pppUser')
             ->first();
@@ -205,47 +186,93 @@ class CustomersController extends Controller
             ]);
         }
 
-        // ৩. গ্রাহকের স্ট্যাটাস active করো
-        $customer->status = 'active';
-        $customer->save();
+        try {
+            \DB::beginTransaction();
 
-        // ৪. auto_disable_date*auto_disable_month আজকের সমান বা ছোট হলে, যতবার দরকার ১ মাস করে বাড়াও
-        $autoDisableDate = Carbon::parse($bill->auto_disable_date)->startOfDay();
-        $autoDisableMonth = $bill->auto_disable_month;
-        $disableDate = $autoDisableDate->copy()->addMonths($autoDisableMonth);
+            // ১. যদি এই মাসের Payment Summary না থাকে, তাহলে তৈরি করো
+            $summaryExists = PaymentSummary::where('customer_payment_unique_id', $unique_id)
+                ->where('summary_date', Carbon::now()->firstOfMonth()->format('Y-m-d'))
+                ->exists();
 
-        if ($disableDate->lte(today())) {
-            while ($disableDate->lte(today())) {
-                $disableDate->addMonth();
+            if (! $summaryExists) {
+                PaymentSummary::create([
+                    'customer_payment_unique_id' => $unique_id,
+                    'summary_date' => Carbon::now()->firstOfMonth()->format('Y-m-d'),
+                    'monthly_rent' => $bill->monthly_rent,
+                    'additional_charge' => $bill->additional_charge,
+                    'vat' => $bill->vat,
+                    'previous_due' => $bill->previous_due,
+                    'advance' => $bill->advance,
+                    'discount' => $bill->discount,
+                ]);
             }
 
-            $bill->auto_disable_date = $disableDate->copy()->subMonths($autoDisableMonth)->toDateString();
-            $bill->save();
-        }
+            // ২. গ্রাহকের স্ট্যাটাস active করো এবং disable_count রিসেট করো
+            $customer->status = 'active';
+            $customer->disable_count = 0;
+            $customer->save();
 
-        // ৫. ppp_user active করো
-        PPPSecrets::where('id', $customer->ppp_user_id)->update([
-            'status' => 'active',
-        ]);
+            // ৩. auto_disable_date*auto_disable_month আজকের সমান বা ছোট হলে, যতবার দরকার ১ মাস করে বাড়াও
+            if ($bill->auto_disable_date) {
+                $autoDisableDate = Carbon::parse($bill->auto_disable_date)->startOfDay();
+                $autoDisableMonth = $bill->auto_disable_month;
+                $disableDate = $autoDisableDate->copy()->addMonths($autoDisableMonth);
 
-        // ৬. মিক্রোটিকে enablePPPSecret কল করো
-        $response = app(MikrotikController::class)->enablePPPSecret(
-            $unique_id,
-            $customer->pppUser->router_name,
-            $customer->pppUser->username
-        );
+                if ($disableDate->lte(today())) {
+                    while ($disableDate->lte(today())) {
+                        $disableDate->addMonth();
+                    }
 
-        if ($response !== '') {
+                    $bill->auto_disable_date = $disableDate->copy()->subMonths($autoDisableMonth)->toDateString();
+                    $bill->save();
+                }
+            }
+
+            if ($customer->pppUser) {
+                // ৪. মিক্রোটিকে enablePPPSecret কল করো (throws on failure)
+                app(MikrotikController::class)->enablePPPSecret(
+                    $unique_id,
+                    $customer->pppUser->router_name,
+                    $customer->pppUser->username
+                );
+
+                // ৫. Restore the profile on the router
+                app(MikrotikController::class)->updatePPPSecret(
+                    $customer->pppUser->router_name,
+                    $customer->pppUser->username,
+                    'profile',
+                    $customer->pppUser->profile
+                );
+
+                // ৬. Kick any active session (non-critical)
+                try {
+                    app(MikrotikController::class)->singleWrite(
+                        $customer->pppUser->router_name,
+                        '/ppp active remove [find name="' . $customer->pppUser->username . '"]'
+                    );
+                } catch (\Exception $e) {
+                    \Log::debug('customerEnable: active session removal skipped: ' . $e->getMessage());
+                }
+
+                // ৭. Sync ppp_secrets.status
+                PPPSecrets::where('id', $customer->ppp_user_id)->update(['status' => 'active']);
+            }
+
+            \DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Customer enabled successfully' . ($customer->pppUser ? ' and PPP secret activated' : ''),
+            ]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error("customerEnable failed for {$unique_id}: " . $e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => $response,
+                'message' => 'Failed to enable customer on router: ' . $e->getMessage(),
             ]);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Customer enabled successfully and PPP secret activated',
-        ]);
     }
 
     /**
@@ -289,24 +316,26 @@ class CustomersController extends Controller
                 return response()->json(['error' => true, 'message' => 'Customer not found']);
             }
 
-            // Check if PPP User exists and delete it from Mikrotik
+            \DB::beginTransaction();
+
+            // Check if PPP User exists and delete it from Mikrotik (throws on failure)
             if ($customerDelete->pppUser) {
-                $response = app(MikrotikController::class)->removePPPSecret(
+                app(MikrotikController::class)->removePPPSecret(
                     $decryptedId,
                     $customerDelete->pppUser->router_name,
                     $customerDelete->pppUser->username
                 );
-
-                if ($response !== '') {
-                    return response()->json(['error' => true, 'message' => $response]);
-                }
             }
 
             // Delete the customer
             $customerDelete->delete();
 
+            \DB::commit();
+
             return response()->json(['success' => true, 'message' => 'Customer deleted successfully']);
         } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Customer destroy failed: ' . $e->getMessage());
             // Handle decryption errors or unexpected exceptions
             return response()->json(['error' => true, 'message' => $e->getMessage()]);
         }

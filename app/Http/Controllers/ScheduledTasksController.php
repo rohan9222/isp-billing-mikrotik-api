@@ -8,6 +8,7 @@ use App\Models\CustomersInfo;
 use App\Models\NotificationLogs;
 use App\Models\PaymentSummary;
 use App\Models\RouterList;
+use App\Models\PPPSecrets;
 use App\Services\MikrotikSSHService;
 use Carbon\Carbon;
 use Codepagol\SmsBridge\Facades\SmsBridge;
@@ -265,16 +266,19 @@ class ScheduledTasksController extends Controller
                 $vat = $billing->vat;
                 $due = $billing->due_amount;
 
-                if (siteUrlSettings('disable_check_no') === null || siteUrlSettings('disable_check_no') < 1 || siteUrlSettings('disable_check_no') === 1) {
+                // Cast to int: siteUrlSettings() returns a string from DB, === 1 would always fail
+                $disableCheckNo = (int) (siteUrlSettings('disable_check_no') ?? 1);
+
+                if ($disableCheckNo <= 1) {
                     $autoDisableDate = Carbon::parse($billing->auto_disable_date)->startOfDay();
                 } else {
-                    $autoDisableDate = Carbon::parse($billing->auto_disable_date)->addDays(siteUrlSettings('disable_check_days') * $customer->disable_count)->startOfDay();
+                    $autoDisableDate = Carbon::parse($billing->auto_disable_date)->addDays((int) siteUrlSettings('disable_check_days') * $customer->disable_count)->startOfDay();
                 }
                 // for previous due
-                if (siteUrlSettings('disable_check_no') === null || siteUrlSettings('disable_check_no') < 1 || siteUrlSettings('disable_check_no') === 1) {
+                if ($disableCheckNo <= 1) {
                     $previousDueDisableDate = Carbon::parse($billing->auto_disable_date)->month(now()->month)->year(now()->year)->startOfDay();
                 } else {
-                    $previousDueDisableDate = Carbon::parse($billing->auto_disable_date)->month(now()->month)->year(now()->year)->addDays(siteUrlSettings('disable_check_days') * $customer->disable_count)->startOfDay();
+                    $previousDueDisableDate = Carbon::parse($billing->auto_disable_date)->month(now()->month)->year(now()->year)->addDays((int) siteUrlSettings('disable_check_days') * $customer->disable_count)->startOfDay();
                 }
                 $autoDisableMonth = $billing->auto_disable_month;
                 $disableLimitDate = $autoDisableDate->copy()->addMonths($autoDisableMonth);
@@ -282,20 +286,21 @@ class ScheduledTasksController extends Controller
                 $totalBill = ($monthlyRent + $additionalCharge + $vat) * $autoDisableMonth;
                 $shouldDisable = false;
                 $disableFor = '';
-                // ✅ logic ১: for previous due
-                if ($billing->previous_due > 0 && $due > $totalBill && $today == $previousDueDisableDate) {
+
+                // ✅ logic ১: Disable for previous due on the exact due date
+                if ($billing->previous_due > 0 && $due > $totalBill && $today->isSameDay($previousDueDisableDate)) {
                     $shouldDisable = true;
                     $disableFor = 'Auto Disable for Previous Due';
                 }
 
-                // ✅ logic ২: Due == Total Bill → Auto Disable Date <= today < DisableLimitDate
-                if ($due > $totalBill && $today->gte($disableLimitDate)) {
+                // ✅ logic ২: Due exceeds totalBill → disable when autoDisableDate is reached
+                if ($due > $totalBill && $today->gte($autoDisableDate)) {
                     $shouldDisable = true;
                     $disableFor = 'Auto Disable for Due';
                 }
 
-                // ✅ logic ২: Due == Total Bill → Auto Disable Date <= today < DisableLimitDate
-                elseif ($due > 0 && $due <= $totalBill && $disableLimitDate && $today->gte($disableLimitDate)) {
+                // ✅ logic ৩: Small due (≤ totalBill) → only disable after full grace period (disableLimitDate)
+                elseif ($due > 0 && $due <= $totalBill && $today->gte($disableLimitDate)) {
                     $shouldDisable = true;
                     $disableFor = 'Auto Disable Date reached';
                 }
@@ -317,6 +322,12 @@ class ScheduledTasksController extends Controller
                                 'status' => 'disable',
                                 'disable_count' => $customer->disable_count + 1,
                             ]);
+
+                            if ($customer->ppp_user_id) {
+                                PPPSecrets::where('id', $customer->ppp_user_id)->update([
+                                    'status' => 'disable',
+                                ]);
+                            }
 
                             $message = 'Dear '.$customer->customer_name.', Your ID '.$customer->customer_unique_id.'('.($customer->pppUser->username ?? '').') is temporarily disconnected, Your Due amount: '.$due.'TK. Regards, '.siteUrlSettings('site_name').', Mobile: '.siteUrlSettings('site_phone');
 

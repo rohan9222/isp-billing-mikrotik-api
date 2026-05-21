@@ -730,11 +730,10 @@ class EditCustomer extends Component
                     } else {
                         $attributeField = $attribute;
                     }
-                    $result = app(MikrotikController::class)->updatePPPSecret($customer->pppUser->router_name, $customer->pppUser->username, $attributeField, $value);
 
-                    if ($result != '') {
-                        flash()->error($result.' On Mikrotik!');
-                    } else {
+                    try {
+                        app(MikrotikController::class)->updatePPPSecret($customer->pppUser->router_name, $customer->pppUser->username, $attributeField, $value);
+
                         $relatedModel = $customer->$relation;
                         if ($relatedModel && $relatedModel->isFillable($attribute)) {
                             $relatedModel->$attribute = $value;
@@ -744,17 +743,52 @@ class EditCustomer extends Component
                         } else {
                             flash()->error('Field not found or not fillable on the related model.');
                         }
+                    } catch (\Exception $e) {
+                        \Log::error("Failed to update PPP Secret " . $attributeField . " on router: " . $e->getMessage());
+                        flash()->error('Failed to update on Mikrotik: ' . $e->getMessage());
                     }
                 } elseif ($relation == 'official' && $attribute == 'status') {
-                    if ($value == 'active' && $customer->ppp_user_id != null) {
-                        app(MikrotikController::class)->enablePPPSecret(decrypt($this->customerId), $customer->pppUser->router_name, $customer->pppUser->username);
-                    } elseif ($value == 'disable' && $customer->ppp_user_id != null) {
-                        app(MikrotikController::class)->disablePPPSecret(decrypt($this->customerId), $customer->pppUser->router_name, $customer->pppUser->username);
+                    try {
+                        \DB::beginTransaction();
+
+                        if ($customer->ppp_user_id != null && $customer->pppUser) {
+                            if ($value == 'active') {
+                                app(MikrotikController::class)->enablePPPSecret(decrypt($this->customerId), $customer->pppUser->router_name, $customer->pppUser->username);
+                                
+                                app(MikrotikController::class)->updatePPPSecret(
+                                    $customer->pppUser->router_name,
+                                    $customer->pppUser->username,
+                                    'profile',
+                                    $customer->pppUser->profile
+                                );
+
+                                try {
+                                    app(MikrotikController::class)->singleWrite(
+                                        $customer->pppUser->router_name,
+                                        '/ppp active remove [find name="' . $customer->pppUser->username . '"]'
+                                    );
+                                } catch (\Exception $e) {
+                                    \Log::debug('EditCustomer enable active session removal skipped: ' . $e->getMessage());
+                                }
+
+                                PPPSecrets::where('id', $customer->ppp_user_id)->update(['status' => 'active']);
+                            } elseif ($value == 'disable') {
+                                app(MikrotikController::class)->disablePPPSecret(decrypt($this->customerId), $customer->pppUser->router_name, $customer->pppUser->username);
+                                PPPSecrets::where('id', $customer->ppp_user_id)->update(['status' => 'disable']);
+                            }
+                        }
+
+                        $customer->$attribute = $value;
+                        $customer->save();
+                        data_set($this->fields, $field, $value); // Update the specific field in the 'customer'
+
+                        \DB::commit();
+                        flash()->success(ucfirst(str_replace('_', ' ', $attribute)).' updated successfully!');
+                    } catch (\Exception $e) {
+                        \DB::rollBack();
+                        \Log::error("Failed to update status for customer " . $customer->customer_unique_id . ": " . $e->getMessage());
+                        flash()->error('Failed to update status on router: ' . $e->getMessage());
                     }
-                    $customer->$attribute = $value;
-                    $customer->save();
-                    data_set($this->fields, $field, $value); // Update the specific field in the 'customer'
-                    flash()->success(ucfirst(str_replace('_', ' ', $attribute)).' updated successfully!');
                 } elseif ($relation && $customer->$relation) {
                     $relatedModel = $customer->$relation;
 

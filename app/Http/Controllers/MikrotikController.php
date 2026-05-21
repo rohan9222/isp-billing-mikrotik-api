@@ -497,6 +497,7 @@ class MikrotikController extends Controller
                 'status' => 'Error on Mikrotik Command',
                 'type' => 'Mikrotik Command',
             ]);
+            throw $e;
         }
     }
 
@@ -547,6 +548,7 @@ class MikrotikController extends Controller
                     'status' => 'Error',
                     'type' => 'Mikrotik Command',
                 ]);
+                throw $fallbackErr;
             }
         }
     }
@@ -556,13 +558,9 @@ class MikrotikController extends Controller
         $this->togglePPPSecret($customerID, $routerName, $username, 'remove');
     }
 
-    public function updatePPPSecret(string $routerName, string $username, string $field, string $value): string
+    public function updatePPPSecret(string $routerName, string $username, string $field, string $value): void
     {
-        try {
-            return $this->singleWrite($routerName, "/ppp secret set " . $field . "=" . $this->mtQuote($value) . " [find name=" . $this->mtQuote($username) . "]");
-        } catch (\Exception $e) {
-            return 'Error: '.$e->getMessage();
-        }
+        $this->singleWrite($routerName, "/ppp secret set " . $field . "=" . $this->mtQuote($value) . " [find name=" . $this->mtQuote($username) . "]");
     }
 
     // =========================================================================
@@ -1611,7 +1609,8 @@ class MikrotikController extends Controller
     {
         $mapEntry = function ($e): array {
             if (is_string($e)) {
-                if (preg_match('/^\s*(?:(?<date>[a-zA-Z]{3}\/\d{2}\/\d{4}|\d{4}-\d{2}-\d{2})\s+)?(?<time>\d{2}:\d{2}:\d{2})\s+(?<topics>[a-zA-Z0-9,\-_]+)\s+(?<message>.*)$/', $e, $matches)) {
+                // Support multiple date formats: 'may/20/2026', 'may/20', '2026-05-20'
+                if (preg_match('/^\s*(?:(?<date>[a-zA-Z]{3}\/\d{1,2}(?:\/\d{4})?|\d{4}-\d{1,2}-\d{1,2})\s+)?(?<time>\d{2}:\d{2}:\d{2})\s+(?<topics>[a-zA-Z0-9,\-_]+)\s+(?<message>.*)$/', $e, $matches)) {
                     return [
                         'log_id' => null,
                         'time' => trim(($matches['date'] ?? '') . ' ' . $matches['time']),
@@ -1664,11 +1663,19 @@ class MikrotikController extends Controller
     {
         $inserted = 0;
         foreach ($logs as $entry) {
-            $exists = ! empty($entry['log_id'])
-                ? MikrotikLog::where('router_name', $routerName)->where('log_id', $entry['log_id'])->exists()
-                : MikrotikLog::where('router_name', $routerName)->where('message', $entry['message'])->where('created_at', '>=', now()->subSeconds(2))->exists();
+            // Check uniqueness using a combination of message, time, and log_id (if present)
+            // MikroTik's transient log_id alone is recycled and unreliable on reboots or buffer wraps.
+            $query = MikrotikLog::where('router_name', $routerName)
+                ->where('message', $entry['message'] ?? '');
 
-            if ($exists) {
+            if (! empty($entry['time'])) {
+                $query->where('time', $entry['time']);
+            }
+            if (! empty($entry['log_id'])) {
+                $query->where('log_id', $entry['log_id']);
+            }
+
+            if ($query->exists()) {
                 continue;
             }
 

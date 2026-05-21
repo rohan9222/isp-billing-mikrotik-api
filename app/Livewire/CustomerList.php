@@ -255,82 +255,86 @@ class CustomerList extends Component
             return;
         }
 
-        $summaryExists = PaymentSummary::where('customer_payment_unique_id', $unique_id)
-            ->where('summary_date', Carbon::now()->firstOfMonth()->format('Y-m-d'))
-            ->exists();
+        try {
+            \DB::beginTransaction();
 
-        if (! $summaryExists) {
-            PaymentSummary::create([
-                'customer_payment_unique_id' => $unique_id,
-                'summary_date'               => Carbon::now()->firstOfMonth()->format('Y-m-d'),
-                'monthly_rent'               => $bill->monthly_rent,
-                'additional_charge'          => $bill->additional_charge,
-                'vat'                        => $bill->vat,
-                'previous_due'               => $bill->previous_due,
-                'advance'                    => $bill->advance,
-                'discount'                   => $bill->discount,
-            ]);
-        }
+            $summaryExists = PaymentSummary::where('customer_payment_unique_id', $unique_id)
+                ->where('summary_date', Carbon::now()->firstOfMonth()->format('Y-m-d'))
+                ->exists();
 
-        $customer = CustomersInfo::where('customer_unique_id', $unique_id)->with('pppUser')->first();
+            if (! $summaryExists) {
+                PaymentSummary::create([
+                    'customer_payment_unique_id' => $unique_id,
+                    'summary_date'               => Carbon::now()->firstOfMonth()->format('Y-m-d'),
+                    'monthly_rent'               => $bill->monthly_rent,
+                    'additional_charge'          => $bill->additional_charge,
+                    'vat'                        => $bill->vat,
+                    'previous_due'               => $bill->previous_due,
+                    'advance'                    => $bill->advance,
+                    'discount'                   => $bill->discount,
+                ]);
+            }
 
-        if (! $customer) {
-            flash()->addError('Customer not found.');
-            $this->dispatch('customer-action-done');
-            return;
-        }
+            $customer = CustomersInfo::where('customer_unique_id', $unique_id)->with('pppUser')->first();
 
-        $customer->status = 'active';
-        $customer->save();
+            if (! $customer) {
+                \DB::rollBack();
+                flash()->addError('Customer not found.');
+                $this->dispatch('customer-action-done');
+                return;
+            }
 
-        if ($bill->auto_disable_date) {
-            $autoDisableDate  = Carbon::parse($bill->auto_disable_date)->startOfDay();
-            $autoDisableMonth = $bill->auto_disable_month;
-            $disableDate      = $autoDisableDate->copy()->addMonths($autoDisableMonth);
+            $customer->status = 'active';
+            $customer->save();
 
-            if ($disableDate->lte(today())) {
-                while ($disableDate->lte(today())) {
-                    $disableDate->addMonth();
+            if ($bill->auto_disable_date) {
+                $autoDisableDate  = Carbon::parse($bill->auto_disable_date)->startOfDay();
+                $autoDisableMonth = $bill->auto_disable_month;
+                $disableDate      = $autoDisableDate->copy()->addMonths($autoDisableMonth);
+
+                if ($disableDate->lte(today())) {
+                    while ($disableDate->lte(today())) {
+                        $disableDate->addMonth();
+                    }
+                    $bill->auto_disable_date = $disableDate->copy()->subMonths($autoDisableMonth)->toDateString();
+                    $bill->save();
                 }
-                $bill->auto_disable_date = $disableDate->copy()->subMonths($autoDisableMonth)->toDateString();
-                $bill->save();
             }
-        }
 
-        if ($customer->pppUser) {
-            PPPSecrets::where('id', $customer->ppp_user_id)->update(['status' => 'active']);
+            if ($customer->pppUser) {
+                PPPSecrets::where('id', $customer->ppp_user_id)->update(['status' => 'active']);
 
-            $response = app(MikrotikController::class)->enablePPPSecret(
-                $unique_id,
-                $customer->pppUser->router_name,
-                $customer->pppUser->username
-            );
-
-            app(MikrotikController::class)->updatePPPSecret(
-                $customer->pppUser->router_name,
-                $customer->pppUser->username,
-                'profile',
-                $customer->pppUser->profile
-            );
-
-            // Remove active PPP session via pooled/cached controller (auto-invalidates cache)
-            try {
-                app(MikrotikController::class)->singleWrite(
+                app(MikrotikController::class)->enablePPPSecret(
+                    $unique_id,
                     $customer->pppUser->router_name,
-                    '/ppp active remove [find name="' . $customer->pppUser->username . '"]'
+                    $customer->pppUser->username
                 );
-            } catch (\Exception $e) {
-                // Active session may not exist — not a critical error
-                \Log::debug('enableCustomer: active session removal skipped: ' . $e->getMessage());
+
+                app(MikrotikController::class)->updatePPPSecret(
+                    $customer->pppUser->router_name,
+                    $customer->pppUser->username,
+                    'profile',
+                    $customer->pppUser->profile
+                );
+
+                // Remove active PPP session via pooled/cached controller (auto-invalidates cache)
+                try {
+                    app(MikrotikController::class)->singleWrite(
+                        $customer->pppUser->router_name,
+                        '/ppp active remove [find name="' . $customer->pppUser->username . '"]'
+                    );
+                } catch (\Exception $e) {
+                    // Active session may not exist — not a critical error
+                    \Log::debug('enableCustomer: active session removal skipped: ' . $e->getMessage());
+                }
             }
 
-            if ($response !== '') {
-                flash()->addError($response);
-            } else {
-                flash()->addSuccess('Customer enabled successfully and PPP secret activated.');
-            }
-        } else {
-            flash()->addSuccess('Customer enabled successfully.');
+            \DB::commit();
+            flash()->addSuccess($customer->pppUser ? 'Customer enabled successfully and PPP secret activated.' : 'Customer enabled successfully.');
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error("Failed to enable customer " . $unique_id . ": " . $e->getMessage());
+            flash()->addError('Failed to enable customer on router: ' . $e->getMessage());
         }
 
         $this->dispatch('customer-action-done');
@@ -442,22 +446,26 @@ class CustomerList extends Component
                 return;
             }
 
-            if ($customerDelete->pppUser) {
-                $response = app(MikrotikController::class)->removePPPSecret(
-                    $decryptedId,
-                    $customerDelete->pppUser->router_name,
-                    $customerDelete->pppUser->username
-                );
+            try {
+                \DB::beginTransaction();
 
-                if ($response !== '') {
-                    flash()->addError($response);
-                    $this->dispatch('customer-action-done');
-                    return;
+                if ($customerDelete->pppUser) {
+                    app(MikrotikController::class)->removePPPSecret(
+                        $decryptedId,
+                        $customerDelete->pppUser->router_name,
+                        $customerDelete->pppUser->username
+                    );
                 }
-            }
 
-            $customerDelete->delete();
-            flash()->addSuccess('Customer deleted successfully.');
+                $customerDelete->delete();
+
+                \DB::commit();
+                flash()->addSuccess('Customer deleted successfully.');
+            } catch (\Exception $e) {
+                \DB::rollBack();
+                \Log::error("Failed to delete customer " . $decryptedId . ": " . $e->getMessage());
+                flash()->addError('Failed to delete customer on router: ' . $e->getMessage());
+            }
         } catch (\Exception $e) {
             flash()->addError($e->getMessage());
         }
