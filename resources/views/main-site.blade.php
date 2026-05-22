@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>{{ $siteData?->hero_title ?? siteUrlSettings('site_name') ?? config('app.name') }}</title>
+    <title>{{ $siteData?->hero_title ?? (siteUrlSettings('site_name') ?? config('app.name')) }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="{{ siteUrlSettings('site_description') ?? '' }}">
 
@@ -27,14 +27,16 @@
             <a class="navbar-brand" href="#top">
                 @if (siteUrlSettings('site_logo'))
                     <img class="d-inline-block align-text-top" style="width:190px;height:53px;"
-                         src="{{ site_image(siteUrlSettings('site_logo')) }}" alt="logo" />
+                        src="{{ site_image(siteUrlSettings('site_logo')) }}" alt="logo" />
                 @else
                     @if (siteUrlSettings('site_icon'))
-                        <img class="d-inline-block align-text-top"
-                             src="{{ site_image(siteUrlSettings('site_icon')) }}" alt="" width="40" />
-                        <span class="font-sans-serif text-success">{{ siteUrlSettings('site_name') ?? config('app.name') }}</span>
+                        <img class="d-inline-block align-text-top" src="{{ site_image(siteUrlSettings('site_icon')) }}"
+                            alt="" width="40" />
+                        <span
+                            class="font-sans-serif text-success">{{ siteUrlSettings('site_name') ?? config('app.name') }}</span>
                     @else
-                        <span class="font-sans-serif text-success">{{ siteUrlSettings('site_name') ?? config('app.name') }}</span>
+                        <span
+                            class="font-sans-serif text-success">{{ siteUrlSettings('site_name') ?? config('app.name') }}</span>
                     @endif
                 @endif
             </a>
@@ -54,8 +56,8 @@
             </div>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
-                    aria-expanded="false" aria-label="Toggle navigation">
+                data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
+                aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
         </div>
@@ -63,7 +65,7 @@
 
 
     <div data-bs-spy="scroll" data-bs-target="#navigation" data-bs-root-margin="0px 0px -40%"
-         data-bs-smooth-scroll="true" class="scrollspy-example bg-light rounded-2 wrapper" tabindex="0">
+        data-bs-smooth-scroll="true" class="scrollspy-example bg-light rounded-2 wrapper" tabindex="0">
 
         {{-- =========================================================
              HERO / BANNER SLIDER
@@ -73,26 +75,26 @@
 
                 {{-- Indicators --}}
                 @php $slides = $siteData?->hero_slides ?? []; @endphp
-                @if(count($slides) > 0)
-                <div class="carousel-indicators">
-                    @foreach($slides as $index => $slide)
-                        <button type="button" data-bs-target="#carouselExampleCaptions"
-                                data-bs-slide-to="{{ $index }}"
-                                class="{{ $index === 0 ? 'active' : '' }}"
-                                @if($index === 0) aria-current="true" @endif
+                @if (count($slides) > 0)
+                    <div class="carousel-indicators">
+                        @foreach ($slides as $index => $slide)
+                            <button type="button" data-bs-target="#carouselExampleCaptions"
+                                data-bs-slide-to="{{ $index }}" class="{{ $index === 0 ? 'active' : '' }}"
+                                @if ($index === 0) aria-current="true" @endif
                                 aria-label="Slide {{ $index + 1 }}"></button>
-                    @endforeach
-                </div>
+                        @endforeach
+                    </div>
                 @endif
 
                 {{-- Slides --}}
                 <div class="carousel-inner">
-                    @if(count($slides) > 0)
-                        @foreach($slides as $index => $slide)
+                    @if (count($slides) > 0)
+                        @foreach ($slides as $index => $slide)
                             <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
                                 <img src="{{ isset($slide['image']) ? site_image($slide['image']) : '' }}"
-                                     class="img-fluid" style="width: 100%; height: auto; object-fit: cover;" alt="{{ $slide['caption'] ?? 'Slide '.($index+1) }}">
-                                @if(!empty($slide['caption']))
+                                    class="img-fluid" style="width: 100%; height: auto; object-fit: cover;"
+                                    alt="{{ $slide['caption'] ?? 'Slide ' . ($index + 1) }}">
+                                @if (!empty($slide['caption']))
                                     <div class="carousel-caption d-none d-md-block">
                                         <h2 class="display-4 fw-bold">{{ $slide['caption'] }}</h2>
                                     </div>
@@ -113,13 +115,13 @@
                     @endif
                 </div>
 
-                <button class="carousel-control-prev" type="button"
-                        data-bs-target="#carouselExampleCaptions" data-bs-slide="prev">
+                <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleCaptions"
+                    data-bs-slide="prev">
                     <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                     <span class="visually-hidden">Previous</span>
                 </button>
-                <button class="carousel-control-next" type="button"
-                        data-bs-target="#carouselExampleCaptions" data-bs-slide="next">
+                <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleCaptions"
+                    data-bs-slide="next">
                     <span class="carousel-control-next-icon" aria-hidden="true"></span>
                     <span class="visually-hidden">Next</span>
                 </button>
@@ -135,13 +137,14 @@
                 <div class="row">
                     <div class="col-md-12">
                         <div class="title">
-                            @if($siteData?->about_title)
+                            @if ($siteData?->about_title)
                                 <h6 class="text-success">{{ $siteData->about_title }}</h6>
                             @else
-                                <h6 class="text-success">Welcome to {{ siteUrlSettings('portal_name') ?? siteUrlSettings('site_name') }}</h6>
+                                <h6 class="text-success">Welcome to
+                                    {{ siteUrlSettings('portal_name') ?? siteUrlSettings('site_name') }}</h6>
                             @endif
                             <h2>{{ $siteData?->hero_title ?? 'We are always Faster & Reliable' }}</h2>
-                            @if($siteData?->about_body)
+                            @if ($siteData?->about_body)
                                 <p>{!! nl2br(e($siteData->about_body)) !!}</p>
                             @elseif($siteData?->hero_subtitle)
                                 <p>{{ $siteData->hero_subtitle }}</p>
@@ -153,16 +156,17 @@
 
                 {{-- Service Cards --}}
                 @php $services = $siteData?->services ?? []; @endphp
-                @if(count($services) > 0)
+                @if (count($services) > 0)
                     <div class="row">
-                        @foreach($services as $service)
+                        @foreach ($services as $service)
                             <div class="col-md-4 col-xs-6 col-sm-6">
                                 <div class="feature-block text-center">
                                     <div class="icon-box">
                                         <i class="{{ $service['icon'] ?? 'bi bi-wifi' }}"></i>
                                     </div>
                                     <h4 class="wow fadeInUp" data-wow-delay=".3s">{{ $service['title'] ?? '' }}</h4>
-                                    <p class="wow fadeInUp" data-wow-delay=".5s">{{ $service['description'] ?? '' }}</p>
+                                    <p class="wow fadeInUp" data-wow-delay=".5s">{{ $service['description'] ?? '' }}
+                                    </p>
                                 </div>
                             </div>
                         @endforeach
@@ -174,21 +178,24 @@
                             <div class="feature-block text-center">
                                 <div class="icon-box"><i class="fa-solid fa-house-signal"></i></div>
                                 <h4 class="wow fadeInUp" data-wow-delay=".3s">Home Internet</h4>
-                                <p class="wow fadeInUp" data-wow-delay=".5s">High-speed broadband internet for your home. Unlimited data, 24/7 uptime.</p>
+                                <p class="wow fadeInUp" data-wow-delay=".5s">High-speed broadband internet for your
+                                    home. Unlimited data, 24/7 uptime.</p>
                             </div>
                         </div>
                         <div class="col-md-4 col-xs-6 col-sm-6">
                             <div class="feature-block text-center">
                                 <div class="icon-box"><i class="fa-solid fa-building-circle-check"></i></div>
                                 <h4 class="wow fadeInUp" data-wow-delay=".3s">Corporate Internet</h4>
-                                <p class="wow fadeInUp" data-wow-delay=".5s">Dedicated business-grade connectivity with SLA guarantees and priority support.</p>
+                                <p class="wow fadeInUp" data-wow-delay=".5s">Dedicated business-grade connectivity
+                                    with SLA guarantees and priority support.</p>
                             </div>
                         </div>
                         <div class="col-md-4 col-xs-6 col-sm-6">
                             <div class="feature-block text-center">
                                 <div class="icon-box"><i class="fa-solid fa-network-wired"></i></div>
                                 <h4 class="wow fadeInUp" data-wow-delay=".3s">Data Connectivity</h4>
-                                <p class="wow fadeInUp" data-wow-delay=".5s">Fiber optic point-to-point links for enterprise and campus connectivity needs.</p>
+                                <p class="wow fadeInUp" data-wow-delay=".5s">Fiber optic point-to-point links for
+                                    enterprise and campus connectivity needs.</p>
                             </div>
                         </div>
                     </div>
@@ -213,34 +220,43 @@
                         @php
                             $clients = $siteData?->valuable_clients ?? [];
                             // If empty, use some dummy data for demo
-                            if(count($clients) === 0) {
+                            if (count($clients) === 0) {
                                 $clients = [
-                                    ['name' => 'Google'], ['name' => 'Microsoft'], ['name' => 'Amazon'],
-                                    ['name' => 'Facebook'], ['name' => 'Twitter'], ['name' => 'Apple'],
-                                    ['name' => 'Intel'], ['name' => 'IBM'], ['name' => 'Oracle']
+                                    ['name' => 'Google'],
+                                    ['name' => 'Microsoft'],
+                                    ['name' => 'Amazon'],
+                                    ['name' => 'Facebook'],
+                                    ['name' => 'Twitter'],
+                                    ['name' => 'Apple'],
+                                    ['name' => 'Intel'],
+                                    ['name' => 'IBM'],
+                                    ['name' => 'Oracle'],
                                 ];
                             }
                             $chunks = array_chunk($clients, 6);
                         @endphp
 
-                        @foreach($chunks as $index => $chunk)
+                        @foreach ($chunks as $index => $chunk)
                             <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
                                 <div class="d-flex justify-content-center flex-wrap gap-3 p-4">
-                                    @foreach($chunk as $client)
+                                    @foreach ($chunk as $client)
                                         <div class="client-item" style="flex: 0 0 180px;">
-                                            @if(!empty($client['link']))
-                                                <a href="{{ $client['link'] }}" target="_blank" title="{{ $client['name'] }}">
+                                            @if (!empty($client['link']))
+                                                <a href="{{ $client['link'] }}" target="_blank"
+                                                    title="{{ $client['name'] }}">
                                             @endif
-                                            
-                                            @if(!empty($client['logo']))
-                                                <img class="img-thumbnail client-logo-img" src="{{ site_image($client['logo']) }}" alt="{{ $client['name'] }}">
+
+                                            @if (!empty($client['logo']))
+                                                <img class="img-thumbnail client-logo-img"
+                                                    src="{{ site_image($client['logo']) }}"
+                                                    alt="{{ $client['name'] }}">
                                             @else
                                                 <div class="client-name-design img-thumbnail">
                                                     <span>{{ $client['name'] }}</span>
                                                 </div>
                                             @endif
 
-                                            @if(!empty($client['link']))
+                                            @if (!empty($client['link']))
                                                 </a>
                                             @endif
                                         </div>
@@ -263,80 +279,177 @@
                         <div class="title p-0">
                             <h2>LATEST WORKS</h2>
                         </div>
-                        <div class="recent-work-mixMenu">
-                            <ul>
-                                <li><button class="filter" data-filter="all">All</button></li>
-                                <li><button class="filter" data-filter=".category-1">Equipment</button></li>
-                                <li><button class="filter" data-filter=".category-2">SERVER</button></li>
-                                <li><button class="filter" data-filter=".category-3">Illustration</button></li>
-                                <li><button class="filter" data-filter=".category-4">Media</button></li>
-                            </ul>
-                        </div>
+                        <div x-data="{ filter: 'all' }">
+                            <div class="recent-work-mixMenu">
+                                <ul>
+                                    <li><button type="button" @click="filter='all'" :class="{ 'active': filter === 'all' }">All</button></li>
+                                    @php $cats = $siteData?->gallery_categories ?? []; @endphp
+                                    @if(count($cats) > 0)
+                                        @foreach($cats as $cat)
+                                            @php $catKey = $cat['key'] ?? ($cat['label'] ?? ''); @endphp
+                                            <li><button type="button" @click="filter='{{ $catKey }}'" :class="{ 'active': filter === '{{ $catKey }}' }">{{ $cat['label'] ?? $cat['key'] ?? '' }}</button></li>
+                                        @endforeach
+                                    @else
+                                        <li><button type="button" @click="filter='category-1'" :class="{ 'active': filter === 'category-1' }">Equipment</button></li>
+                                        <li><button type="button" @click="filter='category-2'" :class="{ 'active': filter === 'category-2' }">SERVER</button></li>
+                                        <li><button type="button" @click="filter='category-3'" :class="{ 'active': filter === 'category-3' }">Illustration</button></li>
+                                        <li><button type="button" @click="filter='category-4'" :class="{ 'active': filter === 'category-4' }">Media</button></li>
+                                    @endif
+                                </ul>
+                            </div>
 
-                        <div class="recent-work-pic container">
-                            <ul id="gallery-images" class="row">
-                                @php $galleryItems = $siteData?->gallery_items ?? []; @endphp
-                                @if(count($galleryItems) > 0)
-                                    @foreach($galleryItems as $index => $item)
-                                        <li class="mix {{ $item['category'] ?? 'category-1' }} col-md-2 col-sm-3 col-6"
-                                            data-my-order="{{ $index + 1 }}">
-                                            <a class="gallery-items-link"
-                                               href="{{ site_image($item['image']) }}"
-                                               data-lightbox="gallery-set"
-                                               data-title="{{ $item['caption'] ?? '' }}">
-                                                <img class="img-thumbnail" src="{{ site_image($item['image']) }}"
-                                                     alt="{{ $item['caption'] ?? '' }}">
-                                                <div class="overlay">
-                                                    <h3>{{ $item['caption'] ?? 'View' }}</h3>
-                                                    <i class="fa-solid fa-network-wired"></i>
+                            <div class="recent-work-pic container">
+                                <ul id="gallery-images" class="row">
+                                    @php $galleryItems = $siteData?->gallery_items ?? []; @endphp
+                                    @if (count($galleryItems) > 0)
+                                        @foreach ($galleryItems as $index => $item)
+                                            @php $itemCat = $item['category'] ?? 'category-1'; @endphp
+                                            <li x-cloak
+                                                x-show="filter === 'all' || filter === '{{ $itemCat }}'"
+                                                x-transition:enter="transition ease-out duration-300"
+                                                x-transition:enter-start="opacity-0 scale-90"
+                                                x-transition:enter-end="opacity-100 scale-100"
+                                                x-transition:leave="transition ease-in duration-200"
+                                                x-transition:leave-start="opacity-100 scale-100"
+                                                x-transition:leave-end="opacity-0 scale-90"
+                                                class="mix {{ $itemCat }} col-md-2 col-sm-3 col-6 position-relative"
+                                                data-my-order="{{ $index + 1 }}">
+                                                <div class="gallery-item-wrapper position-relative">
+                                                    <a class="gallery-items-link d-block" href="{{ site_image($item['image']) }}"
+                                                        data-lightbox="gallery-set"
+                                                        data-title="{{ $item['caption'] ?? '' }}">
+                                                        <img class="img-thumbnail" src="{{ site_image($item['image']) }}"
+                                                            alt="{{ $item['caption'] ?? '' }}">
+                                                        <div class="overlay">
+                                                            <h3>{{ $item['caption'] ?? 'View' }}</h3>
+                                                            <i class="fa-solid fa-network-wired"></i>
+                                                        </div>
+                                                    </a>
                                                 </div>
-                                            </a>
+                                            </li>
+                                        @endforeach
+                                    @else
+                                        {{-- Fallback static gallery --}}
+                                        <li x-cloak
+                                            x-show="filter === 'all' || filter === 'category-1'"
+                                            x-transition:enter="transition ease-out duration-300"
+                                            x-transition:enter-start="opacity-0 scale-90"
+                                            x-transition:enter-end="opacity-100 scale-100"
+                                            x-transition:leave="transition ease-in duration-200"
+                                            x-transition:leave-start="opacity-100 scale-100"
+                                            x-transition:leave-end="opacity-0 scale-90"
+                                            class="mix category-1 col-md-2 col-sm-3 col-6 position-relative">
+                                            <div class="gallery-item-wrapper position-relative">
+                                                <a class="gallery-items-link d-block" href="images/gallery/spliceing.jpg"
+                                                    data-lightbox="gallery-set">
+                                                    <img class="img-thumbnail" src="images/gallery/spliceing.jpg" alt="">
+                                                    <div class="overlay">
+                                                        <h3>Splicing</h3><i class="fa-solid fa-network-wired"></i>
+                                                    </div>
+                                                </a>
+                                            </div>
                                         </li>
-                                    @endforeach
-                                @else
-                                    {{-- Fallback static gallery --}}
-                                    <li class="mix category-1 col-md-2 col-sm-3 col-6">
-                                        <a class="gallery-items-link" href="img/spliceing.jpg" data-lightbox="gallery-set">
-                                            <img class="img-thumbnail" src="img/spliceing.jpg" alt="">
-                                            <div class="overlay"><h3>Splicing</h3><i class="fa-solid fa-network-wired"></i></div>
-                                        </a>
-                                    </li>
-                                    <li class="mix category-1 col-md-2 col-sm-3 col-6">
-                                        <a class="gallery-items-link" href="img/Clever.png" data-lightbox="gallery-set">
-                                            <img class="img-thumbnail" src="img/Clever.png" alt="">
-                                            <div class="overlay"><h3>Clever</h3><i class="ion-ios-plus-empty"></i></div>
-                                        </a>
-                                    </li>
-                                    <li class="mix category-1 col-md-2 col-sm-3 col-6">
-                                        <a class="gallery-items-link" href="img/crimping.jpg" data-lightbox="gallery-set">
-                                            <img class="img-thumbnail" src="img/crimping.jpg" alt="">
-                                            <div class="overlay"><h3>Crimping</h3><i class="ion-ios-plus-empty"></i></div>
-                                        </a>
-                                    </li>
-                                    <li class="mix category-2 col-md-2 col-sm-3 col-6">
-                                        <a class="gallery-items-link" href="img/server.jpg" data-lightbox="gallery-set">
-                                            <img class="img-thumbnail" src="img/server.jpg" alt="">
-                                            <div class="overlay"><h3>Server</h3><i class="ion-ios-plus-empty"></i></div>
-                                        </a>
-                                    </li>
-                                    <li class="mix category-2 col-md-2 col-sm-3 col-6">
-                                        <a class="gallery-items-link" href="img/rack.jpg" data-lightbox="gallery-set">
-                                            <img class="img-thumbnail" src="img/rack.jpg" alt="">
-                                            <div class="overlay"><h3>Rack</h3><i class="ion-ios-plus-empty"></i></div>
-                                        </a>
-                                    </li>
-                                    <li class="mix category-3 col-md-2 col-sm-3 col-6">
-                                        <a class="gallery-items-link" href="img/Patchcord.jpeg" data-lightbox="gallery-set">
-                                            <img class="img-thumbnail" src="img/Patchcord.jpeg" alt="">
-                                            <div class="overlay"><h3>Patchcord</h3><i class="ion-ios-plus-empty"></i></div>
-                                        </a>
-                                    </li>
-                                @endif
-                            </ul>
+                                        <li x-cloak
+                                            x-show="filter === 'all' || filter === 'category-1'"
+                                            x-transition:enter="transition ease-out duration-300"
+                                            x-transition:enter-start="opacity-0 scale-90"
+                                            x-transition:enter-end="opacity-100 scale-100"
+                                            x-transition:leave="transition ease-in duration-200"
+                                            x-transition:leave-start="opacity-100 scale-100"
+                                            x-transition:leave-end="opacity-0 scale-90"
+                                            class="mix category-1 col-md-2 col-sm-3 col-6 position-relative">
+                                            <div class="gallery-item-wrapper position-relative">
+                                                <a class="gallery-items-link d-block" href="images/gallery/Clever.png"
+                                                    data-lightbox="gallery-set">
+                                                    <img class="img-thumbnail" src="images/gallery/Clever.png" alt="">
+                                                    <div class="overlay">
+                                                        <h3>Clever</h3><i class="fa-solid fa-network-wired"></i>
+                                                    </div>
+                                                </a>
+                                            </div>
+                                        </li>
+                                        <li x-cloak
+                                            x-show="filter === 'all' || filter === 'category-1'"
+                                            x-transition:enter="transition ease-out duration-300"
+                                            x-transition:enter-start="opacity-0 scale-90"
+                                            x-transition:enter-end="opacity-100 scale-100"
+                                            x-transition:leave="transition ease-in duration-200"
+                                            x-transition:leave-start="opacity-100 scale-100"
+                                            x-transition:leave-end="opacity-0 scale-90"
+                                            class="mix category-1 col-md-2 col-sm-3 col-6 position-relative">
+                                            <div class="gallery-item-wrapper position-relative">
+                                                <a class="gallery-items-link d-block" href="images/gallery/crimping.jpg"
+                                                    data-lightbox="gallery-set">
+                                                    <img class="img-thumbnail" src="images/gallery/crimping.jpg" alt="">
+                                                    <div class="overlay">
+                                                        <h3>Crimping</h3><i class="fa-solid fa-network-wired"></i>
+                                                    </div>
+                                                </a>
+                                            </div>
+                                        </li>
+                                        <li x-cloak
+                                            x-show="filter === 'all' || filter === 'category-2'"
+                                            x-transition:enter="transition ease-out duration-300"
+                                            x-transition:enter-start="opacity-0 scale-90"
+                                            x-transition:enter-end="opacity-100 scale-100"
+                                            x-transition:leave="transition ease-in duration-200"
+                                            x-transition:leave-start="opacity-100 scale-100"
+                                            x-transition:leave-end="opacity-0 scale-90"
+                                            class="mix category-2 col-md-2 col-sm-3 col-6 position-relative">
+                                            <div class="gallery-item-wrapper position-relative">
+                                                <a class="gallery-items-link d-block" href="images/gallery/server.jpg"
+                                                    data-lightbox="gallery-set">
+                                                    <img class="img-thumbnail" src="images/gallery/server.jpg" alt="">
+                                                    <div class="overlay">
+                                                        <h3>Server</h3><i class="fa-solid fa-network-wired"></i>
+                                                    </div>
+                                                </a>
+                                            </div>
+                                        </li>
+                                        <li x-cloak
+                                            x-show="filter === 'all' || filter === 'category-2'"
+                                            x-transition:enter="transition ease-out duration-300"
+                                            x-transition:enter-start="opacity-0 scale-90"
+                                            x-transition:enter-end="opacity-100 scale-100"
+                                            x-transition:leave="transition ease-in duration-200"
+                                            x-transition:leave-start="opacity-100 scale-100"
+                                            x-transition:leave-end="opacity-0 scale-90"
+                                            class="mix category-2 col-md-2 col-sm-3 col-6 position-relative">
+                                            <div class="gallery-item-wrapper position-relative">
+                                                <a class="gallery-items-link d-block" href="images/gallery/rack.jpg"
+                                                    data-lightbox="gallery-set">
+                                                    <img class="img-thumbnail" src="images/gallery/rack.jpg" alt="">
+                                                    <div class="overlay">
+                                                        <h3>Rack</h3><i class="fa-solid fa-network-wired"></i>
+                                                    </div>
+                                                </a>
+                                            </div>
+                                        </li>
+                                        <li x-cloak
+                                            x-show="filter === 'all' || filter === 'category-3'"
+                                            x-transition:enter="transition ease-out duration-300"
+                                            x-transition:enter-start="opacity-0 scale-90"
+                                            x-transition:enter-end="opacity-100 scale-100"
+                                            x-transition:leave="transition ease-in duration-200"
+                                            x-transition:leave-start="opacity-100 scale-100"
+                                            x-transition:leave-end="opacity-0 scale-90"
+                                            class="mix category-3 col-md-2 col-sm-3 col-6 position-relative">
+                                            <div class="gallery-item-wrapper position-relative">
+                                                <a class="gallery-items-link d-block" href="images/gallery/Patchcord.jpeg"
+                                                    data-lightbox="gallery-set">
+                                                    <img class="img-thumbnail" src="images/gallery/Patchcord.jpeg" alt="">
+                                                    <div class="overlay">
+                                                        <h3>Patchcord</h3><i class="fa-solid fa-network-wired"></i>
+                                                    </div>
+                                                </a>
+                                            </div>
+                                        </li>
+                                    @endif
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
         </section>
 
 
@@ -360,11 +473,12 @@
                 @endphp
 
                 <div class="row mx-auto">
-                    @if($packages->count() > 0)
-                        @foreach($packages as $index => $package)
+                    @if ($packages->count() > 0)
+                        @foreach ($packages as $index => $package)
                             @php $colorClass = $pkgColors[$index % 4]; @endphp
                             <div class="col-xxl-3 col-md-6 pb-1 d-flex">
-                                <div class="pricing-box {{ $colorClass }} mb-30 {{ $package->is_featured ? 'pricing-box-featured' : '' }}">
+                                <div
+                                    class="pricing-box {{ $colorClass }} mb-30 {{ $package->is_featured ? 'pricing-box-featured' : '' }}">
                                     <div class="pricing-head">
                                         <h6>{{ strtoupper($package->plan_label ?? $package->package) }}</h6>
                                         <div class="pricing-icon services-icon">
@@ -372,19 +486,19 @@
                                         </div>
                                     </div>
                                     <div class="pricing-lists mb-30 pkg-w-300" style="width:250px">
-                                        @if($package->speed)
+                                        @if ($package->speed)
                                             <h5>{{ $package->speed }}</h5>
                                         @endif
                                         <ul class="mt-3">
-                                            @if($package->features && count($package->features) > 0)
-                                                @foreach($package->features as $feature)
+                                            @if ($package->features && count($package->features) > 0)
+                                                @foreach ($package->features as $feature)
                                                     <li>{{ $feature['value'] ?? $feature }}</li>
                                                 @endforeach
                                             @else
                                                 <li>24 HOURS UNLIMITED</li>
                                                 <li>Fiber Optics</li>
                                                 <li>24/7 Customer Care</li>
-                                                @if($package->description)
+                                                @if ($package->description)
                                                     <li>{{ $package->description }}</li>
                                                 @endif
                                             @endif
@@ -406,7 +520,8 @@
                     @else
                         {{-- No packages in DB yet - show placeholder --}}
                         <div class="col-md-12 text-center py-5">
-                            <p class="text-muted">No packages available. Please add packages from the billing admin panel.</p>
+                            <p class="text-muted">No packages available. Please add packages from the billing admin
+                                panel.</p>
                         </div>
                     @endif
                 </div>
@@ -422,7 +537,7 @@
                 <div class="row">
                     <div class="title">
                         <h2>{{ $siteData?->team_title ?? 'CREATIVE TEAM' }}</h2>
-                        @if($siteData?->team_subtitle)
+                        @if ($siteData?->team_subtitle)
                             <p>{!! nl2br(e($siteData->team_subtitle)) !!}</p>
                         @endif
                     </div>
@@ -430,11 +545,12 @@
                     <div class="col-md-12">
                         <div id="team-list" class="owl-carousel">
                             @php $teamMembers = $siteData?->team_members ?? []; @endphp
-                            @if(count($teamMembers) > 0)
-                                @foreach($teamMembers as $member)
+                            @if (count($teamMembers) > 0)
+                                @foreach ($teamMembers as $member)
                                     <div>
                                         <div class="block wow fadeInLeft" data-wow-delay=".9s">
-                                            <img src="{{ isset($member['image']) && $member['image'] ? site_image($member['image']) : asset('img/team-demo.png') }}" alt="{{ $member['name'] ?? '' }}">
+                                            <img src="{{ isset($member['image']) && $member['image'] ? site_image($member['image']) : asset('img/team-demo.png') }}"
+                                                alt="{{ $member['name'] ?? '' }}">
                                             <div class="team-overlay">
                                                 <h3>{{ strtoupper($member['name'] ?? '') }}
                                                     <span>{{ $member['role'] ?? '' }}</span>
@@ -447,17 +563,17 @@
                                 @endforeach
                             @else
                                 {{-- Fallback --}}
-                                @foreach(range(1,4) as $i)
-                                <div>
-                                    <div class="block wow fadeInLeft" data-wow-delay=".9s">
-                                        <img src="{{ asset('img/team-demo.png') }}" alt="">
-                                        <div class="team-overlay">
-                                            <h3>TEAM MEMBER <span>Staff</span></h3>
-                                            <span class="icon"><i class="ion-quote"></i></span>
-                                            <p>Dedicated team member committed to providing excellent service.</p>
+                                @foreach (range(1, 4) as $i)
+                                    <div>
+                                        <div class="block wow fadeInLeft" data-wow-delay=".9s">
+                                            <img src="{{ asset('img/team-demo.png') }}" alt="">
+                                            <div class="team-overlay">
+                                                <h3>TEAM MEMBER <span>Staff</span></h3>
+                                                <span class="icon"><i class="ion-quote"></i></span>
+                                                <p>Dedicated team member committed to providing excellent service.</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
                                 @endforeach
                             @endif
                         </div>
@@ -476,51 +592,57 @@
                     <div class="col-md-12">
                         <div class="title">
                             <h2>{{ $siteData?->blog_title ?? 'Blog' }}</h2>
-                            @if($siteData?->blog_subtitle)
+                            @if ($siteData?->blog_subtitle)
                                 <p>{!! nl2br(e($siteData->blog_subtitle)) !!}</p>
                             @endif
                         </div>
 
                         <div id="blog-post" class="owl-carousel">
                             @php $blogPosts = $siteData?->blog_posts ?? []; @endphp
-                            @if(count($blogPosts) > 0)
-                                @foreach($blogPosts as $post)
+                            @if (count($blogPosts) > 0)
+                                @foreach ($blogPosts as $post)
                                     <div>
                                         <div class="block">
-                                            @if(!empty($post['image']))
-                                                <img src="{{ site_image($post['image']) }}" alt="{{ $post['title'] ?? '' }}" class="img-thumbnail">
+                                            @if (!empty($post['image']))
+                                                <img src="{{ site_image($post['image']) }}"
+                                                    alt="{{ $post['title'] ?? '' }}" class="img-thumbnail">
                                             @else
-                                                <img src="{{ asset('img/blog/blog-1.jpg') }}" alt="{{ $post['title'] ?? '' }}" class="img-thumbnail">
+                                                <img src="{{ asset('img/blog/blog-1.jpg') }}"
+                                                    alt="{{ $post['title'] ?? '' }}" class="img-thumbnail">
                                             @endif
                                             <div class="content">
                                                 <h4>
-                                                    <a href="{{ $post['link'] ?? '#' }}">{{ $post['title'] ?? '' }}</a>
+                                                    <a
+                                                        href="{{ $post['link'] ?? '#' }}">{{ $post['title'] ?? '' }}</a>
                                                 </h4>
                                                 <small>By {{ $post['author'] ?? 'Admin' }}
-                                                    @if(!empty($post['date']))
+                                                    @if (!empty($post['date']))
                                                         / {{ \Carbon\Carbon::parse($post['date'])->format('M d, Y') }}
                                                     @endif
                                                 </small>
                                                 <p>{{ $post['excerpt'] ?? '' }}</p>
-                                                <a href="{{ $post['link'] ?? '#' }}" class="btn btn-read">Read More</a>
+                                                <a href="{{ $post['link'] ?? '#' }}" class="btn btn-read">Read
+                                                    More</a>
                                             </div>
                                         </div>
                                     </div>
                                 @endforeach
                             @else
                                 {{-- Fallback --}}
-                                @foreach(range(1,4) as $i)
-                                <div>
-                                    <div class="block">
-                                        <img src="{{ asset('img/blog/blog-'.$i.'.jpg') }}" alt="" class="img-thumbnail">
-                                        <div class="content">
-                                            <h4><a href="#">Latest News & Updates</a></h4>
-                                            <small>By Admin</small>
-                                            <p>Stay updated with the latest news, offers, and updates from our network team.</p>
-                                            <a href="#" class="btn btn-read">Read More</a>
+                                @foreach (range(1, 4) as $i)
+                                    <div>
+                                        <div class="block">
+                                            <img src="{{ asset('img/blog/blog-' . $i . '.jpg') }}" alt=""
+                                                class="img-thumbnail">
+                                            <div class="content">
+                                                <h4><a href="#">Latest News & Updates</a></h4>
+                                                <small>By Admin</small>
+                                                <p>Stay updated with the latest news, offers, and updates from our
+                                                    network team.</p>
+                                                <a href="#" class="btn btn-read">Read More</a>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
                                 @endforeach
                             @endif
                         </div>
@@ -538,19 +660,20 @@
                 <div class="row">
                     <div class="title">
                         <h2>{{ $siteData?->testimonial_title ?? 'TESTIMONIAL' }}</h2>
-                        @if($siteData?->testimonial_subtitle)
+                        @if ($siteData?->testimonial_subtitle)
                             <p>{!! nl2br(e($siteData->testimonial_subtitle)) !!}</p>
                         @endif
                     </div>
 
                     @php $testimonials = $siteData?->testimonials ?? []; @endphp
-                    @if(count($testimonials) > 0)
-                        @foreach($testimonials as $testimonial)
+                    @if (count($testimonials) > 0)
+                        @foreach ($testimonials as $testimonial)
                             <div class="col col-md-6">
                                 <div class="media wow fadeInLeft" data-wow-delay=".3s">
                                     <div class="media-left">
                                         <a href="#">
-                                            <img src="{{ !empty($testimonial['image']) ? site_image($testimonial['image']) : asset('img/service-img.png') }}" alt="{{ $testimonial['name'] ?? '' }}">
+                                            <img src="{{ !empty($testimonial['image']) ? site_image($testimonial['image']) : asset('img/service-img.png') }}"
+                                                alt="{{ $testimonial['name'] ?? '' }}">
                                         </a>
                                     </div>
                                     <div class="media-body">
@@ -564,18 +687,22 @@
                         @endforeach
                     @else
                         {{-- Fallback testimonials --}}
-                        @foreach(['Satisfied Customer', 'Happy Client', 'Regular User', 'Business Owner'] as $name)
-                        <div class="col col-md-6">
-                            <div class="media wow fadeInLeft" data-wow-delay=".3s">
-                                <div class="media-left">
-                                    <a href="#"><img src="{{ asset('img/service-img.png') }}" alt=""></a>
-                                </div>
-                                <div class="media-body">
-                                    <a href="#"><h4 class="media-heading">{{ $name }}</h4></a>
-                                    <p>Excellent internet service with fast speeds and reliable uptime. Customer support is always responsive and helpful. Highly recommended!</p>
+                        @foreach (['Satisfied Customer', 'Happy Client', 'Regular User', 'Business Owner'] as $name)
+                            <div class="col col-md-6">
+                                <div class="media wow fadeInLeft" data-wow-delay=".3s">
+                                    <div class="media-left">
+                                        <a href="#"><img src="{{ asset('img/service-img.png') }}"
+                                                alt=""></a>
+                                    </div>
+                                    <div class="media-body">
+                                        <a href="#">
+                                            <h4 class="media-heading">{{ $name }}</h4>
+                                        </a>
+                                        <p>Excellent internet service with fast speeds and reliable uptime. Customer
+                                            support is always responsive and helpful. Highly recommended!</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
                         @endforeach
                     @endif
                 </div>
@@ -591,7 +718,7 @@
                 <div class="row">
                     <div class="title">
                         <h2>{{ $siteData?->contact_title ?? 'CONTACT US' }}</h2>
-                        @if($siteData?->contact_subtitle)
+                        @if ($siteData?->contact_subtitle)
                             <p>{!! nl2br(e($siteData->contact_subtitle)) !!}</p>
                         @endif
                     </div>
@@ -599,19 +726,18 @@
                     <div class="col-md-6 col">
                         <div class="map">
                             <div id="googleMap">
-                                @if($siteData?->google_map_embed)
-                                    <iframe src="{{ $siteData->google_map_embed }}"
-                                            width="600" height="450" style="border:0;"
-                                            allowfullscreen="" loading="lazy"
-                                            referrerpolicy="no-referrer-when-downgrade"></iframe>
+                                @if ($siteData?->google_map_embed)
+                                    <iframe src="{{ $siteData->google_map_embed }}" width="600" height="450"
+                                        style="border:0;" allowfullscreen="" loading="lazy"
+                                        referrerpolicy="no-referrer-when-downgrade"></iframe>
                                 @elseif(siteUrlSettings('site_map'))
-                                    <iframe src="{{ siteUrlSettings('site_map') }}"
-                                            width="600" height="450" style="border:0;"
-                                            allowfullscreen="" loading="lazy"></iframe>
+                                    <iframe src="{{ siteUrlSettings('site_map') }}" width="600" height="450"
+                                        style="border:0;" allowfullscreen="" loading="lazy"></iframe>
                                 @else
-                                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d97559.35009863286!2d90.89949961876307!3d24.672873925245927!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3756e83b9c19e2e5%3A0xa7695289d8c1a5c1!2sMadan%20Upazila!5e0!3m2!1sen!2sbd!4v1770660584969!5m2!1sen!2sbd"
-                                            width="600" height="450" style="border:0;"
-                                            allowfullscreen="" loading="lazy"></iframe>
+                                    <iframe
+                                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d97559.35009863286!2d90.89949961876307!3d24.672873925245927!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3756e83b9c19e2e5%3A0xa7695289d8c1a5c1!2sMadan%20Upazila!5e0!3m2!1sen!2sbd!4v1770660584969!5m2!1sen!2sbd"
+                                        width="600" height="450" style="border:0;" allowfullscreen=""
+                                        loading="lazy"></iframe>
                                 @endif
                             </div>
                         </div>
@@ -636,16 +762,24 @@
                             <a href="#top">
                                 @if (siteUrlSettings('site_logo'))
                                     <img class="d-inline-block align-text-top mb-3" style="max-width: 190px;"
-                                         src="{{ site_image(siteUrlSettings('site_logo')) }}" alt="logo" />
+                                        src="{{ site_image(siteUrlSettings('site_logo')) }}" alt="logo" />
                                 @else
-                                    <h3 class="text-success fw-bold">{{ siteUrlSettings('site_name') ?? config('app.name') }}</h3>
+                                    <h3 class="text-success fw-bold">
+                                        {{ siteUrlSettings('site_name') ?? config('app.name') }}</h3>
                                 @endif
                             </a>
-                            <p class="mb-1"><i class="fa-solid fa-location-dot me-2"></i>{{ siteUrlSettings('site_address') ?? 'Our Head Office' }}</p>
-                            <p class="mb-1"><i class="fa-solid fa-phone me-2"></i>{{ siteUrlSettings('site_phone') ?? '01700000000' }}</p>
-                            <p class="mb-3"><i class="fa-solid fa-envelope me-2"></i>{{ siteUrlSettings('site_email') ?? 'support@example.com' }}</p>
-                            
-                            <p class="text-muted small">{{ $siteData?->footer_copyright ?? 'All rights reserved © ' . date('Y') }}</p>
+                            <p class="mb-1"><i
+                                    class="fa-solid fa-location-dot me-2"></i>{{ siteUrlSettings('site_address') ?? 'Our Head Office' }}
+                            </p>
+                            <p class="mb-1"><i
+                                    class="fa-solid fa-phone me-2"></i>{{ siteUrlSettings('site_phone') ?? '01700000000' }}
+                            </p>
+                            <p class="mb-3"><i
+                                    class="fa-solid fa-envelope me-2"></i>{{ siteUrlSettings('site_email') ?? 'support@example.com' }}
+                            </p>
+
+                            <p class="text-muted small">
+                                {{ $siteData?->footer_copyright ?? 'All rights reserved © ' . date('Y') }}</p>
 
                             {{-- Social Links --}}
                             @php
@@ -656,11 +790,26 @@
                                 $wa = siteUrlSettings('site_whatsapp');
                             @endphp
                             <div class="mt-2 d-flex gap-3">
-                                @if($fb)   <a href="{{ $fb }}" target="_blank" class="text-success"><i class="fa-brands fa-facebook-f fa-lg"></i></a> @endif
-                                @if($tw)   <a href="{{ $tw }}" target="_blank" class="text-success"><i class="fa-brands fa-twitter fa-lg"></i></a> @endif
-                                @if($ig)   <a href="{{ $ig }}" target="_blank" class="text-success"><i class="fa-brands fa-instagram fa-lg"></i></a> @endif
-                                @if($yt)   <a href="{{ $yt }}" target="_blank" class="text-success"><i class="fa-brands fa-youtube fa-lg"></i></a> @endif
-                                @if($wa)   <a href="https://wa.me/{{ preg_replace('/[^0-9]/','',$wa) }}" target="_blank" class="text-success"><i class="fa-brands fa-whatsapp fa-lg"></i></a> @endif
+                                @if ($fb)
+                                    <a href="{{ $fb }}" target="_blank" class="text-success"><i
+                                            class="fa-brands fa-facebook-f fa-lg"></i></a>
+                                @endif
+                                @if ($tw)
+                                    <a href="{{ $tw }}" target="_blank" class="text-success"><i
+                                            class="fa-brands fa-twitter fa-lg"></i></a>
+                                @endif
+                                @if ($ig)
+                                    <a href="{{ $ig }}" target="_blank" class="text-success"><i
+                                            class="fa-brands fa-instagram fa-lg"></i></a>
+                                @endif
+                                @if ($yt)
+                                    <a href="{{ $yt }}" target="_blank" class="text-success"><i
+                                            class="fa-brands fa-youtube fa-lg"></i></a>
+                                @endif
+                                @if ($wa)
+                                    <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $wa) }}" target="_blank"
+                                        class="text-success"><i class="fa-brands fa-whatsapp fa-lg"></i></a>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -669,7 +818,7 @@
                             <h6>Our Respective Visitor</h6>
                             <div class="p-2">
                                 <img src="https://counter5.optistats.ovh/private/freecounterstat.php?c=yrq4zymn7m8gth9flg3rqlyl6b46p3yz"
-                                     border="0" title="visitor counter" alt="visitor counter">
+                                    border="0" title="visitor counter" alt="visitor counter">
                             </div>
                         </div>
                     </div>
@@ -693,10 +842,11 @@
     <script src="https://fcnetwork24.com/js/script.js"></script> --}}
 
     <script>
-        $(document).ready(function(){
+        $(document).ready(function() {
             // Bootstrap carousel is auto-initialized by data-bs-ride="carousel"
             // But we can ensure it's running smoothly here if needed.
         });
     </script>
 </body>
+
 </html>

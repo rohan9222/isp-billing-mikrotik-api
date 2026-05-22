@@ -24842,7 +24842,6 @@ h5, .h5 {
   }
   .navbar-vertical-collapsed .navbar-vertical.navbar-expand-xl {
     z-index: 1030;
-    width: 3.125rem;
     height: 100vh;
   }
   .navbar-vertical-collapsed .navbar-vertical.navbar-expand-xl .navbar-collapse {
@@ -26945,7 +26944,7 @@ a[href].bg-200:hover, a[href].bg-200:focus {
 }
 
 /*-----------------------------------------------
-|  Back to top button   
+|  Back to top button
 -----------------------------------------------*/
 .btn-back-to-top {
   background-color: var(--cp-dark);

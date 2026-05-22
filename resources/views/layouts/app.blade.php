@@ -369,14 +369,14 @@
     var dataTablesInitTimeout = null;
     function initDynamicDataTables() {
         if (typeof $ === 'undefined' || typeof $.fn.DataTable === 'undefined') return;
-        
+
         // Debounce to prevent multiple rapid initializations during morphing
         if (dataTablesInitTimeout) clearTimeout(dataTablesInitTimeout);
-        
+
         dataTablesInitTimeout = setTimeout(() => {
             $('table.data-table').each(function() {
                 const $table = $(this);
-                
+
                 // Skip if the table is no longer in the document
                 if (!document.body.contains(this)) return;
 
@@ -404,7 +404,7 @@
     document.addEventListener('DOMContentLoaded', initDynamicDataTables);
     document.addEventListener('livewire:navigated', initDynamicDataTables);
     window.addEventListener('reinit-datatables', initDynamicDataTables);
-    
+
     // Livewire 3 hooks for robust 3rd party integration (e.g., DataTables)
     document.addEventListener('livewire:init', () => {
         // 1. Destroy ALL DataTables on the page BEFORE any component morph starts.
@@ -426,7 +426,7 @@
                if (component.el && document.body.contains(component.el)) {
                    initDynamicDataTables();
                }
-           }, 300); 
+           }, 300);
        });
     });
 </script>

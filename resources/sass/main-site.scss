@@ -107,95 +107,225 @@ body {
 #gallery .recent-work-mixMenu {
   padding-bottom: 40px;
   text-align: center;
-}
-#gallery .recent-work-mixMenu ul li {
-  display: inline-block;
-  padding: 0;
-}
-#gallery .recent-work-mixMenu ul li button {
-  background: none;
-  border: 0;
-  font-size: 15px;
-  color: #474747;
-  margin: 0 20px;
-  transition: 0.2s;
-  text-transform: uppercase;
-}
-#gallery .recent-work-mixMenu ul li button:hover {
-  color: #80d6a3;
-}
-#gallery .recent-work-mixMenu ul li button:focus {
-  outline: 0;
-}
-#gallery .recent-work-mixMenu ul li .active {
-  color: #80d6a3;
-}
-#gallery .recent-work-pic ul li {
-  margin-bottom: 30px;
-  position: relative;
-}
-#gallery .recent-work-pic ul li:hover .overlay {
-  opacity: 1;
-}
-#gallery .recent-work-pic ul li:hover .overlay i {
-  top: 40%;
-  opacity: 1;
-}
-#gallery .recent-work-pic ul li:hover .overlay h3 {
-  bottom: 50%;
-  opacity: 1;
-}
-#gallery .recent-work-pic ul li .overlay {
-  position: absolute;
-  top: 0.2rem;
-  left: 1rem;
-  bottom: 0.2rem;
-  right: 1rem;
-  background: rgba(128, 214, 163, 0.85);
-  transition: 0.3s;
-  text-align: center;
-  opacity: 0;
-}
-#gallery .recent-work-pic ul li .overlay h3,
-#gallery .recent-work-pic ul li .overlay i {
-  color: #fff;
   
+  ul {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    padding: 0;
+    margin: 0;
+    
+    li {
+      display: inline-block;
+      padding: 0;
+      
+      button {
+        background: transparent;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        border-radius: 50px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #ffffff;
+        padding: 8px 24px;
+        margin: 0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        
+        &:hover {
+          background: rgba(255, 255, 255, 0.15);
+          border-color: #ffffff;
+          color: #ffffff;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        &:focus {
+          outline: 0;
+          box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4);
+        }
+        
+        &.active {
+          background: #ffffff;
+          border-color: #ffffff;
+          color: #198754; // Success green text matching main layout
+          font-weight: 700;
+          transform: translateY(-2px);
+          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+      }
+    }
+  }
 }
-#gallery .recent-work-pic ul li .overlay h3 {
-  bottom: 30%;
-  left: 50%;
-  opacity: 0;
-  text-transform: uppercase;
-  font-weight: 400;
-  width: 100%;
-  transition: 0.3s;
-  position: absolute;
-  transition-delay: 0.1s;
-  transform: translateX(-50%);
+
+.gallery-upload-container {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  
+  h4 {
+    letter-spacing: 0.5px;
+    font-size: 1.25rem;
+  }
+  
+  .form-control, .form-select {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 8px;
+    color: #ffffff !important;
+    transition: all 0.3s ease;
+    
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.5) !important;
+    }
+    
+    &:focus {
+      background: rgba(255, 255, 255, 0.15) !important;
+      border-color: rgba(255, 255, 255, 0.4) !important;
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25) !important;
+      outline: none;
+    }
+  }
+
+  select.form-select option {
+    background-color: #198754 !important;
+    color: #ffffff !important;
+  }
+  
+  .btn-light {
+    background: #ffffff !important;
+    border: 0 !important;
+    color: #198754 !important;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.9) !important;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+    }
+  }
 }
-#gallery .recent-work-pic ul li .overlay i {
-  top: 30%;
-  opacity: 0;
-  left: 50%;
-  font-size: 50px;
-  transition: 0.3s;
-  transition-delay: 0s;
-  position: absolute;
-  transform: translate(-50%, 50%);
-}
-#gallery .recent-work-pic ul li .overlay .overlay-content {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-#gallery .recent-work-pic ul li img {
-  width: 15em !important;
-  height: 15em !important;
+
+#gallery .recent-work-pic {
+  ul {
+    padding: 0;
+    margin: 0;
+    
+    li {
+      margin-bottom: 30px;
+      position: relative;
+      
+      &:hover .overlay {
+        opacity: 1;
+      }
+      
+      &:hover .overlay i {
+        top: 40%;
+        opacity: 1;
+      }
+      
+      &:hover .overlay h3 {
+        bottom: 50%;
+        opacity: 1;
+      }
+      
+      .overlay {
+        position: absolute;
+        top: 0.2rem;
+        left: 1rem;
+        bottom: 0.2rem;
+        right: 1rem;
+        background: rgba(128, 214, 163, 0.85);
+        transition: 0.3s;
+        text-align: center;
+        opacity: 0;
+        
+        h3, i {
+          color: #fff;
+        }
+        
+        h3 {
+          bottom: 30%;
+          left: 50%;
+          opacity: 0;
+          text-transform: uppercase;
+          font-weight: 400;
+          width: 100%;
+          transition: 0.3s;
+          position: absolute;
+          transition-delay: 0.1s;
+          transform: translateX(-50%);
+        }
+        
+        i {
+          top: 30%;
+          opacity: 0;
+          left: 50%;
+          font-size: 50px;
+          transition: 0.3s;
+          transition-delay: 0s;
+          position: absolute;
+          transform: translate(-50%, 50%);
+        }
+        
+        .overlay-content {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+        }
+      }
+      
+      img {
+        width: 100% !important;
+        aspect-ratio: 1 / 1;
+        object-fit: cover;
+        border-radius: 8px;
+        transition: transform 0.3s ease;
+      }
+    }
+  }
 }
 
 #gallery-images .mix {
-  display: none;
+  display: block;
+}
+
+// Alpine.js utility transition classes (Tailwind equivalent for non-Tailwind templates)
+.transition {
+  transition-property: opacity, transform !important;
+}
+.ease-out {
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1) !important;
+}
+.ease-in {
+  transition-timing-function: cubic-bezier(0.4, 0, 1, 1) !important;
+}
+.duration-300 {
+  transition-duration: 300ms !important;
+}
+.duration-200 {
+  transition-duration: 200ms !important;
+}
+.opacity-0 {
+  opacity: 0 !important;
+}
+.opacity-100 {
+  opacity: 1 !important;
+}
+.scale-90 {
+  transform: scale(0.9) !important;
+}
+.scale-100 {
+  transform: scale(1) !important;
 }
 /* animation keyfrem */
 @-webkit-keyframes wiggle {

@@ -18,6 +18,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Components\ViewField;
 use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
@@ -119,6 +120,12 @@ class MainSiteSetup extends Component implements HasActions, HasForms
             'services' => MainSiteData::getValue('services', []),
             'testimonials' => MainSiteData::getValue('testimonials', []),
             'gallery_items' => MainSiteData::getValue('gallery_items', []),
+            'gallery_categories' => MainSiteData::getValue('gallery_categories', [
+                ['key' => 'category-1', 'label' => 'Equipment'],
+                ['key' => 'category-2', 'label' => 'Server'],
+                ['key' => 'category-3', 'label' => 'Illustration'],
+                ['key' => 'category-4', 'label' => 'Media'],
+            ]),
             'valuable_clients' => MainSiteData::getValue('valuable_clients', []),
             'all_data' => MainSiteData::all()->toArray(),
         ]);
@@ -282,12 +289,9 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                                     TextInput::make('site_invoice_footer')
                                         ->label('Footer Text')
                                         ->placeholder('e.g., Thank you for choosing us!'),
-                                    Textarea::make('site_invoice_notes')
-                                        ->label('Default Notes')
-                                        ->rows(2),
-                                    Textarea::make('site_invoice_terms')
+                                    RichEditor::make('site_invoice_terms')
                                         ->label('Terms & Conditions')
-                                        ->rows(2),
+                                        ->grow(),
                                     FileUpload::make('site_invoice_signature')
                                         ->label('Authorized Signature')
                                         ->image()
@@ -414,6 +418,46 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                                                 ->placeholder('https://...'),
                                         ])->columns(3)->grid(3),
                                 ]),
+
+                            Section::make('Gallery')
+                                ->icon('heroicon-m-photo')
+                                ->description('Manage gallery images shown on the public homepage. Upload images, set a caption and category.')
+                                ->components([
+                                    Repeater::make('gallery_categories')
+                                        ->label('Gallery Categories')
+                                        ->schema([
+                                            TextInput::make('key')->label('Key')->required()->placeholder('Unique key used in gallery items, e.g. category-1')->inlineLabel(),
+                                            TextInput::make('label')->label('Label')->required()->placeholder('Human readable label shown on filter buttons')->inlineLabel(),
+                                        ])
+                                        ->columns(2)
+                                        ->grid(2)
+                                        ->extraAttributes(['class' => 'px-0'])
+                                        ->helperText('Define categories available for gallery items. New categories uploaded from the public uploader will be added automatically.'),
+
+                                    Repeater::make('gallery_items')
+                                        ->label('Gallery Items')
+                                        ->reorderable()
+                                        ->schema([
+                                            FileUpload::make('image')
+                                                ->label('Image')
+                                                ->image()
+                                                ->directory('gallery')
+                                                ->required(),
+                                            TextInput::make('caption')
+                                                ->label('Caption')
+                                                ->placeholder('Optional caption'),
+                                            Select::make('category')
+                                                ->label('Category')
+                                                ->options(fn () => collect(MainSiteData::getValue('gallery_categories', []))
+                                                    ->mapWithKeys(fn($c) => [($c['key'] ?? $c['label'] ?? '') => $c['label'] ?? $c['key'] ?? ''])
+                                                    ->toArray())
+                                                ->default('category-1'),
+                                        ])
+                                        ->columns(1)
+                                        ->grid(1)
+                                        ->helperText('Add, reorder, or remove gallery images. Files are stored in the `gallery` folder. Use drag‑and‑drop to change order.'),
+                                ]),
+
                             Section::make('Footer & Global')
                                 ->icon('heroicon-m-bars-3')
                                 ->components([
@@ -460,7 +504,7 @@ class MainSiteSetup extends Component implements HasActions, HasForms
             'mysql_binary_path', 'log_server_enabled', 'log_server_routers', 'log_retention_days',
             'hero_title', 'hero_subtitle', 'hero_button_text', 'hero_button_link', 'registration_link',
             'about_title', 'about_body', 'packages_section_title', 'testimonial_title', 'footer_copyright', 'is_active',
-            'hero_slides', 'services', 'testimonials', 'gallery_items', 'valuable_clients',
+            'hero_slides', 'services', 'testimonials', 'gallery_items', 'gallery_categories', 'valuable_clients',
         ];
 
         foreach ($keys as $key) {
