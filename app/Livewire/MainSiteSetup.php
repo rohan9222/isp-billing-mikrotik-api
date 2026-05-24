@@ -426,13 +426,26 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                                     Repeater::make('gallery_categories')
                                         ->label('Gallery Categories')
                                         ->schema([
-                                            TextInput::make('key')->label('Key')->required()->placeholder('Unique key used in gallery items, e.g. category-1')->inlineLabel(),
-                                            TextInput::make('label')->label('Label')->required()->placeholder('Human readable label shown on filter buttons')->inlineLabel(),
+                                            TextInput::make('key')
+                                                ->label('Key')
+                                                ->required()
+                                                ->placeholder('Unique key used in gallery items, e.g. category-1')
+                                                ->inlineLabel(),
+                                            TextInput::make('label')
+                                                ->label('Label')
+                                                ->required()
+                                                ->placeholder('Human readable label shown on filter buttons')
+                                                ->inlineLabel(),
                                         ])
                                         ->columns(2)
                                         ->grid(2)
-                                        ->extraAttributes(['class' => 'px-0'])
-                                        ->helperText('Define categories available for gallery items. New categories uploaded from the public uploader will be added automatically.'),
+                                        ->extraAttributes(['class' => 'p-0 m-0'])
+                                        ->helperText('Define categories available for gallery items. New categories uploaded from the public uploader will be added automatically.')
+                                        ->deleteAction(fn (Action $action) => $action->iconButton()->icon('heroicon-m-trash'))
+                                        ->moveUpAction(fn (Action $action) => $action->iconButton()->icon('heroicon-m-chevron-up'))
+                                        ->moveDownAction(fn (Action $action) => $action->iconButton()->icon('heroicon-m-chevron-down'))
+                                        ->reactive()
+                                        ->afterStateUpdated(fn () => $this->save()),
 
                                     Repeater::make('gallery_items')
                                         ->label('Gallery Items')
