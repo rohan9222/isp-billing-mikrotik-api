@@ -15,9 +15,14 @@
                     <label class="small text-muted fw-bold ps-1">FILTERS</label>
                     <div class="d-flex flex-wrap gap-2">
                         <div class="filter-group d-flex gap-1 overflow-auto pb-1">
-                            <input type="radio" class="btn-check" name="collection" id="all_list" autocomplete="off" checked>
+                            <input type="radio" class="btn-check" name="collection" id="all_list" autocomplete="off">
                             <label class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-none fw-600" for="all_list">
                                 <i class="bi bi-people-fill me-1"></i> All Customers <span class="badge bg-white text-primary fw-bold"></span>
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="collection" id="all_active_list" autocomplete="off" checked>
+                            <label class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-none fw-600" for="all_active_list">
+                                <i class="bi bi-people-fill me-1"></i> All Active <span class="badge bg-white text-primary fw-bold"></span>
                             </label>
 
                             <input type="radio" class="btn-check" name="collection" id="collection_list" autocomplete="off">
@@ -386,6 +391,8 @@
                     data: function(d) {
                         if ($('#all_list').is(':checked')) {
                             d.filter = 'all';
+                        } else if ($('#all_active_list').is(':checked')) {
+                            d.filter = 'all_active';
                         } else if ($('#without_collection_list').is(':checked')) {
                             d.filter = 'without_collection';
                         } else if ($('#collection_list').is(':checked')) {
@@ -549,7 +556,7 @@
 
             $('#reset_table').on('click', function() {
                 $('#router_filter').val('');
-                $('#all_list').prop('checked', true);
+                $('#all_active_list').prop('checked', true);
                 resetTableState();
                 table.clear().draw();
                 table.ajax.reload(null, true);

@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasAvatar;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class PPPSecrets extends Authenticatable implements FilamentUser
+class PPPSecrets extends Authenticatable implements FilamentUser, HasAvatar
 {
     use HasFactory;
 
@@ -82,5 +83,18 @@ class PPPSecrets extends Authenticatable implements FilamentUser
     public function getNameAttribute()
     {
         return $this->username;
+    }
+
+    /**
+     * Get the user's avatar URL for Filament.
+     */
+    public function getFilamentAvatarUrl(): ?string
+    {
+        $customer = $this->customer;
+        if ($customer && $customer->photo_url) {
+            return asset($customer->photo_url);
+        }
+
+        return null;
     }
 }

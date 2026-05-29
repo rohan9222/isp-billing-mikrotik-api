@@ -11,7 +11,7 @@
                         type="search"
                         name="customer_list"
                         class="form-control w-100"
-                        placeholder="FCNET-XXX, customer name, mobile, name"
+                        placeholder="{{ siteUrlSettings('customer_id_prefix') ?: 'FCNET' }}-XXX, customer name, mobile, name"
                         wire:model.live="customer_list"
                         autocomplete="off"
                         tabindex="1"

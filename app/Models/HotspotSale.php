@@ -13,7 +13,7 @@ class HotspotSale extends Model
     ];
 
     protected $casts = [
-        'amount'    => 'decimal:2',
+        'amount' => 'decimal:2',
         'sale_date' => 'date',
     ];
 

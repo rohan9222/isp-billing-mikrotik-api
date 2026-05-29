@@ -104,7 +104,7 @@ class MainSiteData extends Model
             ];
 
             foreach ($defaults as $key => $defaultValue) {
-                if (!property_exists($data, $key)) {
+                if (! property_exists($data, $key)) {
                     $data->$key = $defaultValue;
                 }
             }

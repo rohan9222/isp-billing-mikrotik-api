@@ -8,7 +8,7 @@
                 <x-slot name="title">{{ __('Search') }}</x-slot>
                 <x-slot name="aside">
                     <input type="search" name="customer_list" class="form-control w-100"
-                        placeholder="FCNET-XXX, customer name, mobile, name" wire:model.live="customer_list"
+                        placeholder="{{ siteUrlSettings('customer_id_prefix') ?: 'FCNET' }}-XXX, customer name, mobile, name" wire:model.live="customer_list"
                         autocomplete="off" tabindex="1" wire:keydown.arrow-down="incrementHighlight"
                         wire:keydown.arrow-up="decrementHighlight" wire:keydown.enter="selectHighlightedCustomer"
                         id="customer_list" autofocus>

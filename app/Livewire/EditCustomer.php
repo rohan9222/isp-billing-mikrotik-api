@@ -100,10 +100,10 @@ class EditCustomer extends Component
         // Call loadCustomerData with the customerId parameter
         $this->loadCustomerData($customerId);
         $this->loadInterfaceNames();
-        
+
         // Load packages based on the customer's router
         $routerName = $this->fields['pppUser']['router_name'] ?? null;
-        $this->packageLists = PackageList::where('router_name', !empty($routerName) ? $routerName : null)
+        $this->packageLists = PackageList::where('router_name', ! empty($routerName) ? $routerName : null)
             ->pluck('package');
     }
 
@@ -197,7 +197,7 @@ class EditCustomer extends Component
                 ], $this->ppp_user_id !== null ? [
                     'router_name' => $customer->pppUser->router_name ?? '',
                     'username' => $customer->pppUser->username ?? '',
-                    'password' => $customer->pppUser->password ?? '',
+                    'password' => '******',
                     'service' => $customer->pppUser->service ?? '',
                     'profile' => $customer->pppUser->profile ?? '',
                     'caller_id' => $customer->pppUser->caller_id ?? '',
@@ -254,12 +254,12 @@ class EditCustomer extends Component
         try {
             app(MikrotikController::class)->singleWrite(
                 $customer->pppUser->router_name,
-                '/ppp secret remove [find name="' . $customer->pppUser->username . '"]'
+                '/ppp secret remove [find name="'.$customer->pppUser->username.'"]'
             );
         } catch (\Exception $routerEx) {
             // Log but continue — user may have already been removed from router
-            \Log::warning('deletePPPUser router error: ' . $routerEx->getMessage());
-            flash()->warning('Router warning: ' . $routerEx->getMessage() . '. Cleaning up database record.');
+            \Log::warning('deletePPPUser router error: '.$routerEx->getMessage());
+            flash()->warning('Router warning: '.$routerEx->getMessage().'. Cleaning up database record.');
         }
 
         // Always clean up the database record regardless of router outcome
@@ -279,7 +279,7 @@ class EditCustomer extends Component
             ];
             // Proceed only if service is static and router_name is set
             // auto disable date will be set only if router_name is set
-            $normalizedRouterName = !empty($this->router_name) ? $this->router_name : null;
+            $normalizedRouterName = ! empty($this->router_name) ? $this->router_name : null;
             if ($normalizedRouterName) {
                 $this->auto_disable = true;
                 $this->auto_disable_date = now()->addDays(30)->format('Y-m-d');
@@ -588,11 +588,11 @@ class EditCustomer extends Component
         'mobile.regex' => 'Mobile number must start with "880" and be 11 digits long',
         'alternative_mobile.regex' => 'Mobile number must start with "880" and be 11 digits long',
         'identification_no.regex' => 'NID No must e number and it less than 9 or grater than 17 digit',
+        'password.required' => 'Password is required. No Blank or Null Value Allowed.',
     ];
 
     public function updateCustomer($field, $value)
     {
-        // dd($field, $value);
         // Define validation rules directly if there's an issue with accessing the rules method
         $rules = [
             'customer_name' => 'required|min:3|max:255',
@@ -608,7 +608,7 @@ class EditCustomer extends Component
             'caller_id' => 'nullable|mac_address',
             'queue_name' => 'nullable|required_if:service,static|string|max:25',
             'profile' => 'nullable|required_if:service,pppoe|string|max:25',
-            // 'username' => 'nullable|required_if:service,pppoe|string|max:25|unique:p_p_p_secrets,username',
+            'password' => ($this->service === 'pppoe') ? 'required|string|min:3|max:25' : 'nullable|string|min:3|max:25',
             'username' => [
                 'nullable',
                 'required_if:service,pppoe',
@@ -706,7 +706,7 @@ class EditCustomer extends Component
                     if ($attribute == 'package_name') {
                         $router = $customer->pppUser->router_name ?? null;
                         $pkg = PackageList::where('package', $value)
-                            ->where('router_name', !empty($router) ? $router : null)
+                            ->where('router_name', ! empty($router) ? $router : null)
                             ->first();
                         $customer->package_id = $pkg?->id;
                     } else {
@@ -738,14 +738,14 @@ class EditCustomer extends Component
                         if ($relatedModel && $relatedModel->isFillable($attribute)) {
                             $relatedModel->$attribute = $value;
                             $relatedModel->save();
-                            data_set($this->fields, $field, $value);
+                            data_set($this->fields, $field, $attribute === 'password' ? '******' : $value);
                             flash()->success(ucfirst(str_replace('_', ' ', $attribute)).' updated successfully!');
                         } else {
                             flash()->error('Field not found or not fillable on the related model.');
                         }
                     } catch (\Exception $e) {
-                        \Log::error("Failed to update PPP Secret " . $attributeField . " on router: " . $e->getMessage());
-                        flash()->error('Failed to update on Mikrotik: ' . $e->getMessage());
+                        \Log::error('Failed to update PPP Secret '.$attributeField.' on router: '.$e->getMessage());
+                        flash()->error('Failed to update on Mikrotik: '.$e->getMessage());
                     }
                 } elseif ($relation == 'official' && $attribute == 'status') {
                     try {
@@ -754,7 +754,7 @@ class EditCustomer extends Component
                         if ($customer->ppp_user_id != null && $customer->pppUser) {
                             if ($value == 'active') {
                                 app(MikrotikController::class)->enablePPPSecret(decrypt($this->customerId), $customer->pppUser->router_name, $customer->pppUser->username);
-                                
+
                                 app(MikrotikController::class)->updatePPPSecret(
                                     $customer->pppUser->router_name,
                                     $customer->pppUser->username,
@@ -765,10 +765,10 @@ class EditCustomer extends Component
                                 try {
                                     app(MikrotikController::class)->singleWrite(
                                         $customer->pppUser->router_name,
-                                        '/ppp active remove [find name="' . $customer->pppUser->username . '"]'
+                                        '/ppp active remove [find name="'.$customer->pppUser->username.'"]'
                                     );
                                 } catch (\Exception $e) {
-                                    \Log::debug('EditCustomer enable active session removal skipped: ' . $e->getMessage());
+                                    \Log::debug('EditCustomer enable active session removal skipped: '.$e->getMessage());
                                 }
 
                                 PPPSecrets::where('id', $customer->ppp_user_id)->update(['status' => 'active']);
@@ -786,8 +786,8 @@ class EditCustomer extends Component
                         flash()->success(ucfirst(str_replace('_', ' ', $attribute)).' updated successfully!');
                     } catch (\Exception $e) {
                         \DB::rollBack();
-                        \Log::error("Failed to update status for customer " . $customer->customer_unique_id . ": " . $e->getMessage());
-                        flash()->error('Failed to update status on router: ' . $e->getMessage());
+                        \Log::error('Failed to update status for customer '.$customer->customer_unique_id.': '.$e->getMessage());
+                        flash()->error('Failed to update status on router: '.$e->getMessage());
                     }
                 } elseif ($relation && $customer->$relation) {
                     $relatedModel = $customer->$relation;

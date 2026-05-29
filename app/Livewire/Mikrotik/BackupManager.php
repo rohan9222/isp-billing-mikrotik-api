@@ -5,6 +5,7 @@ namespace App\Livewire\Mikrotik;
 use App\Http\Controllers\MikrotikController;
 use App\Models\RouterList;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\File;
 use Livewire\Component;
 
 class BackupManager extends Component
@@ -46,7 +47,7 @@ class BackupManager extends Component
 
         try {
             $ctrl = app(MikrotikController::class);
-            
+
             // 1. Fetch REMOTE backups from the router hardware
             $remoteData = $ctrl->singleRead(
                 $this->selectedRouter,
@@ -59,11 +60,11 @@ class BackupManager extends Component
             $snapshots = [];
 
             foreach ($remoteData as $item) {
-                if (isset($item['name']) && str_ends_with((string)$item['name'], '.backup')) {
+                if (isset($item['name']) && str_ends_with((string) $item['name'], '.backup')) {
                     // Extract timestamp like 20260403_163159 from AutoBackup_20260403_163159
                     $nameParts = explode('_', str_replace('.backup', '', $item['name']));
                     $timestamp = count($nameParts) >= 3 ? ($nameParts[1].'_'.$nameParts[2]) : $item['name'];
-                    
+
                     $snapshots[$timestamp]['remote'] = [
                         'id' => $item['.id'] ?? $item['id'] ?? '',
                         'name' => $item['name'],
@@ -77,13 +78,13 @@ class BackupManager extends Component
             // 2. Fetch LOCAL mirrored configurations from the server folder
             $localDir = base_path('backups');
             if (is_dir($localDir)) {
-                $localFiles = \Illuminate\Support\Facades\File::files($localDir);
+                $localFiles = File::files($localDir);
                 foreach ($localFiles as $file) {
                     $filename = $file->getFilename();
                     if (str_starts_with($filename, $this->selectedRouter) && str_ends_with($filename, '.rsc')) {
-                         // Extract timestamp like 20260403_163159 from RouterName_20260403_163159.rsc
-                         $nameParts = explode('_', str_replace('.rsc', '', $filename));
-                         $timestamp = count($nameParts) >= 3 ? ($nameParts[1].'_'.$nameParts[2]) : $filename;
+                        // Extract timestamp like 20260403_163159 from RouterName_20260403_163159.rsc
+                        $nameParts = explode('_', str_replace('.rsc', '', $filename));
+                        $timestamp = count($nameParts) >= 3 ? ($nameParts[1].'_'.$nameParts[2]) : $filename;
 
                         $snapshots[$timestamp]['local'] = [
                             'name' => $filename,
@@ -96,13 +97,13 @@ class BackupManager extends Component
             }
 
             // Transform grouped snapshots into a sortable array
-            foreach($snapshots as $ts => $data) {
+            foreach ($snapshots as $ts => $data) {
                 $primaryTime = $data['local']['raw_time'] ?? ($data['remote']['raw_time'] ?? 0);
                 $this->backups[] = [
                     'timestamp' => $ts,
                     'remote' => $data['remote'] ?? null,
                     'local' => $data['local'] ?? null,
-                    'sort_time' => is_numeric($primaryTime) ? $primaryTime : strtotime((string)$primaryTime),
+                    'sort_time' => is_numeric($primaryTime) ? $primaryTime : strtotime((string) $primaryTime),
                 ];
             }
 
@@ -119,9 +120,10 @@ class BackupManager extends Component
     protected function formatSize($size): string
     {
         if (is_numeric($size)) {
-            return number_format((int)$size / 1024, 2).' KB';
+            return number_format((int) $size / 1024, 2).' KB';
         }
-        return (string)$size;
+
+        return (string) $size;
     }
 
     public function createBackup(): void
@@ -131,7 +133,7 @@ class BackupManager extends Component
         }
 
         try {
-            $controller = app(\App\Http\Controllers\MikrotikController::class);
+            $controller = app(MikrotikController::class);
             $result = $controller->createBackup($this->selectedRouter, 'AutoBackup');
 
             if (! empty($result['warnings'])) {
@@ -152,6 +154,7 @@ class BackupManager extends Component
             flash()->error('Backup failed: '.$e->getMessage());
         }
     }
+
     public function deleteBackup(string $id, string $name): void
     {
         if (! $this->selectedRouter) {
@@ -220,8 +223,9 @@ class BackupManager extends Component
                 return response()->download($path);
             }
         }
-        
-        flash()->warning("Proprietary binary .backup files can only be downloaded via WinBox/FTP. Local .rsc mirrors can be downloaded normally.");
+
+        flash()->warning('Proprietary binary .backup files can only be downloaded via WinBox/FTP. Local .rsc mirrors can be downloaded normally.');
+
         return null;
     }
 

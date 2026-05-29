@@ -354,7 +354,7 @@
                                                 @else
                                                     <span x-show="isEditing !== 'pppUser.{{ $field }}'"
                                                         @click="isEditing = 'pppUser.{{ $field }}';
-                                                        tempValue['pppUser.{{ $field }}'] = @js(  $fields['pppUser'][$field] ?? '' );
+                                                        tempValue['pppUser.{{ $field }}'] = @js($field === 'password' ? '' : ($fields['pppUser'][$field] ?? ''));
                                                         $wire.startEditing('pppUser.{{ $field }}');"
                                                         style="cursor: pointer; text-decoration: underline dotted;"
                                                         class="link-success">

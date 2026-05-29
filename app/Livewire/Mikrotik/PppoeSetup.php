@@ -23,7 +23,9 @@ class PppoeSetup extends Component
     public string $srv_mrru = 'disabled';
 
     public int $srv_keepalive = 10;
+
     public array $srv_authentication = ['mschap2', 'pap', 'chap', 'mschap1'];
+
     public string $srv_default_profile = 'default';
 
     public $editServerId = null;
@@ -67,27 +69,49 @@ class PppoeSetup extends Component
 
     public array $ipPools = [];
 
-    public string $sec_local_address = '', $sec_remote_address = '', $sec_caller_id = '';
+    public string $sec_local_address = '';
+
+    public string $sec_remote_address = '';
+
+    public string $sec_caller_id = '';
 
     // OVPN Server Form
     public string $ovpn_name = 'ovpn-server1';
+
     public bool $ovpn_enabled = false;
+
     public int $ovpn_port = 1194;
+
     public string $ovpn_mode = 'ip';
+
     public string $ovpn_protocol = 'tcp';
+
     public int $ovpn_netmask = 24;
+
     public string $ovpn_mac_address = '00:00:00:00:00:00';
+
     public int $ovpn_max_mtu = 1500;
+
     public int $ovpn_keepalive_timeout = 60;
+
     public string $ovpn_default_profile = 'default';
+
     public string $ovpn_certificate = 'none';
+
     public bool $ovpn_require_client_cert = false;
+
     public string $ovpn_tls_version = 'any';
+
     public int $ovpn_key_renegotiate_sec = 3600;
+
     public array $ovpn_redirect_gateway = ['disabled'];
+
     public string $ovpn_user_auth_method = 'pap';
+
     public array $ovpn_auth = ['sha1'];
+
     public array $ovpn_cipher = ['aes128-cbc', 'aes256-cbc'];
+
     public array $certificates = [];
 
     public function mount(): void
@@ -128,7 +152,7 @@ class PppoeSetup extends Component
 
             $this->dispatch('reinit-datatables');
         } catch (\Exception $e) {
-            flash()->error('Load error: ' . $e->getMessage());
+            flash()->error('Load error: '.$e->getMessage());
         }
     }
 
@@ -164,7 +188,8 @@ class PppoeSetup extends Component
             ], $this->editServerId);
 
             if ($res && (is_string($res) && (str_contains(strtolower($res), 'error') || str_contains(strtolower($res), 'failure')))) {
-                flash()->error('MikroTik Error: ' . $res);
+                flash()->error('MikroTik Error: '.$res);
+
                 return;
             }
 
@@ -226,11 +251,15 @@ class PppoeSetup extends Component
                     // Check standard controller response status
                     if (isset($output['status']) && $output['status'] === false) {
                         $errorMsg = $output['message'] ?? 'Unknown Error';
-                        if (isset($output['errors']['ssh'])) $errorMsg .= ' (SSH: ' . $output['errors']['ssh'] . ')';
-                        if (isset($output['errors']['api'])) $errorMsg .= ' (API: ' . $output['errors']['api'] . ')';
+                        if (isset($output['errors']['ssh'])) {
+                            $errorMsg .= ' (SSH: '.$output['errors']['ssh'].')';
+                        }
+                        if (isset($output['errors']['api'])) {
+                            $errorMsg .= ' (API: '.$output['errors']['api'].')';
+                        }
                         flash()->error("Router $router: $errorMsg");
                         $hasError = true;
-                    } 
+                    }
                     // Check for raw string errors if any
                     elseif (is_string($output) && (str_contains(strtolower($output), 'error') || str_contains(strtolower($output), 'failure'))) {
                         flash()->error("Router $router: $output");
@@ -242,7 +271,7 @@ class PppoeSetup extends Component
                 $hasError = true;
             }
 
-            if (!$hasError) {
+            if (! $hasError) {
                 flash()->success($this->editProfileId ? 'PPP Profile updated!' : 'PPP Profile added!');
                 $this->reset(['prof_name', 'prof_rate_limit', 'prof_local_address', 'prof_remote_address', 'prof_comment', 'editProfileId']);
                 $this->loadData();
@@ -296,7 +325,8 @@ class PppoeSetup extends Component
             ], $this->editSecretId);
 
             if ($res && is_string($res) && (str_contains(strtolower($res), 'error') || str_contains(strtolower($res), 'failure'))) {
-                flash()->error('MikroTik Error: ' . $res);
+                flash()->error('MikroTik Error: '.$res);
+
                 return;
             }
 
@@ -351,13 +381,13 @@ class PppoeSetup extends Component
                 $this->ovpn_require_client_cert = ($config['require-client-certificate'] ?? 'no') === 'yes';
                 $this->ovpn_tls_version = $config['tls-version'] ?? 'any';
                 $this->ovpn_key_renegotiate_sec = (int) ($config['key-renegotiation-interval'] ?? 3600);
-                $this->ovpn_redirect_gateway = is_string($config['redirect-gateway'] ?? null) 
-                    ? explode(',', $config['redirect-gateway']) 
-                    : (array)($config['redirect-gateway'] ?? ['disabled']);
+                $this->ovpn_redirect_gateway = is_string($config['redirect-gateway'] ?? null)
+                    ? explode(',', $config['redirect-gateway'])
+                    : (array) ($config['redirect-gateway'] ?? ['disabled']);
                 $this->ovpn_user_auth_method = $config['user-auth-method'] ?? 'pap';
-                
-                $this->ovpn_auth = is_string($config['auth'] ?? null) ? explode(',', $config['auth']) : (array)($config['auth'] ?? ['sha1']);
-                $this->ovpn_cipher = is_string($config['cipher'] ?? null) ? explode(',', $config['cipher']) : (array)($config['cipher'] ?? ['aes128-cbc']);
+
+                $this->ovpn_auth = is_string($config['auth'] ?? null) ? explode(',', $config['auth']) : (array) ($config['auth'] ?? ['sha1']);
+                $this->ovpn_cipher = is_string($config['cipher'] ?? null) ? explode(',', $config['cipher']) : (array) ($config['cipher'] ?? ['aes128-cbc']);
             }
         } catch (\Exception $e) {
             flash()->error('OVPN Load: '.$e->getMessage());
@@ -366,8 +396,9 @@ class PppoeSetup extends Component
 
     public function saveOvpn(): void
     {
-        if (!$this->selectedRouter) {
+        if (! $this->selectedRouter) {
             flash()->error('No router selected!');
+
             return;
         }
 
@@ -375,7 +406,7 @@ class PppoeSetup extends Component
             // Ensure we have at least one auth/cipher to avoid command errors
             $auth = array_filter($this->ovpn_auth);
             $cipher = array_filter($this->ovpn_cipher);
-            
+
             $res = app(MikrotikController::class)->updateOvpnConfig($this->selectedRouter, [
                 'enabled' => $this->ovpn_enabled,
                 'port' => $this->ovpn_port,
@@ -392,18 +423,18 @@ class PppoeSetup extends Component
                 'key_renegotiate_sec' => $this->ovpn_key_renegotiate_sec,
                 'redirect_gateway' => implode(',', array_filter($this->ovpn_redirect_gateway)),
                 'user_auth_method' => $this->ovpn_user_auth_method,
-                'auth' => !empty($auth) ? implode(',', $auth) : 'sha1',
-                'cipher' => !empty($cipher) ? implode(',', $cipher) : 'aes128-cbc',
+                'auth' => ! empty($auth) ? implode(',', $auth) : 'sha1',
+                'cipher' => ! empty($cipher) ? implode(',', $cipher) : 'aes128-cbc',
             ]);
 
             if ($res === 'success') {
                 flash()->success('OpenVPN configuration updated successfully!');
                 $this->loadOvpn(); // Refresh fields from router
             } else {
-                flash()->error('Router Error: ' . $res);
+                flash()->error('Router Error: '.$res);
             }
         } catch (\Exception $e) {
-            flash()->error('System Error: ' . $e->getMessage());
+            flash()->error('System Error: '.$e->getMessage());
         }
     }
 
@@ -416,6 +447,7 @@ class PppoeSetup extends Component
     public function render()
     {
         $routers = RouterList::where('action', 'connected')->get();
+
         return view('livewire.mikrotik.pppoe-setup', compact('routers'))->layout('layouts.app');
     }
 }

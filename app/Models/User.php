@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Http\Controllers\AvatarController;
+use Filament\Models\Contracts\HasAvatar;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -12,7 +13,7 @@ use Laravel\Jetstream\HasTeams;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements HasAvatar
 {
     use HasApiTokens;
     use HasFactory;
@@ -95,5 +96,13 @@ class User extends Authenticatable
             //     $q->where('name', 'like', '%' . $search . '%');
             // });
         });
+    }
+
+    /**
+     * Get the user's avatar URL for Filament.
+     */
+    public function getFilamentAvatarUrl(): ?string
+    {
+        return $this->profile_photo_url;
     }
 }

@@ -43,6 +43,9 @@
         <!-- parent pages-->
         <a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('customers.index') }}" role="button">Customers</a>
     </li>
+    <li class="nav-item">
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('admin-tickets') }}" role="button">Support Tickets</a>
+    </li>
     <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="collections">Collection</a>
         <div class="dropdown-menu dropdown-caret dropdown-menu-card border-0 mt-0" aria-labelledby="collections">

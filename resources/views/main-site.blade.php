@@ -10,10 +10,16 @@
 
     <link rel="shortcut icon" href="{{ site_image(siteUrlSettings('site_favicon')) }}" type="image/x-icon">
 
-    @vite(['resources/sass/main-site.scss', 'resources/js/main-site.js'])
+    <script>
+        (function () {
+            const theme = localStorage.getItem('site-theme') || 'dark';
+            if (theme === 'light') {
+                document.documentElement.classList.add('theme-light');
+            }
+        })();
+    </script>
 
-    {{-- <link rel="stylesheet" href="https://fcnetwork24.com/css/lightbox.css"> --}}
-    {{-- <link rel="stylesheet" href="https://fcnetwork24.com/style.css"> --}}
+    @vite(['resources/sass/main-site.scss', 'resources/js/main-site.js'])
 </head>
 
 <body id="top" class="container-fluid m-0 p-0">
@@ -43,7 +49,7 @@
 
             {{-- Nav Links --}}
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <ul class="nav nav-tabs navbar-nav me-auto mb-2 mb-lg-0">
+                <ul class="nav nav-tabs navbar-nav ms-auto mb-2 mb-lg-0">
                     <li class="nav-item"><a class="nav-link" href="#banner">Home</a></li>
                     <li class="nav-item"><a class="nav-link" href="#features">Service</a></li>
                     <li class="nav-item"><a class="nav-link" href="#gallery">Gallery</a></li>
@@ -53,6 +59,12 @@
                     <li class="nav-item"><a class="nav-link" href="#testimonial">Testimonial</a></li>
                     <li class="nav-item"><a class="nav-link" href="#contact-form">Contact</a></li>
                 </ul>
+            </div>
+
+            <div class="d-flex align-items-center ms-auto ms-lg-3 me-2">
+                <button id="theme-toggle" class="btn btn-link rounded-circle p-2 text-light text-decoration-none border-0" type="button" aria-label="Toggle Theme">
+                    <i class="bi bi-moon-stars" id="theme-toggle-icon" style="font-size: 1.25rem;"></i>
+                </button>
             </div>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -71,7 +83,7 @@
              HERO / BANNER SLIDER
         ========================================================== --}}
         <section id="banner" class="bg-success">
-            <div id="carouselExampleCaptions" class="carousel slide carousel-fade" data-bs-ride="carousel">
+            <div id="carouselExampleCaptions" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="7000">
 
                 {{-- Indicators --}}
                 @php $slides = $siteData?->hero_slides ?? []; @endphp
@@ -176,7 +188,7 @@
                     <div class="row">
                         <div class="col-md-4 col-xs-6 col-sm-6">
                             <div class="feature-block text-center">
-                                <div class="icon-box"><i class="fa-solid fa-house-signal"></i></div>
+                                <div class="icon-box"><i class="bi bi-house-fill"></i></div>
                                 <h4 class="wow fadeInUp" data-wow-delay=".3s">Home Internet</h4>
                                 <p class="wow fadeInUp" data-wow-delay=".5s">High-speed broadband internet for your
                                     home. Unlimited data, 24/7 uptime.</p>
@@ -184,7 +196,7 @@
                         </div>
                         <div class="col-md-4 col-xs-6 col-sm-6">
                             <div class="feature-block text-center">
-                                <div class="icon-box"><i class="fa-solid fa-building-circle-check"></i></div>
+                                <div class="icon-box"><i class="bi bi-building-fill-check"></i></div>
                                 <h4 class="wow fadeInUp" data-wow-delay=".3s">Corporate Internet</h4>
                                 <p class="wow fadeInUp" data-wow-delay=".5s">Dedicated business-grade connectivity
                                     with SLA guarantees and priority support.</p>
@@ -192,7 +204,7 @@
                         </div>
                         <div class="col-md-4 col-xs-6 col-sm-6">
                             <div class="feature-block text-center">
-                                <div class="icon-box"><i class="fa-solid fa-network-wired"></i></div>
+                                <div class="icon-box"><i class="bi bi-hdd-network-fill"></i></div>
                                 <h4 class="wow fadeInUp" data-wow-delay=".3s">Data Connectivity</h4>
                                 <p class="wow fadeInUp" data-wow-delay=".5s">Fiber optic point-to-point links for
                                     enterprise and campus connectivity needs.</p>
@@ -215,53 +227,61 @@
                         </div>
                     </div>
                 </div>
-                <div id="ClientCarousel" class="carousel slide" data-bs-ride="carousel">
-                    <div class="carousel-inner">
-                        @php
-                            $clients = $siteData?->valuable_clients ?? [];
-                            // If empty, use some dummy data for demo
-                            if (count($clients) === 0) {
-                                $clients = [
-                                    ['name' => 'Google'],
-                                    ['name' => 'Microsoft'],
-                                    ['name' => 'Amazon'],
-                                    ['name' => 'Facebook'],
-                                    ['name' => 'Twitter'],
-                                    ['name' => 'Apple'],
-                                    ['name' => 'Intel'],
-                                    ['name' => 'IBM'],
-                                    ['name' => 'Oracle'],
-                                ];
-                            }
-                            $chunks = array_chunk($clients, 6);
-                        @endphp
+                @php
+                    $clients = $siteData?->valuable_clients ?? [];
+                    if (count($clients) === 0) {
+                        $clients = [
+                            ['name' => 'Google'],
+                            ['name' => 'Microsoft'],
+                            ['name' => 'Amazon'],
+                            ['name' => 'Facebook'],
+                            ['name' => 'Twitter'],
+                            ['name' => 'Apple'],
+                            ['name' => 'Intel'],
+                            ['name' => 'IBM'],
+                            ['name' => 'Oracle'],
+                        ];
+                    }
+                @endphp
+                <div class="marquee-container">
+                    <div class="marquee-content">
+                        @foreach ($clients as $client)
+                            <div class="client-item-marquee">
+                                @if (!empty($client['link']))
+                                    <a href="{{ $client['link'] }}" target="_blank" title="{{ $client['name'] }}">
+                                @endif
 
-                        @foreach ($chunks as $index => $chunk)
-                            <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
-                                <div class="d-flex justify-content-center flex-wrap gap-3 p-4">
-                                    @foreach ($chunk as $client)
-                                        <div class="client-item" style="flex: 0 0 180px;">
-                                            @if (!empty($client['link']))
-                                                <a href="{{ $client['link'] }}" target="_blank"
-                                                    title="{{ $client['name'] }}">
-                                            @endif
+                                @if (!empty($client['logo']))
+                                    <img class="client-logo-img" src="{{ site_image($client['logo']) }}" alt="{{ $client['name'] }}">
+                                @else
+                                    <div class="client-name-design">
+                                        <span>{{ $client['name'] }}</span>
+                                    </div>
+                                @endif
 
-                                            @if (!empty($client['logo']))
-                                                <img class="img-thumbnail client-logo-img"
-                                                    src="{{ site_image($client['logo']) }}"
-                                                    alt="{{ $client['name'] }}">
-                                            @else
-                                                <div class="client-name-design img-thumbnail">
-                                                    <span>{{ $client['name'] }}</span>
-                                                </div>
-                                            @endif
+                                @if (!empty($client['link']))
+                                    </a>
+                                @endif
+                            </div>
+                        @endforeach
+                        {{-- Duplicate items for infinite scroll effect --}}
+                        @foreach ($clients as $client)
+                            <div class="client-item-marquee">
+                                @if (!empty($client['link']))
+                                    <a href="{{ $client['link'] }}" target="_blank" title="{{ $client['name'] }}">
+                                @endif
 
-                                            @if (!empty($client['link']))
-                                                </a>
-                                            @endif
-                                        </div>
-                                    @endforeach
-                                </div>
+                                @if (!empty($client['logo']))
+                                    <img class="client-logo-img" src="{{ site_image($client['logo']) }}" alt="{{ $client['name'] }}">
+                                @else
+                                    <div class="client-name-design">
+                                        <span>{{ $client['name'] }}</span>
+                                    </div>
+                                @endif
+
+                                @if (!empty($client['link']))
+                                    </a>
+                                @endif
                             </div>
                         @endforeach
                     </div>
@@ -322,7 +342,7 @@
                                                             alt="{{ $item['caption'] ?? '' }}">
                                                         <div class="overlay">
                                                             <h3>{{ $item['caption'] ?? 'View' }}</h3>
-                                                            <i class="fa-solid fa-network-wired"></i>
+                                                            <i class="bi bi-diagram-3-fill"></i>
                                                         </div>
                                                     </a>
                                                 </div>
@@ -344,7 +364,7 @@
                                                     data-lightbox="gallery-set">
                                                     <img class="img-thumbnail" src="images/gallery/spliceing.jpg" alt="">
                                                     <div class="overlay">
-                                                        <h3>Splicing</h3><i class="fa-solid fa-network-wired"></i>
+                                                        <h3>Splicing</h3><i class="bi bi-diagram-3-fill"></i>
                                                     </div>
                                                 </a>
                                             </div>
@@ -363,7 +383,7 @@
                                                     data-lightbox="gallery-set">
                                                     <img class="img-thumbnail" src="images/gallery/Clever.png" alt="">
                                                     <div class="overlay">
-                                                        <h3>Clever</h3><i class="fa-solid fa-network-wired"></i>
+                                                        <h3>Clever</h3><i class="bi bi-diagram-3-fill"></i>
                                                     </div>
                                                 </a>
                                             </div>
@@ -382,7 +402,7 @@
                                                     data-lightbox="gallery-set">
                                                     <img class="img-thumbnail" src="images/gallery/crimping.jpg" alt="">
                                                     <div class="overlay">
-                                                        <h3>Crimping</h3><i class="fa-solid fa-network-wired"></i>
+                                                        <h3>Crimping</h3><i class="bi bi-diagram-3-fill"></i>
                                                     </div>
                                                 </a>
                                             </div>
@@ -401,7 +421,7 @@
                                                     data-lightbox="gallery-set">
                                                     <img class="img-thumbnail" src="images/gallery/server.jpg" alt="">
                                                     <div class="overlay">
-                                                        <h3>Server</h3><i class="fa-solid fa-network-wired"></i>
+                                                        <h3>Server</h3><i class="bi bi-server"></i>
                                                     </div>
                                                 </a>
                                             </div>
@@ -420,7 +440,7 @@
                                                     data-lightbox="gallery-set">
                                                     <img class="img-thumbnail" src="images/gallery/rack.jpg" alt="">
                                                     <div class="overlay">
-                                                        <h3>Rack</h3><i class="fa-solid fa-network-wired"></i>
+                                                        <h3>Rack</h3><i class="bi bi-server"></i>
                                                     </div>
                                                 </a>
                                             </div>
@@ -439,7 +459,7 @@
                                                     data-lightbox="gallery-set">
                                                     <img class="img-thumbnail" src="images/gallery/Patchcord.jpeg" alt="">
                                                     <div class="overlay">
-                                                        <h3>Patchcord</h3><i class="fa-solid fa-network-wired"></i>
+                                                        <h3>Patchcord</h3><i class="bi bi-ethernet"></i>
                                                     </div>
                                                 </a>
                                             </div>
@@ -470,60 +490,84 @@
                 @php
                     $regLink = $siteData?->registration_link ?? '#contact-form';
                     $pkgColors = ['', 'pricing-box-2', 'pricing-box-3', ''];
+                    $packageChunks = $packages->chunk(4);
                 @endphp
 
-                <div class="row mx-auto">
-                    @if ($packages->count() > 0)
-                        @foreach ($packages as $index => $package)
-                            @php $colorClass = $pkgColors[$index % 4]; @endphp
-                            <div class="col-xxl-3 col-md-6 pb-1 d-flex">
-                                <div
-                                    class="pricing-box {{ $colorClass }} mb-30 {{ $package->is_featured ? 'pricing-box-featured' : '' }}">
-                                    <div class="pricing-head">
-                                        <h6>{{ strtoupper($package->plan_label ?? $package->package) }}</h6>
-                                        <div class="pricing-icon services-icon">
-                                            <i class="fa fa-wifi"></i>
-                                        </div>
-                                    </div>
-                                    <div class="pricing-lists mb-30 pkg-w-300" style="width:250px">
-                                        @if ($package->speed)
-                                            <h5>{{ $package->speed }}</h5>
-                                        @endif
-                                        <ul class="mt-3">
-                                            @if ($package->features && count($package->features) > 0)
-                                                @foreach ($package->features as $feature)
-                                                    <li>{{ $feature['value'] ?? $feature }}</li>
-                                                @endforeach
-                                            @else
-                                                <li>24 HOURS UNLIMITED</li>
-                                                <li>Fiber Optics</li>
-                                                <li>24/7 Customer Care</li>
-                                                @if ($package->description)
-                                                    <li>{{ $package->description }}</li>
-                                                @endif
-                                            @endif
-                                        </ul>
-                                    </div>
-                                    <div class="price mb-20">
-                                        <h2>{{ number_format($package->price, 0) }}৳
-                                            <span>/MONTH</span>
-                                        </h2>
-                                    </div>
-                                    <div class="pricing-btn">
-                                        <a href="{{ $regLink }}" class="price-btn">
-                                            <span>+</span>Get Online Register
-                                        </a>
+                <div id="pricingCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="8000">
+                    <div class="carousel-inner">
+                        @if ($packages->count() > 0)
+                            @foreach ($packageChunks as $chunkIndex => $chunk)
+                                <div class="carousel-item {{ $chunkIndex === 0 ? 'active' : '' }}">
+                                    <div class="row justify-content-center px-lg-5">
+                                        @foreach ($chunk as $index => $package)
+                                            @php $colorClass = $pkgColors[$index % 4]; @endphp
+                                            <div class="col-xl-3 col-md-6 pb-1 d-flex">
+                                                <div class="pricing-box {{ $colorClass }} mb-30 {{ $package->is_featured ? 'pricing-box-featured' : '' }} w-100">
+                                                    <div class="pricing-head">
+                                                        <h6>{{ strtoupper($package->plan_label ?? $package->package) }}</h6>
+                                                        <div class="pricing-icon services-icon">
+                                                            <i class="bi bi-wifi"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div class="pricing-lists mb-30">
+                                                        @if ($package->speed)
+                                                            <h5>{{ $package->speed }}</h5>
+                                                        @endif
+                                                        <ul class="mt-3">
+                                                            @if ($package->features && count($package->features) > 0)
+                                                                @foreach ($package->features as $feature)
+                                                                    <li>{{ $feature['value'] ?? $feature }}</li>
+                                                                @endforeach
+                                                            @else
+                                                                <li>24 HOURS UNLIMITED</li>
+                                                                <li>Fiber Optics</li>
+                                                                <li>24/7 Customer Care</li>
+                                                                @if ($package->description)
+                                                                    <li>{{ $package->description }}</li>
+                                                                @endif
+                                                            @endif
+                                                        </ul>
+                                                    </div>
+                                                    <div class="price mb-20">
+                                                        <h2>{{ number_format($package->price, 0) }}৳
+                                                            <span>/MONTH</span>
+                                                        </h2>
+                                                    </div>
+                                                    <div class="pricing-btn">
+                                                        <a href="{{ $regLink }}" class="price-btn">
+                                                            <span>+</span>Get Online Register
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
                                     </div>
                                 </div>
+                            @endforeach
+                        @else
+                            <div class="carousel-item active">
+                                <div class="col-md-12 text-center py-5">
+                                    <p class="text-muted">No packages available. Please add packages from the billing admin panel.</p>
+                                </div>
                             </div>
-                        @endforeach
-                    @else
-                        {{-- No packages in DB yet - show placeholder --}}
-                        <div class="col-md-12 text-center py-5">
-                            <p class="text-muted">No packages available. Please add packages from the billing admin
-                                panel.</p>
-                        </div>
+                        @endif
+                    </div>
+                    @if ($packageChunks->count() > 1)
+                        <button class="carousel-control-prev" type="button" data-bs-target="#pricingCarousel" data-bs-slide="prev" style="width: 5%;">
+                            <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: rgba(0,0,0,0.5); border-radius: 50%;"></span>
+                            <span class="visually-hidden">Previous</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#pricingCarousel" data-bs-slide="next" style="width: 5%;">
+                            <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: rgba(0,0,0,0.5); border-radius: 50%;"></span>
+                            <span class="visually-hidden">Next</span>
+                        </button>
                     @endif
+                </div>
+
+                <div class="text-center mt-4">
+                    <a href="{{ route('all-packages') }}" class="btn btn-outline-primary btn-lg rounded-pill px-5 py-2 font-weight-bold" style="border: 2px solid; font-weight: 700; transition: all 0.3s ease;">
+                        View All Packages
+                    </a>
                 </div>
             </div>
         </section>
@@ -543,38 +587,52 @@
                     </div>
 
                     <div class="col-md-12">
-                        <div id="team-list" class="owl-carousel">
-                            @php $teamMembers = $siteData?->team_members ?? []; @endphp
-                            @if (count($teamMembers) > 0)
-                                @foreach ($teamMembers as $member)
-                                    <div>
-                                        <div class="block wow fadeInLeft" data-wow-delay=".9s">
-                                            <img src="{{ isset($member['image']) && $member['image'] ? site_image($member['image']) : asset('img/team-demo.png') }}"
-                                                alt="{{ $member['name'] ?? '' }}">
-                                            <div class="team-overlay">
-                                                <h3>{{ strtoupper($member['name'] ?? '') }}
-                                                    <span>{{ $member['role'] ?? '' }}</span>
-                                                </h3>
-                                                <span class="icon"><i class="ion-quote"></i></span>
-                                                <p>{{ $member['bio'] ?? '' }}</p>
-                                            </div>
+                        @php
+                            $teamMembers = $siteData?->team_members ?? [];
+                            if (count($teamMembers) === 0) {
+                                $teamMembers = [
+                                    ['name' => 'TEAM MEMBER 1', 'role' => 'Staff', 'bio' => 'Dedicated team member committed to providing excellent service.'],
+                                    ['name' => 'TEAM MEMBER 2', 'role' => 'Staff', 'bio' => 'Dedicated team member committed to providing excellent service.'],
+                                    ['name' => 'TEAM MEMBER 3', 'role' => 'Staff', 'bio' => 'Dedicated team member committed to providing excellent service.'],
+                                    ['name' => 'TEAM MEMBER 4', 'role' => 'Staff', 'bio' => 'Dedicated team member committed to providing excellent service.'],
+                                ];
+                            }
+                            $teamChunks = array_chunk($teamMembers, 3);
+                        @endphp
+
+                        <div id="teamCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="8500">
+                            <div class="carousel-inner">
+                                @foreach ($teamChunks as $chunkIndex => $chunk)
+                                    <div class="carousel-item {{ $chunkIndex === 0 ? 'active' : '' }}">
+                                        <div class="row justify-content-center px-lg-5">
+                                            @foreach ($chunk as $member)
+                                                <div class="col-md-4 d-flex">
+                                                    <div class="block wow fadeInLeft w-100" data-wow-delay=".3s">
+                                                        <img src="{{ isset($member['image']) && $member['image'] ? site_image($member['image']) : asset('img/team-demo.png') }}"
+                                                            alt="{{ $member['name'] ?? '' }}">
+                                                        <div class="team-overlay">
+                                                            <h3>{{ strtoupper($member['name'] ?? '') }}
+                                                                <span>{{ $member['role'] ?? '' }}</span>
+                                                            </h3>
+                                                            <span class="icon"><i class="bi bi-chat-quote"></i></span>
+                                                            <p>{{ $member['bio'] ?? '' }}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
                                         </div>
                                     </div>
                                 @endforeach
-                            @else
-                                {{-- Fallback --}}
-                                @foreach (range(1, 4) as $i)
-                                    <div>
-                                        <div class="block wow fadeInLeft" data-wow-delay=".9s">
-                                            <img src="{{ asset('img/team-demo.png') }}" alt="">
-                                            <div class="team-overlay">
-                                                <h3>TEAM MEMBER <span>Staff</span></h3>
-                                                <span class="icon"><i class="ion-quote"></i></span>
-                                                <p>Dedicated team member committed to providing excellent service.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endforeach
+                            </div>
+                            @if (count($teamChunks) > 1)
+                                <button class="carousel-control-prev" type="button" data-bs-target="#teamCarousel" data-bs-slide="prev" style="width: 5%;">
+                                    <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: rgba(0,0,0,0.5); border-radius: 50%;"></span>
+                                    <span class="visually-hidden">Previous</span>
+                                </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#teamCarousel" data-bs-slide="next" style="width: 5%;">
+                                    <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: rgba(0,0,0,0.5); border-radius: 50%;"></span>
+                                    <span class="visually-hidden">Next</span>
+                                </button>
                             @endif
                         </div>
                     </div>
@@ -597,53 +655,62 @@
                             @endif
                         </div>
 
-                        <div id="blog-post" class="owl-carousel">
-                            @php $blogPosts = $siteData?->blog_posts ?? []; @endphp
-                            @if (count($blogPosts) > 0)
-                                @foreach ($blogPosts as $post)
-                                    <div>
-                                        <div class="block">
-                                            @if (!empty($post['image']))
-                                                <img src="{{ site_image($post['image']) }}"
-                                                    alt="{{ $post['title'] ?? '' }}" class="img-thumbnail">
-                                            @else
-                                                <img src="{{ asset('img/blog/blog-1.jpg') }}"
-                                                    alt="{{ $post['title'] ?? '' }}" class="img-thumbnail">
-                                            @endif
-                                            <div class="content">
-                                                <h4>
-                                                    <a
-                                                        href="{{ $post['link'] ?? '#' }}">{{ $post['title'] ?? '' }}</a>
-                                                </h4>
-                                                <small>By {{ $post['author'] ?? 'Admin' }}
-                                                    @if (!empty($post['date']))
-                                                        / {{ \Carbon\Carbon::parse($post['date'])->format('M d, Y') }}
-                                                    @endif
-                                                </small>
-                                                <p>{{ $post['excerpt'] ?? '' }}</p>
-                                                <a href="{{ $post['link'] ?? '#' }}" class="btn btn-read">Read
-                                                    More</a>
-                                            </div>
+                        @php
+                            $blogPosts = $siteData?->blog_posts ?? [];
+                            if (count($blogPosts) === 0) {
+                                $blogPosts = [
+                                    ['title' => 'Latest News & Updates 1', 'author' => 'Admin', 'excerpt' => 'Stay updated with the latest news, offers, and updates from our network team.'],
+                                    ['title' => 'Latest News & Updates 2', 'author' => 'Admin', 'excerpt' => 'Stay updated with the latest news, offers, and updates from our network team.'],
+                                    ['title' => 'Latest News & Updates 3', 'author' => 'Admin', 'excerpt' => 'Stay updated with the latest news, offers, and updates from our network team.'],
+                                    ['title' => 'Latest News & Updates 4', 'author' => 'Admin', 'excerpt' => 'Stay updated with the latest news, offers, and updates from our network team.'],
+                                ];
+                            }
+                            $blogChunks = array_chunk($blogPosts, 3);
+                        @endphp
+
+                        <div id="blogCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="9000">
+                            <div class="carousel-inner">
+                                @foreach ($blogChunks as $chunkIndex => $chunk)
+                                    <div class="carousel-item {{ $chunkIndex === 0 ? 'active' : '' }}">
+                                        <div class="row justify-content-center px-lg-5">
+                                            @foreach ($chunk as $post)
+                                                <div class="col-md-4 d-flex">
+                                                    <div class="block w-100">
+                                                        @if (!empty($post['image']))
+                                                            <img src="{{ site_image($post['image']) }}"
+                                                                alt="{{ $post['title'] ?? '' }}" class="img-thumbnail">
+                                                        @else
+                                                            <img src="{{ asset('img/blog/blog-1.jpg') }}"
+                                                                alt="{{ $post['title'] ?? '' }}" class="img-thumbnail">
+                                                        @endif
+                                                        <div class="content">
+                                                            <h4>
+                                                                <a href="{{ $post['link'] ?? '#' }}">{{ $post['title'] ?? '' }}</a>
+                                                            </h4>
+                                                            <small>By {{ $post['author'] ?? 'Admin' }}
+                                                                @if (!empty($post['date']))
+                                                                    / {{ \Carbon\Carbon::parse($post['date'])->format('M d, Y') }}
+                                                                @endif
+                                                            </small>
+                                                            <p>{{ $post['excerpt'] ?? '' }}</p>
+                                                            <a href="{{ $post['link'] ?? '#' }}" class="btn btn-read">Read More</a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
                                         </div>
                                     </div>
                                 @endforeach
-                            @else
-                                {{-- Fallback --}}
-                                @foreach (range(1, 4) as $i)
-                                    <div>
-                                        <div class="block">
-                                            <img src="{{ asset('img/blog/blog-' . $i . '.jpg') }}" alt=""
-                                                class="img-thumbnail">
-                                            <div class="content">
-                                                <h4><a href="#">Latest News & Updates</a></h4>
-                                                <small>By Admin</small>
-                                                <p>Stay updated with the latest news, offers, and updates from our
-                                                    network team.</p>
-                                                <a href="#" class="btn btn-read">Read More</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endforeach
+                            </div>
+                            @if (count($blogChunks) > 1)
+                                <button class="carousel-control-prev" type="button" data-bs-target="#blogCarousel" data-bs-slide="prev" style="width: 5%;">
+                                    <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: rgba(0,0,0,0.5); border-radius: 50%;"></span>
+                                    <span class="visually-hidden">Previous</span>
+                                </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#blogCarousel" data-bs-slide="next" style="width: 5%;">
+                                    <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: rgba(0,0,0,0.5); border-radius: 50%;"></span>
+                                    <span class="visually-hidden">Next</span>
+                                </button>
                             @endif
                         </div>
                     </div>
@@ -769,13 +836,13 @@
                                 @endif
                             </a>
                             <p class="mb-1"><i
-                                    class="fa-solid fa-location-dot me-2"></i>{{ siteUrlSettings('site_address') ?? 'Our Head Office' }}
+                                    class="bi bi-geo-alt me-2"></i>{{ siteUrlSettings('site_address') ?? 'Our Head Office' }}
                             </p>
                             <p class="mb-1"><i
-                                    class="fa-solid fa-phone me-2"></i>{{ siteUrlSettings('site_phone') ?? '01700000000' }}
+                                    class="bi bi-telephone me-2"></i>{{ siteUrlSettings('site_phone') ?? '01700000000' }}
                             </p>
                             <p class="mb-3"><i
-                                    class="fa-solid fa-envelope me-2"></i>{{ siteUrlSettings('site_email') ?? 'support@example.com' }}
+                                    class="bi bi-envelope me-2"></i>{{ siteUrlSettings('site_email') ?? 'support@example.com' }}
                             </p>
 
                             <p class="text-muted small">
@@ -791,24 +858,24 @@
                             @endphp
                             <div class="mt-2 d-flex gap-3">
                                 @if ($fb)
-                                    <a href="{{ $fb }}" target="_blank" class="text-success"><i
-                                            class="fa-brands fa-facebook-f fa-lg"></i></a>
+                                    <a href="{{ $fb }}" target="_blank" class="social-link"><i
+                                            class="bi bi-facebook"></i></a>
                                 @endif
                                 @if ($tw)
-                                    <a href="{{ $tw }}" target="_blank" class="text-success"><i
-                                            class="fa-brands fa-twitter fa-lg"></i></a>
+                                    <a href="{{ $tw }}" target="_blank" class="social-link"><i
+                                            class="bi bi-twitter-x"></i></a>
                                 @endif
                                 @if ($ig)
-                                    <a href="{{ $ig }}" target="_blank" class="text-success"><i
-                                            class="fa-brands fa-instagram fa-lg"></i></a>
+                                    <a href="{{ $ig }}" target="_blank" class="social-link"><i
+                                            class="bi bi-instagram"></i></a>
                                 @endif
                                 @if ($yt)
-                                    <a href="{{ $yt }}" target="_blank" class="text-success"><i
-                                            class="fa-brands fa-youtube fa-lg"></i></a>
+                                    <a href="{{ $yt }}" target="_blank" class="social-link"><i
+                                            class="bi bi-youtube"></i></a>
                                 @endif
                                 @if ($wa)
                                     <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $wa) }}" target="_blank"
-                                        class="text-success"><i class="fa-brands fa-whatsapp fa-lg"></i></a>
+                                        class="social-link"><i class="bi bi-whatsapp"></i></a>
                                 @endif
                             </div>
                         </div>
@@ -830,7 +897,7 @@
 
     {{-- Back to Top --}}
     <button type="button" class="btn btn-floating" id="btn-back-to-top">
-        <i class="fa-solid fa-circle-up fa-2xl text-success"></i>
+        <i class="bi bi-arrow-up-circle-fill text-success" style="font-size: 2.2rem; color: #06b6d4 !important;"></i>
     </button>
 
     {{-- Scripts --}}
@@ -842,9 +909,31 @@
     <script src="https://fcnetwork24.com/js/script.js"></script> --}}
 
     <script>
-        $(document).ready(function() {
-            // Bootstrap carousel is auto-initialized by data-bs-ride="carousel"
-            // But we can ensure it's running smoothly here if needed.
+        document.addEventListener('DOMContentLoaded', function () {
+            const themeToggle = document.getElementById('theme-toggle');
+            const themeToggleIcon = document.getElementById('theme-toggle-icon');
+            
+            function updateToggleIcon(isLight) {
+                if (isLight) {
+                    themeToggleIcon.className = 'bi bi-sun';
+                    themeToggle.classList.remove('text-light');
+                    themeToggle.classList.add('text-dark');
+                } else {
+                    themeToggleIcon.className = 'bi bi-moon-stars';
+                    themeToggle.classList.remove('text-dark');
+                    themeToggle.classList.add('text-light');
+                }
+            }
+            
+            // Initial setup
+            const isLight = document.documentElement.classList.contains('theme-light');
+            updateToggleIcon(isLight);
+            
+            themeToggle.addEventListener('click', function () {
+                const currentlyLight = document.documentElement.classList.toggle('theme-light');
+                localStorage.setItem('site-theme', currentlyLight ? 'light' : 'dark');
+                updateToggleIcon(currentlyLight);
+            });
         });
     </script>
 </body>

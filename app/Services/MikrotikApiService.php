@@ -15,11 +15,11 @@ class MikrotikApiService
     {
         try {
             $config = new Config([
-                'host'     => $host,
-                'user'     => $username,
-                'pass'     => $password,
-                'port'     => $port ?? 8728,
-                'timeout'  => $timeout,
+                'host' => $host,
+                'user' => $username,
+                'pass' => $password,
+                'port' => $port ?? 8728,
+                'timeout' => $timeout,
                 'attempts' => 1,
             ]);
 

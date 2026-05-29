@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Http\Controllers\MikrotikController;
 use App\Models\AddressField;
 use App\Models\BillingInfo;
 use App\Models\CustomersAddress;
@@ -11,7 +12,6 @@ use App\Models\PackageList;
 use App\Models\PPPSecrets;
 use App\Models\RouterList;
 use App\Models\User;
-use App\Http\Controllers\MikrotikController;
 // MikrotikSSHService removed — all router I/O routed through MikrotikController (pooled + cached)
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -187,7 +187,7 @@ class NewCustomer extends Component
         // If package name is set, get the package price
         if ($this->package_name) {
             $package = PackageList::where('package', $this->package_name)
-                ->where('router_name', !empty($this->router_name) ? $this->router_name : null)
+                ->where('router_name', ! empty($this->router_name) ? $this->router_name : null)
                 ->first();
             $this->monthly_rent = $package?->price ?? '';
         }
@@ -389,12 +389,21 @@ class NewCustomer extends Component
             }
 
             // create customers_info table record
+            $prefix = siteUrlSettings('customer_id_prefix') ?: 'FCNET';
             $lastCustomer = CustomersInfo::orderBy('id', 'desc')->value('customer_unique_id');
             if ($lastCustomer) {
-                $lastId = (int) substr($lastCustomer, 5); // 'FCNET' + 3 digits
-                $newId = 'FCNET'.($lastId + 1); // create new id
+                if (str_starts_with($lastCustomer, $prefix)) {
+                    $lastId = (int) substr($lastCustomer, strlen($prefix));
+                } else {
+                    if (preg_match('/(\d+)$/', $lastCustomer, $matches)) {
+                        $lastId = (int) $matches[1];
+                    } else {
+                        $lastId = 99;
+                    }
+                }
+                $newId = $prefix . ($lastId + 1);
             } else {
-                $newId = 'FCNET100'; // if no record found, start from 100
+                $newId = $prefix . '100';
             }
             $customer = new CustomersInfo;
             $customer->customer_unique_id = $newId;
@@ -412,7 +421,7 @@ class NewCustomer extends Component
             $assignedPackageId = null;
             if ($this->package_name) {
                 $pkg = PackageList::where('package', $this->package_name)
-                    ->where('router_name', !empty($this->router_name) ? $this->router_name : null);
+                    ->where('router_name', ! empty($this->router_name) ? $this->router_name : null);
                 $assignedPackageId = $pkg->first()?->id;
             }
             $customer->package_id = $assignedPackageId;
@@ -500,7 +509,7 @@ class NewCustomer extends Component
         $this->addressFields = AddressField::orderBy('order', 'asc')->get();
         $this->routers = RouterList::select('router_name')->where('action', 'connected')->get();
         $this->packages = PackageList::select('price', 'package')
-            ->when(!empty($this->router_name), fn ($q) => $q->where('router_name', $this->router_name))
+            ->when(! empty($this->router_name), fn ($q) => $q->where('router_name', $this->router_name))
             ->get();
         // $users = User::permission('create-user')->get();
         $this->users = User::all();

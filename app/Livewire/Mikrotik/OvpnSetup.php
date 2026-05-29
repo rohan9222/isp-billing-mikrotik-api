@@ -12,21 +12,34 @@ class OvpnSetup extends Component
 
     // Form fields
     public bool $enabled = false;
+
     public int $port = 1194;
+
     public string $mode = 'ip';
+
     public int $netmask = 24;
+
     public string $default_profile = 'default';
+
     public string $certificate = 'none';
+
     public bool $require_client_cert = false;
+
     public array $auth = ['sha1'];
+
     public array $cipher = ['aes128-cbc', 'aes256-cbc'];
+
     public string $protocol = 'tcp';
+
     public string $mac_address = '00:00:00:00:00:00';
+
     public int $max_mtu = 1500;
+
     public int $keepalive_timeout = 60;
 
     // Data lists
     public array $profiles = [];
+
     public array $certificates = [];
 
     public function mount(): void
@@ -45,11 +58,13 @@ class OvpnSetup extends Component
 
     public function loadData(): void
     {
-        if (!$this->selectedRouter) return;
+        if (! $this->selectedRouter) {
+            return;
+        }
 
         try {
             $ctrl = app(MikrotikController::class);
-            
+
             // Load Config
             $config = $ctrl->getOvpnConfig($this->selectedRouter);
             if ($config) {
@@ -60,10 +75,10 @@ class OvpnSetup extends Component
                 $this->default_profile = $config['default-profile'] ?? 'default';
                 $this->certificate = $config['certificate'] ?? 'none';
                 $this->require_client_cert = ($config['require-client-certificate'] ?? 'no') === 'yes';
-                
+
                 // Auth & Cipher (can be comma strings)
-                $this->auth = is_string($config['auth'] ?? null) ? explode(',', $config['auth']) : (array)($config['auth'] ?? ['sha1']);
-                $this->cipher = is_string($config['cipher'] ?? null) ? explode(',', $config['cipher']) : (array)($config['cipher'] ?? ['aes128-cbc']);
+                $this->auth = is_string($config['auth'] ?? null) ? explode(',', $config['auth']) : (array) ($config['auth'] ?? ['sha1']);
+                $this->cipher = is_string($config['cipher'] ?? null) ? explode(',', $config['cipher']) : (array) ($config['cipher'] ?? ['aes128-cbc']);
 
                 // Extras
                 $this->protocol = $config['protocol'] ?? 'tcp';
@@ -77,7 +92,7 @@ class OvpnSetup extends Component
             $this->certificates = collect($ctrl->getItems($this->selectedRouter, '/certificate'))->pluck('name')->toArray();
 
         } catch (\Exception $e) {
-            flash()->error('Load error: ' . $e->getMessage());
+            flash()->error('Load error: '.$e->getMessage());
         }
     }
 
@@ -115,7 +130,7 @@ class OvpnSetup extends Component
     public function render()
     {
         return view('livewire.mikrotik.ovpn-setup', [
-            'routers' => RouterList::where('action', 'connected')->get()
+            'routers' => RouterList::where('action', 'connected')->get(),
         ]);
     }
 }

@@ -24,6 +24,7 @@ class PaymentSummaryResource extends Resource
 
     protected static ?string $pluralLabel = 'Payments Summary';
 
+    protected static ?int $navigationSort = 5;
     protected static ?string $slug = 'payments-summary';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;

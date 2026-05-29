@@ -229,29 +229,31 @@ class CustomersController extends Controller
             }
 
             if ($customer->pppUser) {
-                // ৪. মিক্রোটিকে enablePPPSecret কল করো (throws on failure)
-                app(MikrotikController::class)->enablePPPSecret(
-                    $unique_id,
-                    $customer->pppUser->router_name,
-                    $customer->pppUser->username
-                );
-
-                // ৫. Restore the profile on the router
-                app(MikrotikController::class)->updatePPPSecret(
-                    $customer->pppUser->router_name,
-                    $customer->pppUser->username,
-                    'profile',
-                    $customer->pppUser->profile
-                );
-
-                // ৬. Kick any active session (non-critical)
-                try {
-                    app(MikrotikController::class)->singleWrite(
+                if (! empty($customer->pppUser->router_name)) {
+                    // ৪. মিক্রোটিকে enablePPPSecret কল করো (throws on failure)
+                    app(MikrotikController::class)->enablePPPSecret(
+                        $unique_id,
                         $customer->pppUser->router_name,
-                        '/ppp active remove [find name="' . $customer->pppUser->username . '"]'
+                        $customer->pppUser->username
                     );
-                } catch (\Exception $e) {
-                    \Log::debug('customerEnable: active session removal skipped: ' . $e->getMessage());
+
+                    // ৫. Restore the profile on the router
+                    app(MikrotikController::class)->updatePPPSecret(
+                        $customer->pppUser->router_name,
+                        $customer->pppUser->username,
+                        'profile',
+                        $customer->pppUser->profile
+                    );
+
+                    // ৬. Kick any active session (non-critical)
+                    try {
+                        app(MikrotikController::class)->singleWrite(
+                            $customer->pppUser->router_name,
+                            '/ppp active remove [find name="'.$customer->pppUser->username.'"]'
+                        );
+                    } catch (\Exception $e) {
+                        \Log::debug('customerEnable: active session removal skipped: '.$e->getMessage());
+                    }
                 }
 
                 // ৭. Sync ppp_secrets.status
@@ -262,15 +264,15 @@ class CustomersController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Customer enabled successfully' . ($customer->pppUser ? ' and PPP secret activated' : ''),
+                'message' => 'Customer enabled successfully'.($customer->pppUser ? ' and PPP secret activated' : ''),
             ]);
         } catch (\Exception $e) {
             \DB::rollBack();
-            \Log::error("customerEnable failed for {$unique_id}: " . $e->getMessage());
+            \Log::error("customerEnable failed for {$unique_id}: ".$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to enable customer on router: ' . $e->getMessage(),
+                'message' => 'Failed to enable customer on router: '.$e->getMessage(),
             ]);
         }
     }
@@ -319,7 +321,7 @@ class CustomersController extends Controller
             \DB::beginTransaction();
 
             // Check if PPP User exists and delete it from Mikrotik (throws on failure)
-            if ($customerDelete->pppUser) {
+            if ($customerDelete->pppUser && ! empty($customerDelete->pppUser->router_name)) {
                 app(MikrotikController::class)->removePPPSecret(
                     $decryptedId,
                     $customerDelete->pppUser->router_name,
@@ -335,7 +337,8 @@ class CustomersController extends Controller
             return response()->json(['success' => true, 'message' => 'Customer deleted successfully']);
         } catch (\Exception $e) {
             \DB::rollBack();
-            \Log::error('Customer destroy failed: ' . $e->getMessage());
+            \Log::error('Customer destroy failed: '.$e->getMessage());
+
             // Handle decryption errors or unexpected exceptions
             return response()->json(['error' => true, 'message' => $e->getMessage()]);
         }

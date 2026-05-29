@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\MikrotikController;
 use App\Http\Controllers\ScheduledTasksController;
 use App\Livewire\MikrotikSync;
+use App\Models\MainSiteData;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -29,8 +31,8 @@ Schedule::call(function () {
 Schedule::command('app:poll-router-logs')->everyMinute();
 
 Schedule::call(function () {
-    $days = (int) \App\Models\MainSiteData::getValue('log_retention_days', 30);
-    app(\App\Http\Controllers\MikrotikController::class)->pruneOldLogs($days);
+    $days = (int) MainSiteData::getValue('log_retention_days', 30);
+    app(MikrotikController::class)->pruneOldLogs($days);
 })->dailyAt('04:00');
 
 Artisan::command('inspire', function () {

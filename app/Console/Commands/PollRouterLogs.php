@@ -2,6 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Http\Controllers\MikrotikController;
+use App\Models\MainSiteData;
+use App\Models\RouterList;
 use Illuminate\Console\Command;
 
 class PollRouterLogs extends Command
@@ -30,46 +33,49 @@ class PollRouterLogs extends Command
      */
     public function handle()
     {
-        $enabled = (bool) \App\Models\MainSiteData::getValue('log_server_enabled', false);
-        if (!$enabled) {
+        $enabled = (bool) MainSiteData::getValue('log_server_enabled', false);
+        if (! $enabled) {
             $this->info('Log server is disabled in settings.');
+
             return;
         }
 
-        $enabledRouters = \App\Models\MainSiteData::getValue('log_server_routers', []);
+        $enabledRouters = MainSiteData::getValue('log_server_routers', []);
         if (empty($enabledRouters)) {
             $this->warn('No routers selected for logging.');
+
             return;
         }
 
-        $routers = \App\Models\RouterList::where('action', 'connected')
+        $routers = RouterList::where('action', 'connected')
             ->whereIn('router_name', $enabledRouters)
             ->get();
 
         if ($routers->isEmpty()) {
             $this->warn('No connected routers found among the selected ones.');
+
             return;
         }
 
-        $this->info('Polling logs for ' . $routers->count() . ' routers...');
-        
-        $ctrl = app(\App\Http\Controllers\MikrotikController::class);
+        $this->info('Polling logs for '.$routers->count().' routers...');
+
+        $ctrl = app(MikrotikController::class);
         $totalInserted = 0;
 
         foreach ($routers as $router) {
             try {
                 $this->comment("Fetching logs from: {$router->router_name}");
                 $logs = $ctrl->getRouterLogs($router->router_name, 150);
-                
-                if (!empty($logs)) {
+
+                if (! empty($logs)) {
                     $inserted = $ctrl->storeRouterLogs($router->router_name, $logs);
                     $totalInserted += $inserted;
                     $this->info("  - Inserted {$inserted} new logs.");
                 } else {
-                    $this->warn("  - No logs retrieved.");
+                    $this->warn('  - No logs retrieved.');
                 }
             } catch (\Exception $e) {
-                $this->error("  - Failed: " . $e->getMessage());
+                $this->error('  - Failed: '.$e->getMessage());
             }
         }
 

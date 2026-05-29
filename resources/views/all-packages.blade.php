@@ -5,17 +5,12 @@
     <title>All Packages - {{ siteUrlSettings('site_name') ?? config('app.name') }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" href="{{ site_image(siteUrlSettings('site_favicon')) }}" type="image/x-icon">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
     @vite(['resources/sass/main-site.scss', 'resources/js/main-site.js'])
-    <style>
-        .all-packages-header { padding: 60px 0; background: #28a745; color: #fff; text-align: center; }
-        .pricing-section { padding: 80px 0; background: #f8f9fa; min-height: 80vh; }
-        .back-home { margin-top: 20px; }
-        .pricing-box { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: 0.3s; margin-bottom: 30px; }
-        .pricing-box:hover { transform: translateY(-10px); }
-        .pricing-btn .price-btn { padding: 12px 30px; background: #28a745; color: white; border-radius: 50px; text-decoration: none; display: inline-block; font-weight: 600; }
-        .pricing-lists ul { list-style: none; padding: 0; }
-        .pricing-lists ul li { padding: 5px 0; color: #555; }
-    </style>
 </head>
 <body class="container-fluid m-0 p-0">
 
@@ -44,7 +39,7 @@
                             <div class="pricing-head text-center">
                                 <h6>{{ strtoupper($package->plan_label ?? $package->package) }}</h6>
                                 <div class="pricing-icon mb-3">
-                                    <i class="fa fa-wifi fa-2x"></i>
+                                    <i class="bi bi-wifi fs-2 text-primary"></i>
                                 </div>
                             </div>
                             <div class="pricing-lists mb-4">
@@ -54,12 +49,12 @@
                                 <ul class="mt-3">
                                     @if($package->features && count($package->features) > 0)
                                         @foreach($package->features as $feature)
-                                            <li><i class="fa fa-check text-success me-2"></i>{{ $feature['value'] ?? $feature }}</li>
+                                            <li><i class="bi bi-check-circle-fill text-success me-2"></i>{{ $feature['value'] ?? $feature }}</li>
                                         @endforeach
                                     @else
-                                        <li><i class="fa fa-check text-success me-2"></i>24 HOURS UNLIMITED</li>
-                                        <li><i class="fa fa-check text-success me-2"></i>Fiber Optics</li>
-                                        @if($package->description) <li><i class="fa fa-check text-success me-2"></i>{{ $package->description }}</li> @endif
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>24 HOURS UNLIMITED</li>
+                                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Fiber Optics</li>
+                                        @if($package->description) <li><i class="bi bi-check-circle-fill text-success me-2"></i>{{ $package->description }}</li> @endif
                                     @endif
                                 </ul>
                             </div>
@@ -80,7 +75,7 @@
         </div>
     </section>
 
-    <footer style="padding: 30px 0; background: #333; color: #ccc; text-align: center;">
+    <footer>
         <div class="container">
             <p>&copy; {{ date('Y') }} {{ siteUrlSettings('site_name') ?? config('app.name') }}. All rights reserved.</p>
             <p class="small">{{ siteUrlSettings('site_phone') }} | {{ siteUrlSettings('site_email') }}</p>

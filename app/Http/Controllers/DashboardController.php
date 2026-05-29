@@ -53,16 +53,16 @@ class DashboardController extends Controller
                 ->whereMonth('collection_date', $month)
                 ->sum('collection_amount')
                 + HotspotSale::whereYear('sale_date', $previousYear)
-                ->whereMonth('sale_date', $month)
-                ->sum('amount');
+                    ->whereMonth('sale_date', $month)
+                    ->sum('amount');
 
             // Income (current year's month's total)
             $incomeCurrentYear = CollectionSummary::whereYear('collection_date', $currentYear)
                 ->whereMonth('collection_date', $month)
                 ->sum('collection_amount')
                 + HotspotSale::whereYear('sale_date', $currentYear)
-                ->whereMonth('sale_date', $month)
-                ->sum('amount');
+                    ->whereMonth('sale_date', $month)
+                    ->sum('amount');
 
             // Revenue Difference (current year's income - previous year's cashflow)
             $revenueDifference = $incomeCurrentYear - $cashflowPreviousYear;

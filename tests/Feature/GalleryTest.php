@@ -100,7 +100,7 @@ class GalleryTest extends TestCase
                 'image' => $fakeImagePath,
                 'caption' => 'Temporary Caption',
                 'category' => 'nature',
-            ]
+            ],
         ]);
 
         $role = Role::create(['name' => 'Super Admin']);

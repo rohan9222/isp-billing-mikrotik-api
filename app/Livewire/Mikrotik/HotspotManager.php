@@ -17,82 +17,134 @@ class HotspotManager extends Component
 
     // ── Router ──────────────────────────────────────────────────────────────
     public string $selectedRouter = '';
+
     public string $activeTab = 'dashboard';
 
     // ── User form ────────────────────────────────────────────────────────────
-    public string $u_name      = '';
-    public string $u_password  = '';
-    public string $u_profile   = 'default';
-    public string $u_comment   = '';
+    public string $u_name = '';
+
+    public string $u_password = '';
+
+    public string $u_profile = 'default';
+
+    public string $u_comment = '';
+
     public string $u_limit_uptime = '';
-    public string $u_limit_bytes  = '';
+
+    public string $u_limit_bytes = '';
+
     public ?string $editUserId = null;
+
     public string $original_u_name = '';
 
     // ── User Profile form ────────────────────────────────────────────────────
-    public string $up_name            = '';
-    public string $up_rate_limit      = '';
-    public int    $up_shared_users    = 1;
+    public string $up_name = '';
+
+    public string $up_rate_limit = '';
+
+    public int $up_shared_users = 1;
+
     public string $up_session_timeout = '';
-    public string $up_idle_timeout    = '';
+
+    public string $up_idle_timeout = '';
+
     public string $up_status_autorefresh = '1m';
-    public string $up_address_pool       = 'none';
-    public string $up_comment            = '';
+
+    public string $up_address_pool = 'none';
+
+    public string $up_comment = '';
+
     public ?string $editUserProfileId = null;
+
     public string $original_up_name = '';
 
     // ── Voucher Generator ────────────────────────────────────────────────────
-    public string $v_profile     = '';
-    public int    $v_count       = 10;
-    public int    $v_length      = 6;
-    public int    $v_pwd_length  = 6;
-    public string $v_prefix      = '';
-    public string $v_type        = 'alphanumeric_mixed';
-    public bool   $v_user_equals_pass = true;
-    public float  $v_price       = 0;
-    public string $v_batch_name  = '';
-    public string $v_comment     = '';
+    public string $v_profile = '';
+
+    public int $v_count = 10;
+
+    public int $v_length = 6;
+
+    public int $v_pwd_length = 6;
+
+    public string $v_prefix = '';
+
+    public string $v_type = 'alphanumeric_mixed';
+
+    public bool $v_user_equals_pass = true;
+
+    public float $v_price = 0;
+
+    public string $v_batch_name = '';
+
+    public string $v_comment = '';
+
     public string $v_limit_uptime = '';
-    public bool   $v_push_to_router = true;
-    public array  $generatedVouchers = [];
-    public bool   $showVoucherPreview = false;
+
+    public bool $v_push_to_router = true;
+
+    public array $generatedVouchers = [];
+
+    public bool $showVoucherPreview = false;
 
     // ── Voucher filter ───────────────────────────────────────────────────────
     public string $voucherFilter = 'all';
+
     public string $voucherSearch = '';
 
     // ── Sale / Income ────────────────────────────────────────────────────────
-    public string $s_voucher_code    = '';
-    public string $s_username        = '';
-    public string $s_profile         = '';
-    public float  $s_amount          = 0;
-    public string $s_payment_method  = 'cash';
-    public string $s_note            = '';
-    public string $s_date            = '';
+    public string $s_voucher_code = '';
+
+    public string $s_username = '';
+
+    public string $s_profile = '';
+
+    public float $s_amount = 0;
+
+    public string $s_payment_method = 'cash';
+
+    public string $s_note = '';
+
+    public string $s_date = '';
 
     // ── Report filters ───────────────────────────────────────────────────────
     public string $report_from = '';
-    public string $report_to   = '';
-    public string $reportType  = 'daily';
+
+    public string $report_to = '';
+
+    public string $reportType = 'daily';
 
     // ── Router data ──────────────────────────────────────────────────────────
-    public array $servers      = [];
-    public array $profiles     = [];
-    public array $users        = [];
+    public array $servers = [];
+
+    public array $profiles = [];
+
+    public array $users = [];
+
     public array $userProfiles = [];
-    public array $sessions     = [];
-    public array $hosts        = [];
-    public array $ipPools      = [];
+
+    public array $sessions = [];
+
+    public array $hosts = [];
+
+    public array $ipPools = [];
+
     public array $routerResources = [];
-    public array $hsLogs       = [];
+
+    public array $hsLogs = [];
 
     // ── Computed stats ───────────────────────────────────────────────────────
-    public int   $onlineCount  = 0;
-    public float $todayIncome  = 0;
-    public float $monthIncome  = 0;
-    public int   $totalVouchers = 0;
-    public int   $usedVouchers  = 0;
-    public array $chartData     = [];
+    public int $onlineCount = 0;
+
+    public float $todayIncome = 0;
+
+    public float $monthIncome = 0;
+
+    public int $totalVouchers = 0;
+
+    public int $usedVouchers = 0;
+
+    public array $chartData = [];
 
     protected function ctrl(): MikrotikController
     {
@@ -106,8 +158,8 @@ class HotspotManager extends Component
         }
 
         $this->report_from = now()->startOfMonth()->toDateString();
-        $this->report_to   = now()->toDateString();
-        $this->s_date      = now()->toDateString();
+        $this->report_to = now()->toDateString();
+        $this->s_date = now()->toDateString();
 
         $first = RouterList::where('action', 'connected')->first();
         if ($first) {
@@ -144,37 +196,41 @@ class HotspotManager extends Component
 
     public function loadData(): void
     {
-        if (! $this->selectedRouter) return;
+        if (! $this->selectedRouter) {
+            return;
+        }
 
         try {
-            $this->servers      = $this->ctrl()->getHotspotServers($this->selectedRouter);
+            $this->servers = $this->ctrl()->getHotspotServers($this->selectedRouter);
             $this->userProfiles = $this->ctrl()->getHotspotUserProfiles($this->selectedRouter);
-            $this->profiles     = $this->ctrl()->getHotspotProfiles($this->selectedRouter);
-            $this->users        = $this->ctrl()->getHotspotUsers($this->selectedRouter);
-            $this->ipPools      = $this->ctrl()->getIpPools($this->selectedRouter);
-            $this->sessions     = $this->ctrl()->getHotspotActiveSessions($this->selectedRouter);
-            $this->onlineCount  = count($this->sessions);
+            $this->profiles = $this->ctrl()->getHotspotProfiles($this->selectedRouter);
+            $this->users = $this->ctrl()->getHotspotUsers($this->selectedRouter);
+            $this->ipPools = $this->ctrl()->getIpPools($this->selectedRouter);
+            $this->sessions = $this->ctrl()->getHotspotActiveSessions($this->selectedRouter);
+            $this->onlineCount = count($this->sessions);
             $this->loadResources();
             $this->refreshLogs();
             $this->performSync(false); // Auto-sync without flash message
             $this->loadStats();
             $this->dispatch('reinit-datatables');
         } catch (\Exception $e) {
-            flash()->error('Load error: ' . $e->getMessage());
+            flash()->error('Load error: '.$e->getMessage());
         }
     }
 
     public function loadStats(): void
     {
-        if (! $this->selectedRouter) return;
+        if (! $this->selectedRouter) {
+            return;
+        }
 
-        $this->todayIncome  = HotspotSale::forRouter($this->selectedRouter)
+        $this->todayIncome = HotspotSale::forRouter($this->selectedRouter)
             ->whereDate('sale_date', today())->sum('amount');
-        $this->monthIncome  = HotspotSale::forRouter($this->selectedRouter)
+        $this->monthIncome = HotspotSale::forRouter($this->selectedRouter)
             ->whereMonth('sale_date', now()->month)
             ->whereYear('sale_date', now()->year)->sum('amount');
         $this->totalVouchers = HotspotVoucher::forRouter($this->selectedRouter)->count();
-        $this->usedVouchers  = HotspotVoucher::forRouter($this->selectedRouter)->where('status', 'used')->count();
+        $this->usedVouchers = HotspotVoucher::forRouter($this->selectedRouter)->where('status', 'used')->count();
 
         // 7-day chart data
         $days = [];
@@ -192,8 +248,8 @@ class HotspotManager extends Component
     public function refreshSessions(): void
     {
         try {
-            $this->sessions    = $this->ctrl()->getHotspotActiveSessions($this->selectedRouter);
-            $this->hosts       = $this->ctrl()->getHotspotHosts($this->selectedRouter);
+            $this->sessions = $this->ctrl()->getHotspotActiveSessions($this->selectedRouter);
+            $this->hosts = $this->ctrl()->getHotspotHosts($this->selectedRouter);
             $this->onlineCount = count($this->sessions);
             $this->loadResources();
         } catch (\Exception $e) {
@@ -205,36 +261,38 @@ class HotspotManager extends Component
     {
         try {
             $res = $this->ctrl()->singleRead(
-                $this->selectedRouter, 
-                '/system/resource/print', 
+                $this->selectedRouter,
+                '/system/resource/print',
                 'system resource print'
             );
             $this->routerResources = $res[0] ?? [];
-        } catch (\Exception $e) {}
+        } catch (\Exception $e) {
+        }
     }
 
     public function refreshLogs(): void
     {
         try {
-            // Fetch logs and filter for hotspot topic manually if needed, 
+            // Fetch logs and filter for hotspot topic manually if needed,
             // or just show recent logs. Mikhmon usually filters by 'hotspot'.
             $logs = $this->ctrl()->getRouterLogs($this->selectedRouter, 20);
-            $this->hsLogs = array_filter($logs, function($l) {
-                return str_contains(strtolower($l['topics'] ?? ''), 'hotspot') || 
+            $this->hsLogs = array_filter($logs, function ($l) {
+                return str_contains(strtolower($l['topics'] ?? ''), 'hotspot') ||
                        str_contains(strtolower($l['message'] ?? ''), 'hotspot');
             });
             // If empty, just show all logs
             if (empty($this->hsLogs)) {
                 $this->hsLogs = array_slice($logs, 0, 10);
             }
-        } catch (\Exception $e) {}
+        } catch (\Exception $e) {
+        }
     }
 
     public function syncVoucherSales(): void
     {
         try {
             // 1. Check active sessions (already doing this for active sales)
-            if (!empty($this->sessions)) {
+            if (! empty($this->sessions)) {
                 $activeUsernames = array_column($this->sessions, 'user');
                 $unusedActive = HotspotVoucher::forRouter($this->selectedRouter)
                     ->where('status', 'unused')
@@ -250,7 +308,7 @@ class HotspotManager extends Component
             // This catches users who logged in/out while we weren't looking.
             $routerUsers = $this->ctrl()->getHotspotUsers($this->selectedRouter);
             $routerUsernames = array_column($routerUsers, 'name');
-            
+
             $dbVouchers = HotspotVoucher::forRouter($this->selectedRouter)
                 ->where('status', 'unused')
                 ->get();
@@ -260,36 +318,37 @@ class HotspotManager extends Component
                 if ($rUser) {
                     // Check for usage on router
                     $uptime = $rUser['uptime'] ?? '0s';
-                    if ($uptime !== '0s' && !empty($uptime)) {
+                    if ($uptime !== '0s' && ! empty($uptime)) {
                         $this->markVoucherAsUsed($v, $rUser);
                     }
                 } else {
-                    // Voucher is in DB but missing from Router? 
+                    // Voucher is in DB but missing from Router?
                     // This is 'Unsynced'. We'll show a warning or provide a button to push.
                 }
             }
-        } catch (\Exception $e) {}
+        } catch (\Exception $e) {
+        }
     }
 
     protected function markVoucherAsUsed($v, $rUser): void
     {
         HotspotSale::create([
-            'router_name'    => $this->selectedRouter,
-            'voucher_code'   => $v->code,
-            'profile'        => $v->profile,
-            'username'       => $v->username,
-            'amount'         => $v->price,
+            'router_name' => $this->selectedRouter,
+            'voucher_code' => $v->code,
+            'profile' => $v->profile,
+            'username' => $v->username,
+            'amount' => $v->price,
             'payment_method' => 'voucher',
-            'note'           => 'Auto-synced from router usage',
-            'sale_date'      => now()->toDateString(),
-            'sold_by'        => $v->created_by,
+            'note' => 'Auto-synced from router usage',
+            'sale_date' => now()->toDateString(),
+            'sold_by' => $v->created_by,
         ]);
 
         $v->update([
-            'status'      => 'used', 
-            'used_by'     => $v->username, 
-            'used_at'     => now(),
-            'mac_address' => $rUser['mac-address'] ?? $rUser['mac_address'] ?? null
+            'status' => 'used',
+            'used_by' => $v->username,
+            'used_at' => now(),
+            'mac_address' => $rUser['mac-address'] ?? $rUser['mac_address'] ?? null,
         ]);
     }
 
@@ -303,11 +362,11 @@ class HotspotManager extends Component
         try {
             // 1. Sync Status (Used/Unused) based on Router Uptime
             $this->syncVoucherSales();
-            
+
             // 2. Fetch all router users
             $routerUsers = $this->ctrl()->getHotspotUsers($this->selectedRouter);
             $routerUsernames = array_column($routerUsers, 'name');
-            
+
             // 3. Identify and Push missing DB vouchers TO the router
             $missingOnRouter = HotspotVoucher::forRouter($this->selectedRouter)
                 ->where('status', 'unused')
@@ -315,12 +374,12 @@ class HotspotManager extends Component
 
             $pushedCount = 0;
             foreach ($missingOnRouter as $v) {
-                if (!in_array($v->username, $routerUsernames)) {
+                if (! in_array($v->username, $routerUsernames)) {
                     $this->ctrl()->addHotspotUser($this->selectedRouter, [
-                        'name'     => $v->username,
+                        'name' => $v->username,
                         'password' => $v->password,
-                        'profile'  => $v->profile,
-                        'comment'  => "Synced: " . ($v->batch_name ?: 'bulk')
+                        'profile' => $v->profile,
+                        'comment' => 'Synced: '.($v->batch_name ?: 'bulk'),
                     ]);
                     $pushedCount++;
                 }
@@ -331,52 +390,60 @@ class HotspotManager extends Component
             $importedCount = 0;
             foreach ($routerUsers as $ru) {
                 $rName = $ru['name'] ?? null;
-                if (!$rName || in_array($rName, $dbUsernames)) continue;
+                if (! $rName || in_array($rName, $dbUsernames)) {
+                    continue;
+                }
 
                 $rProfile = $ru['profile'] ?? 'default';
-                
+
                 // Find price from linked DB packages if possible
                 $pkg = collect($this->hotspotPackages)->firstWhere('package', $rProfile);
-                
+
                 HotspotVoucher::create([
                     'router_name' => $this->selectedRouter,
-                    'username'    => $rName,
-                    'password'    => $ru['password'] ?? $rName,
-                    'code'        => $rName,
-                    'profile'     => $rProfile,
-                    'price'       => $pkg ? $pkg->price : 0,
-                    'batch_name'  => 'Imported from Router',
-                    'status'      => ($ru['uptime'] ?? '0s') !== '0s' ? 'used' : 'unused',
-                    'created_by'  => auth()->id(),
+                    'username' => $rName,
+                    'password' => $ru['password'] ?? $rName,
+                    'code' => $rName,
+                    'profile' => $rProfile,
+                    'price' => $pkg ? $pkg->price : 0,
+                    'batch_name' => 'Imported from Router',
+                    'status' => ($ru['uptime'] ?? '0s') !== '0s' ? 'used' : 'unused',
+                    'created_by' => auth()->id(),
                 ]);
                 $importedCount++;
             }
 
             if ($showFlash) {
-                $msg = "Sync Complete!";
-                if ($pushedCount > 0) $msg .= " Pushed $pushedCount to router.";
-                if ($importedCount > 0) $msg .= " Imported $importedCount into database.";
+                $msg = 'Sync Complete!';
+                if ($pushedCount > 0) {
+                    $msg .= " Pushed $pushedCount to router.";
+                }
+                if ($importedCount > 0) {
+                    $msg .= " Imported $importedCount into database.";
+                }
                 flash()->success($msg);
             }
-            
+
             if ($showFlash || $pushedCount > 0 || $importedCount > 0) {
                 $this->loadStats();
             }
         } catch (\Exception $e) {
-            if ($showFlash) flash()->error("Sync Failed: " . $e->getMessage());
+            if ($showFlash) {
+                flash()->error('Sync Failed: '.$e->getMessage());
+            }
         }
     }
 
     public function editUser(array $u): void
     {
-        $this->editUserId       = $u['.id'] ?? null;
-        $this->original_u_name  = $u['name'] ?? '';
-        $this->u_name           = $u['name'] ?? '';
-        $this->u_password       = $u['password'] ?? '';
-        $this->u_profile        = $u['profile'] ?? 'default';
-        $this->u_comment        = $u['comment'] ?? '';
-        $this->u_limit_uptime   = $u['limit-uptime'] ?? '';
-        $this->u_limit_bytes    = $u['limit-bytes-total'] ?? '';
+        $this->editUserId = $u['.id'] ?? null;
+        $this->original_u_name = $u['name'] ?? '';
+        $this->u_name = $u['name'] ?? '';
+        $this->u_password = $u['password'] ?? '';
+        $this->u_profile = $u['profile'] ?? 'default';
+        $this->u_comment = $u['comment'] ?? '';
+        $this->u_limit_uptime = $u['limit-uptime'] ?? '';
+        $this->u_limit_bytes = $u['limit-bytes-total'] ?? '';
     }
 
     public function startAddUser(): void
@@ -410,34 +477,36 @@ class HotspotManager extends Component
         $this->dispatch('print-vouchers', vouchers: [[
             'username' => $u['name'],
             'password' => (string) ($u['password'] ?? ''),
-            'profile'  => (string) ($u['profile'] ?? 'default'),
-            'price'    => $v ? (float) $v->price : 0,
-            'qr_code'  => 'yes',
+            'profile' => (string) ($u['profile'] ?? 'default'),
+            'price' => $v ? (float) $v->price : 0,
+            'qr_code' => 'yes',
         ]], batch: $v ? 'Voucher' : 'Hotspot User', router: $this->selectedRouter);
     }
-
-
 
     public function addUser(): void
     {
         $this->validate([
-            'u_name'         => 'required|string|max:100',
-            'u_password'     => 'required|string|max:100',
-            'u_profile'      => 'required|string',
-            'u_comment'      => 'nullable|string',
+            'u_name' => 'required|string|max:100',
+            'u_password' => 'required|string|max:100',
+            'u_profile' => 'required|string',
+            'u_comment' => 'nullable|string',
             'u_limit_uptime' => 'nullable|string',
-            'u_limit_bytes'  => 'nullable|string',
+            'u_limit_bytes' => 'nullable|string',
         ]);
 
         try {
             $p = [
-                'name'     => $this->u_name,
+                'name' => $this->u_name,
                 'password' => $this->u_password,
-                'profile'  => $this->u_profile,
-                'comment'  => $this->u_comment,
+                'profile' => $this->u_profile,
+                'comment' => $this->u_comment,
             ];
-            if ($this->u_limit_uptime) $p['limit-uptime'] = $this->u_limit_uptime;
-            if ($this->u_limit_bytes)  $p['limit-bytes-total'] = $this->u_limit_bytes;
+            if ($this->u_limit_uptime) {
+                $p['limit-uptime'] = $this->u_limit_uptime;
+            }
+            if ($this->u_limit_bytes) {
+                $p['limit-bytes-total'] = $this->u_limit_bytes;
+            }
 
             $this->ctrl()->addHotspotUser($this->selectedRouter, $p, $this->original_u_name ?: null);
 
@@ -465,8 +534,6 @@ class HotspotManager extends Component
         }
     }
 
-
-
     public function disconnectSession(string $user): void
     {
         try {
@@ -484,16 +551,16 @@ class HotspotManager extends Component
 
     public function editUserProfile(array $up): void
     {
-        $this->editUserProfileId        = $up['.id'] ?? null;
-        $this->original_up_name         = $up['name'] ?? '';
-        $this->up_name                  = $up['name'] ?? '';
-        $this->up_rate_limit            = $up['rate-limit'] ?? '';
-        $this->up_shared_users          = (int) ($up['shared-users'] ?? 1);
-        $this->up_session_timeout       = $up['session-timeout'] ?? '';
-        $this->up_idle_timeout          = $up['idle-timeout'] ?? '';
-        $this->up_status_autorefresh    = $up['status-autorefresh'] ?? '1m';
-        $this->up_address_pool          = $up['address-pool'] ?? 'none';
-        $this->up_comment               = $up['comment'] ?? '';
+        $this->editUserProfileId = $up['.id'] ?? null;
+        $this->original_up_name = $up['name'] ?? '';
+        $this->up_name = $up['name'] ?? '';
+        $this->up_rate_limit = $up['rate-limit'] ?? '';
+        $this->up_shared_users = (int) ($up['shared-users'] ?? 1);
+        $this->up_session_timeout = $up['session-timeout'] ?? '';
+        $this->up_idle_timeout = $up['idle-timeout'] ?? '';
+        $this->up_status_autorefresh = $up['status-autorefresh'] ?? '1m';
+        $this->up_address_pool = $up['address-pool'] ?? 'none';
+        $this->up_comment = $up['comment'] ?? '';
     }
 
     public function editUserProfileByName(string $name): void
@@ -501,6 +568,7 @@ class HotspotManager extends Component
         $up = collect($this->userProfiles)->firstWhere('name', $name);
         if (! $up) {
             flash()->error("Profile '{$name}' not found. Try Refresh.");
+
             return;
         }
         $this->editUserProfile($up);
@@ -509,23 +577,23 @@ class HotspotManager extends Component
     public function addUserProfile(): void
     {
         $this->validate([
-            'up_name'               => 'required|string|max:100',
-            'up_shared_users'       => 'required|integer|min:1',
-            'up_rate_limit'         => 'nullable|string',
-            'up_session_timeout'    => 'nullable|string',
-            'up_idle_timeout'       => 'nullable|string',
+            'up_name' => 'required|string|max:100',
+            'up_shared_users' => 'required|integer|min:1',
+            'up_rate_limit' => 'nullable|string',
+            'up_session_timeout' => 'nullable|string',
+            'up_idle_timeout' => 'nullable|string',
             'up_status_autorefresh' => 'nullable|string',
-            'up_address_pool'       => 'nullable|string',
+            'up_address_pool' => 'nullable|string',
         ]);
         try {
             $this->ctrl()->addHotspotUserProfile($this->selectedRouter, [
-                'name'               => $this->up_name,
-                'rate_limit'         => $this->up_rate_limit,
-                'shared_users'       => $this->up_shared_users,
-                'session_timeout'    => $this->up_session_timeout,
-                'idle_timeout'       => $this->up_idle_timeout,
+                'name' => $this->up_name,
+                'rate_limit' => $this->up_rate_limit,
+                'shared_users' => $this->up_shared_users,
+                'session_timeout' => $this->up_session_timeout,
+                'idle_timeout' => $this->up_idle_timeout,
                 'status_autorefresh' => $this->up_status_autorefresh,
-                'address_pool'       => $this->up_address_pool,
+                'address_pool' => $this->up_address_pool,
             ], $this->original_up_name ?: null);
 
             flash()->success($this->editUserProfileId ? 'Profile updated!' : 'Profile added!');
@@ -582,14 +650,15 @@ class HotspotManager extends Component
     private function generateVoucherString(string $type, int $length): string
     {
         $chars = match ($type) {
-            'numeric'            => '0123456789',
-            'upper'              => 'ABCDEFGHJKLMNPQRSTUVWXYZ',
-            'lower'              => 'abcdefghjklmnpqrstuvwxyz',
-            'mixed'              => 'abcdefghjklmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ',
+            'numeric' => '0123456789',
+            'upper' => 'ABCDEFGHJKLMNPQRSTUVWXYZ',
+            'lower' => 'abcdefghjklmnpqrstuvwxyz',
+            'mixed' => 'abcdefghjklmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ',
             'alphanumeric_lower' => 'abcdefghjklmnpqrstuvwxyz23456789',
             'alphanumeric_upper' => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789',
-            default              => 'abcdefghjklmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789', // alphanumeric_mixed
+            default => 'abcdefghjklmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789', // alphanumeric_mixed
         };
+
         // Avoid potentially matching exact substrings by excessive shuffling
         return substr(str_shuffle(str_repeat($chars, 5)), 0, $length);
     }
@@ -597,13 +666,13 @@ class HotspotManager extends Component
     public function generateVouchers(): void
     {
         $this->validate([
-            'v_profile'    => 'required|string',
-            'v_count'      => 'required|integer|min:1|max:500',
-            'v_length'     => 'required|integer|min:3|max:20',
+            'v_profile' => 'required|string',
+            'v_count' => 'required|integer|min:1|max:500',
+            'v_length' => 'required|integer|min:3|max:20',
             'v_pwd_length' => 'required|integer|min:3|max:20',
         ]);
 
-        $batch = $this->v_batch_name ?: ('BATCH-' . strtoupper(Str::random(6)));
+        $batch = $this->v_batch_name ?: ('BATCH-'.strtoupper(Str::random(6)));
         $this->v_batch_name = $batch;
         $this->generatedVouchers = [];
 
@@ -614,52 +683,54 @@ class HotspotManager extends Component
         while (count($created) < $this->v_count && $attempts < 5000) {
             $attempts++;
             $prefix = strtoupper($this->v_prefix);
-            $username = $prefix . $this->generateVoucherString($this->v_type, $this->v_length);
+            $username = $prefix.$this->generateVoucherString($this->v_type, $this->v_length);
             // $username acts as the unique 'code' for the voucher record
-            if (in_array($username, $existing) || in_array($username, array_column($created, 'code'))) continue;
+            if (in_array($username, $existing) || in_array($username, array_column($created, 'code'))) {
+                continue;
+            }
 
             $password = $this->v_user_equals_pass ? $username : $this->generateVoucherString($this->v_type, $this->v_pwd_length);
 
             $created[] = [
                 'router_name' => $this->selectedRouter,
-                'code'        => $username,
-                'profile'     => $this->v_profile,
-                'username'    => $username,
-                'password'    => $password,
-                'price'       => $this->v_price,
-                'batch_name'  => $batch,
-                'status'      => 'unused',
-                'comment'     => $this->v_comment,
-                'limit_uptime'=> $this->v_limit_uptime,
-                'created_by'  => auth()->id(),
-                'created_at'  => now(),
-                'updated_at'  => now(),
+                'code' => $username,
+                'profile' => $this->v_profile,
+                'username' => $username,
+                'password' => $password,
+                'price' => $this->v_price,
+                'batch_name' => $batch,
+                'status' => 'unused',
+                'comment' => $this->v_comment,
+                'limit_uptime' => $this->v_limit_uptime,
+                'created_by' => auth()->id(),
+                'created_at' => now(),
+                'updated_at' => now(),
             ];
         }
 
         // Save to DB
-        HotspotVoucher::insert(array_map(fn($v) => array_diff_key($v, ['limit_uptime' => '']), $created));
+        HotspotVoucher::insert(array_map(fn ($v) => array_diff_key($v, ['limit_uptime' => '']), $created));
 
         // Push to router if requested
         if ($this->v_push_to_router) {
-            $batch_users = array_map(fn($v) => [
-                'name'     => $v['username'],
+            $batch_users = array_map(fn ($v) => [
+                'name' => $v['username'],
                 'password' => $v['password'],
-                'profile'  => $v['profile'],
-                'comment'  => $v['comment'] ?: $v['batch_name'],
+                'profile' => $v['profile'],
+                'comment' => $v['comment'] ?: $v['batch_name'],
                 'limit-uptime' => $v['limit_uptime'],
             ], $created);
             $results = $this->ctrl()->pushHotspotUserBatch($this->selectedRouter, $batch_users);
-            $errors  = array_filter($results, fn($r) => str_starts_with($r, 'Error'));
+            $errors = array_filter($results, fn ($r) => str_starts_with($r, 'Error'));
             if ($errors) {
-                flash()->warning(count($errors) . ' voucher(s) failed to push to router.');
+                flash()->warning(count($errors).' voucher(s) failed to push to router.');
             }
         }
 
         $this->generatedVouchers = $created;
         $this->showVoucherPreview = true;
         $this->loadStats();
-        flash()->success(count($created) . ' vouchers generated in batch "' . $batch . '"!');
+        flash()->success(count($created).' vouchers generated in batch "'.$batch.'"!');
     }
 
     public function deleteVoucherBatch(string $batch): void
@@ -673,8 +744,9 @@ class HotspotManager extends Component
 
     public function triggerPrintBatch(string $batchName): void
     {
-        $vouchers = array_map(function($v) {
+        $vouchers = array_map(function ($v) {
             $v['qr_code'] = 'yes';
+
             return $v;
         }, HotspotVoucher::where('batch_name', $batchName)
             ->where('router_name', $this->selectedRouter)
@@ -693,19 +765,21 @@ class HotspotManager extends Component
         }
         if ($this->voucherSearch) {
             $q->where(function ($q) {
-                $q->where('code', 'like', '%' . $this->voucherSearch . '%')
-                  ->orWhere('batch_name', 'like', '%' . $this->voucherSearch . '%')
-                  ->orWhere('profile', 'like', '%' . $this->voucherSearch . '%');
+                $q->where('code', 'like', '%'.$this->voucherSearch.'%')
+                    ->orWhere('batch_name', 'like', '%'.$this->voucherSearch.'%')
+                    ->orWhere('profile', 'like', '%'.$this->voucherSearch.'%');
             });
         }
-        
-        $vouchers = array_map(function($v) {
+
+        $vouchers = array_map(function ($v) {
             $v['qr_code'] = 'yes';
+
             return $v;
         }, $q->orderByDesc('created_at')->get(['username', 'password', 'profile', 'price'])->toArray());
 
         if (empty($vouchers)) {
             flash()->warning('No vouchers found matching your filter to print.');
+
             return;
         }
 
@@ -718,11 +792,12 @@ class HotspotManager extends Component
             $packages = $this->hotspotPackages;
             if ($packages->isEmpty()) {
                 flash()->warning('No packages found in database to sync.');
+
                 return;
             }
 
             $results = $this->ctrl()->syncHotspotProfilesToRouter($this->selectedRouter, $packages);
-            flash()->success(count($results) . ' packages synced to router.');
+            flash()->success(count($results).' packages synced to router.');
             $this->loadData();
         } catch (\Exception $e) {
             flash()->error($e->getMessage());
@@ -734,7 +809,7 @@ class HotspotManager extends Component
         try {
             $enable = ($currentStatus === 'true'); // if true (disabled), we want to enable (true)
             $this->ctrl()->toggleHotspotUser($this->selectedRouter, $username, $enable);
-            
+
             flash()->success($enable ? "User '{$username}' enabled." : "User '{$username}' disabled.");
             $this->loadData(); // Refresh UI
         } catch (\Exception $e) {
@@ -751,7 +826,7 @@ class HotspotManager extends Component
                 $this->ctrl()->removeHotspotUser($this->selectedRouter, $v->username);
                 // Remove from DB
                 $v->delete();
-                flash()->success("Voucher and Router User removed.");
+                flash()->success('Voucher and Router User removed.');
             }
             $this->loadData();
         } catch (\Exception $e) {
@@ -769,27 +844,25 @@ class HotspotManager extends Component
                 $this->editUser($u);
                 $this->dispatch('open-modal', 'userModal');
             } else {
-                flash()->warning("Could not find user properties on router.");
+                flash()->warning('Could not find user properties on router.');
             }
         }
     }
 
-    public function triggerPrintSingle(int $id, string $qr_code="yes"): void
+    public function triggerPrintSingle(int $id, string $qr_code = 'yes'): void
     {
         $v = HotspotVoucher::find($id);
         if ($v) {
             $vouchers = [[
                 'username' => $v->username,
                 'password' => $v->password,
-                'profile'  => $v->profile,
-                'price'    => $v->price,
-                'qr_code'  => $qr_code,
+                'profile' => $v->profile,
+                'price' => $v->price,
+                'qr_code' => $qr_code,
             ]];
             $this->dispatch('print-vouchers', vouchers: $vouchers, batch: 'Single', router: $this->selectedRouter);
         }
     }
-
-
 
     // =========================================================================
     // INCOME / SALES
@@ -808,21 +881,21 @@ class HotspotManager extends Component
     {
         $this->validate([
             's_username' => 'required|string|max:100',
-            's_profile'  => 'required|string',
-            's_amount'   => 'required|numeric|min:0',
-            's_date'     => 'required|date',
+            's_profile' => 'required|string',
+            's_amount' => 'required|numeric|min:0',
+            's_date' => 'required|date',
         ]);
 
         HotspotSale::create([
-            'router_name'    => $this->selectedRouter,
-            'voucher_code'   => $this->s_voucher_code ?: null,
-            'profile'        => $this->s_profile,
-            'username'       => $this->s_username,
-            'amount'         => $this->s_amount,
+            'router_name' => $this->selectedRouter,
+            'voucher_code' => $this->s_voucher_code ?: null,
+            'profile' => $this->s_profile,
+            'username' => $this->s_username,
+            'amount' => $this->s_amount,
             'payment_method' => $this->s_payment_method,
-            'note'           => $this->s_note,
-            'sale_date'      => $this->s_date,
-            'sold_by'        => auth()->id(),
+            'note' => $this->s_note,
+            'sale_date' => $this->s_date,
+            'sold_by' => auth()->id(),
         ]);
 
         // Mark voucher as used if provided
@@ -834,7 +907,7 @@ class HotspotManager extends Component
         flash()->success('Sale recorded successfully!');
         $this->reset(['s_voucher_code', 's_username', 's_note']);
         $this->s_amount = 0;
-        $this->s_date   = now()->toDateString();
+        $this->s_date = now()->toDateString();
         $this->loadStats();
         $this->dispatch('close-modal', 'sale-modal');
     }
@@ -855,8 +928,8 @@ class HotspotManager extends Component
         $v = HotspotVoucher::where('code', $this->s_voucher_code)->first();
         if ($v) {
             $this->s_username = $v->username;
-            $this->s_profile  = $v->profile;
-            $this->s_amount   = $v->price;
+            $this->s_profile = $v->profile;
+            $this->s_amount = $v->price;
         }
     }
 
@@ -867,28 +940,28 @@ class HotspotManager extends Component
     public function getReportData(): array
     {
         $from = $this->report_from ?: now()->startOfMonth()->toDateString();
-        $to   = $this->report_to   ?: now()->toDateString();
+        $to = $this->report_to ?: now()->toDateString();
 
         $sales = HotspotSale::forRouter($this->selectedRouter)
             ->forPeriod($from, $to)
             ->orderBy('sale_date')
             ->get();
 
-        $grouped = $sales->groupBy(fn($s) => $s->sale_date->toDateString());
+        $grouped = $sales->groupBy(fn ($s) => $s->sale_date->toDateString());
 
-        $byProfile = $sales->groupBy('profile')->map(fn($g) => [
-            'count'  => $g->count(),
-            'total'  => $g->sum('amount'),
-            'profile'=> $g->first()->profile,
+        $byProfile = $sales->groupBy('profile')->map(fn ($g) => [
+            'count' => $g->count(),
+            'total' => $g->sum('amount'),
+            'profile' => $g->first()->profile,
         ])->values();
 
         return [
-            'total'     => $sales->sum('amount'),
-            'count'     => $sales->count(),
-            'daily'     => $grouped,
+            'total' => $sales->sum('amount'),
+            'count' => $sales->count(),
+            'daily' => $grouped,
             'byProfile' => $byProfile,
-            'from'      => $from,
-            'to'        => $to,
+            'from' => $from,
+            'to' => $to,
         ];
     }
 
@@ -913,11 +986,12 @@ class HotspotManager extends Component
         }
         if ($this->voucherSearch) {
             $q->where(function ($q) {
-                $q->where('code', 'like', '%' . $this->voucherSearch . '%')
-                  ->orWhere('batch_name', 'like', '%' . $this->voucherSearch . '%')
-                  ->orWhere('profile', 'like', '%' . $this->voucherSearch . '%');
+                $q->where('code', 'like', '%'.$this->voucherSearch.'%')
+                    ->orWhere('batch_name', 'like', '%'.$this->voucherSearch.'%')
+                    ->orWhere('profile', 'like', '%'.$this->voucherSearch.'%');
             });
         }
+
         return $q->orderByDesc('created_at')->paginate(25);
     }
 
@@ -952,11 +1026,11 @@ class HotspotManager extends Component
 
     public function render()
     {
-        $routers     = RouterList::where('action', 'connected')->orderBy('router_name')->get();
-        $reportData  = $this->activeTab === 'report' ? $this->getReportData() : [];
-        $vouchers    = $this->activeTab === 'vouchers' ? $this->vouchers : collect();
+        $routers = RouterList::where('action', 'connected')->orderBy('router_name')->get();
+        $reportData = $this->activeTab === 'report' ? $this->getReportData() : [];
+        $vouchers = $this->activeTab === 'vouchers' ? $this->vouchers : collect();
         $voucherBatches = $this->activeTab === 'vouchers' ? $this->voucherBatches : collect();
-        $sales       = in_array($this->activeTab, ['income', 'report']) ? $this->sales : collect();
+        $sales = in_array($this->activeTab, ['income', 'report']) ? $this->sales : collect();
 
         $hotspotPackages = $this->hotspotPackages;
 

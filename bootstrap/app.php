@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CheckSiteStatus;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -12,7 +13,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->append(\App\Http\Middleware\CheckSiteStatus::class);
+        $middleware->append(CheckSiteStatus::class);
+        $middleware->validateCsrfTokens(except: [
+            '/payment/bkash/callback',
+            '/payment/nagad/callback',
+            '/payment/sslcommerz/callback',
+            '/payment/mock/submit',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

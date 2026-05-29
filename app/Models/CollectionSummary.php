@@ -22,6 +22,7 @@ class CollectionSummary extends Model
         'transaction_id',
         'payment_status',
         'bill_month',
+        'invoice_no',
     ];
 
     public function customer()

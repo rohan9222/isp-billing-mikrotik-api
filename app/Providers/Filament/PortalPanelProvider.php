@@ -4,19 +4,17 @@ namespace App\Providers\Filament;
 
 use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Pages\Auth\Login;
+use App\Filament\Pages\Auth\Register;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Assets\Css;
 use Filament\Support\Assets\Js;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Width;
-use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -37,10 +35,12 @@ class PortalPanelProvider extends PanelProvider
             ->id('portal')
             ->path('')
             ->domain('portal.'.$baseDomain)
-            ->favicon(fn () => siteUrlSettings('site_favicon') ?? asset('images/favicon.png'))
-            ->brandLogo(fn () => view('filament.application-logo'))
+            ->favicon(site_image(siteUrlSettings('site_favicon'), 'images/favicon.png'))
+            ->brandLogo(site_image(siteUrlSettings('site_logo'), 'images/favicon.png'))
+            ->brandName(siteUrlSettings('site_name') ?? 'Code Pagol')
             ->brandLogoHeight('3.5rem')
             ->login(Login::class)
+            ->registration((siteUrlSettings('portal_registration_enabled') ?? 1) ? Register::class : null)
             ->authGuard('ppp')
             ->profile(EditProfile::class)
             ->maxContentWidth(Width::Full)
@@ -54,14 +54,6 @@ class PortalPanelProvider extends PanelProvider
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
-            ->pages([
-                Dashboard::class,
-            ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
-            ->widgets([
-                AccountWidget::class,
-                FilamentInfoWidget::class,
-            ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

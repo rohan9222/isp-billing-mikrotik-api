@@ -2,9 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\MainSiteData;
 use Closure;
 use Illuminate\Http\Request;
-use App\Models\MainSiteData;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckSiteStatus
@@ -12,7 +12,7 @@ class CheckSiteStatus
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -38,8 +38,8 @@ class CheckSiteStatus
             if ($host === $baseDomain || str_starts_with($host, 'portal.')) {
                 $title = $maintenance ? 'Under Maintenance' : 'Site Temporarily Offline';
                 $heading = $maintenance ? 'We\'ll Be Back Soon' : 'Closed Temporarily';
-                $message = MainSiteData::getValue('site_message') ?: ($maintenance 
-                    ? 'We are currently performing scheduled maintenance. Please check back shortly.' 
+                $message = MainSiteData::getValue('site_message') ?: ($maintenance
+                    ? 'We are currently performing scheduled maintenance. Please check back shortly.'
                     : 'This portal and website are temporarily offline. Please check back later.');
 
                 return response()->view('errors.site-closed', [

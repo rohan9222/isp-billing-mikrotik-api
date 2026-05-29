@@ -12,7 +12,7 @@ class MainSiteController extends Controller
         $siteData = MainSiteData::getActive();
         $packages = PackageList::orderBy('sort_order')
             ->where('show_on_site', true)
-            ->limit(4)
+            ->limit(10)
             ->get();
 
         return view('main-site', compact('siteData', 'packages'));

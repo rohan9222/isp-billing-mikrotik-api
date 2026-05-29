@@ -50,11 +50,15 @@
         // for theme dark and light
         (() => {
             const isTheme = localStorage.getItem('theme') || 'auto';
+            let appliedTheme = isTheme;
             if (isTheme === 'auto') {
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.setAttribute('data-bs-theme', prefersDark ? 'dark' : 'light');
+                appliedTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            document.documentElement.setAttribute('data-bs-theme', appliedTheme);
+            if (appliedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
             } else {
-                document.documentElement.setAttribute('data-bs-theme', isTheme);
+                document.documentElement.classList.remove('dark');
             }
         })();
     </script>
@@ -242,6 +246,11 @@
                     applied = isDark ? 'dark' : 'light';
                 }
                 document.documentElement.setAttribute('data-bs-theme', applied);
+                if (applied === 'dark') {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
             }
         }
     }

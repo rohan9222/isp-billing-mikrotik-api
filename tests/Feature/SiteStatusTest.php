@@ -13,7 +13,7 @@ class SiteStatusTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Ensure default settings exist
         MainSiteData::setValue('site_status', 'active');
         MainSiteData::setValue('site_maintenance', '0');

@@ -4,8 +4,12 @@ use App\Http\Controllers\CollectionReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\MainSiteController;
+use App\Http\Controllers\Payment\BkashPaymentController;
+use App\Http\Controllers\Payment\NagadPaymentController;
+use App\Http\Controllers\Payment\SslCommerzPaymentController;
 use App\Livewire\AddressSetup;
 use App\Livewire\Admin\ManageRole;
+use App\Livewire\Admin\ManageTickets;
 use App\Livewire\Admin\ManageUser;
 use App\Livewire\CollectionEdit;
 use App\Livewire\CommentSubmit;
@@ -100,6 +104,7 @@ Route::middleware([
         Route::get('/new/customers', CustomerList::class)->name('customers-new');
         Route::get('/admin-users', ManageUser::class)->name('admin-users');
         Route::get('/admin-roles', ManageRole::class)->name('admin-roles');
+        Route::get('/support-tickets', ManageTickets::class)->name('admin-tickets');
         Route::get('/mikrotik', MikrotikSync::class)->name('mikrotik-sync');
 
         // Mikrotik Setup Routes
@@ -169,5 +174,18 @@ Route::middleware([
     // Route::post('/bkash/payment', [BkashController::class, 'createPayment']);
     // Route::post('/bkash/execute/{paymentID}', [BkashController::class, 'executePayment']);
 
-    Route::domain('portal.'.$baseDomain)->group(function () {});
+    Route::domain('portal.'.$baseDomain)->group(function () {
+        // Authenticated portal payment initiation routes
+        Route::middleware(['auth:ppp'])->group(function () {
+            Route::get('/payment/bkash/initiate', [BkashPaymentController::class, 'initiate'])->name('payment.bkash.initiate');
+            Route::get('/payment/nagad/initiate', [NagadPaymentController::class, 'initiate'])->name('payment.nagad.initiate');
+            Route::get('/payment/sslcommerz/initiate', [SslCommerzPaymentController::class, 'initiate'])->name('payment.sslcommerz.initiate');
+        });
+
+        // Public payment callback routes (Gateways redirect here, CSRF is disabled for POSTs)
+        Route::any('/payment/bkash/callback', [BkashPaymentController::class, 'callback'])->name('payment.bkash.callback');
+        Route::any('/payment/nagad/callback', [NagadPaymentController::class, 'callback'])->name('payment.nagad.callback');
+        Route::any('/payment/sslcommerz/callback', [SslCommerzPaymentController::class, 'callback'])->name('payment.sslcommerz.callback');
+        Route::post('/payment/mock/submit', [BkashPaymentController::class, 'mockSubmit'])->name('payment.mock.submit');
+    });
 });

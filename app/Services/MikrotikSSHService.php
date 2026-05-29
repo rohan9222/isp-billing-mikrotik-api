@@ -37,8 +37,8 @@ class MikrotikSSHService
      * when sent via SSH exec without a pseudo-terminal. This method allocates a
      * PTY, waits for the interactive shell prompt (consuming the login banner),
      * sends the command, waits for the router to finish, then reads the response.
-     * 
-     * @throws \Exception on SSH failure
+     *
+     * @throws Exception on SSH failure
      */
     public function executePtyCommand(string $command, int $waitSeconds = 5): string
     {
@@ -97,8 +97,6 @@ class MikrotikSSHService
         return (bool) preg_match('/^\s*\d+\s+.*[^\s]=[^\s].*$/m', $output);
     }
 
-
-
     // ─── Format Parsers ───────────────────────────────────────────────────────
 
     /**
@@ -111,29 +109,29 @@ class MikrotikSSHService
         // Normalize memory and hdd size keys to bytes
         $sizeKeys = [
             'free-memory', 'total-memory', 'free-hdd-space', 'total-hdd-space',
-            'memory-size', 'hdd-size', 'active-flow-bytes', 'inactive-flow-bytes'
+            'memory-size', 'hdd-size', 'active-flow-bytes', 'inactive-flow-bytes',
         ];
         if (in_array($key, $sizeKeys, true)) {
             if (preg_match('/^([\d\.]+)\s*(?:(GiB|MiB|KiB|B|GB|MB|KB)|(g|m|k))?$/i', $value, $matches)) {
-                $number = (float)$matches[1];
+                $number = (float) $matches[1];
                 $unit = strtolower($matches[2] ?? $matches[3] ?? '');
-                
+
                 switch ($unit) {
                     case 'gib':
                     case 'gb':
                     case 'g':
-                        return (int)($number * 1024 * 1024 * 1024);
+                        return (int) ($number * 1024 * 1024 * 1024);
                     case 'mib':
                     case 'mb':
                     case 'm':
-                        return (int)($number * 1024 * 1024);
+                        return (int) ($number * 1024 * 1024);
                     case 'kib':
                     case 'kb':
                     case 'k':
-                        return (int)($number * 1024);
+                        return (int) ($number * 1024);
                     case 'b':
                     default:
-                        return (int)$number;
+                        return (int) $number;
                 }
             }
         }
@@ -141,33 +139,33 @@ class MikrotikSSHService
         // Normalize CPU frequency
         if ($key === 'cpu-frequency') {
             if (preg_match('/^(\d+)\s*(?:MHz)?$/i', $value, $matches)) {
-                return (int)$matches[1];
+                return (int) $matches[1];
             }
         }
 
         // Normalize CPU load and bad-blocks percentage
         if ($key === 'cpu-load' || $key === 'bad-blocks') {
             if (preg_match('/^([\d\.]+)\s*%?$/', $value, $matches)) {
-                return str_contains($matches[1], '.') ? (float)$matches[1] : (int)$matches[1];
+                return str_contains($matches[1], '.') ? (float) $matches[1] : (int) $matches[1];
             }
         }
 
         // Normalize CPU count and other integer fields
         if ($key === 'cpu-count' || $key === 'write-sect-since-reboot' || $key === 'write-sect-total') {
             if (ctype_digit($value)) {
-                return (int)$value;
+                return (int) $value;
             }
         }
 
         // Normalize temperature (e.g. 35C -> 35) and voltage (e.g. 12.1V -> 12.1)
         if ($key === 'temperature') {
             if (preg_match('/^([\d\.]+)\s*C?$/i', $value, $matches)) {
-                return str_contains($matches[1], '.') ? (float)$matches[1] : (int)$matches[1];
+                return str_contains($matches[1], '.') ? (float) $matches[1] : (int) $matches[1];
             }
         }
         if ($key === 'voltage') {
             if (preg_match('/^([\d\.]+)\s*V?$/i', $value, $matches)) {
-                return str_contains($matches[1], '.') ? (float)$matches[1] : (int)$matches[1];
+                return str_contains($matches[1], '.') ? (float) $matches[1] : (int) $matches[1];
             }
         }
 

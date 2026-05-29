@@ -69,8 +69,12 @@ if (! function_exists('site_image')) {
      */
     function site_image($path, $fallback = 'images/logo.png')
     {
-        if (! $path) return asset($fallback);
-        if (str_starts_with($path, 'http')) return $path;
+        if (! $path) {
+            return asset($fallback);
+        }
+        if (str_starts_with($path, 'http')) {
+            return $path;
+        }
 
         // Path clean up
         $path = ltrim($path, '/');
@@ -81,12 +85,11 @@ if (! function_exists('site_image')) {
         }
 
         // Check 2: storage folder (standard Filament/Laravel location)
-        if (file_exists(public_path('storage/' . $path))) {
-            return asset('storage/' . $path);
+        if (file_exists(public_path('storage/'.$path))) {
+            return asset('storage/'.$path);
         }
 
         // Final fallback: asset with original path
         return asset($path);
     }
 }
-

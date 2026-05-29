@@ -12,24 +12,26 @@ use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Forms\Components\ViewField;
 use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
 class MainSiteSetup extends Component implements HasActions, HasForms
@@ -51,8 +53,11 @@ class MainSiteSetup extends Component implements HasActions, HasForms
             'portal_name' => MainSiteData::getValue('portal_name', 'Code Pagol Ltd'),
             'site_title' => MainSiteData::getValue('site_title'),
             'site_status' => MainSiteData::getValue('site_status', 'active'),
-            'site_maintenance' => (bool) MainSiteData::getValue('site_maintenance', false),
+            'site_maintenance' => MainSiteData::getValue('site_maintenance', 0) ? 1 : 0,
             'site_message' => MainSiteData::getValue('site_message'),
+            'portal_registration_enabled' => MainSiteData::getValue('portal_registration_enabled', 1) ? 1 : 0,
+            'portal_change_password_enabled' => MainSiteData::getValue('portal_change_password_enabled', 1) ? 1 : 0,
+            'portal_theme_preset' => MainSiteData::getValue('portal_theme_preset', 'indigo'),
 
             // Assets
             'site_logo' => MainSiteData::getValue('site_logo'),
@@ -82,6 +87,7 @@ class MainSiteSetup extends Component implements HasActions, HasForms
             // Billing & Invoicing
             'site_currency' => MainSiteData::getValue('site_currency', 'BDT'),
             'site_invoice_prefix' => MainSiteData::getValue('site_invoice_prefix', 'INV-'),
+            'customer_id_prefix' => MainSiteData::getValue('customer_id_prefix', 'FCNET'),
             'site_invoice_logo' => MainSiteData::getValue('site_invoice_logo'),
             'site_invoice_color' => MainSiteData::getValue('site_invoice_color', '#000000'),
             'site_invoice_footer' => MainSiteData::getValue('site_invoice_footer'),
@@ -100,9 +106,28 @@ class MainSiteSetup extends Component implements HasActions, HasForms
 
             // Log Server
             'mysql_binary_path' => MainSiteData::getValue('mysql_binary_path', ''),
-            'log_server_enabled' => (bool) MainSiteData::getValue('log_server_enabled', false),
+            'log_server_enabled' => MainSiteData::getValue('log_server_enabled', 0) ? 1 : 0,
             'log_server_routers' => MainSiteData::getValue('log_server_routers', []),
             'log_retention_days' => MainSiteData::getValue('log_retention_days', 30),
+
+            // Payment Gateways
+            'payment_bkash_enabled' => MainSiteData::getValue('payment_bkash_enabled', 0) ? 1 : 0,
+            'payment_bkash_base_url' => MainSiteData::getValue('payment_bkash_base_url', 'https://tokenized.sandbox.bka.sh/v1.2.0-beta'),
+            'payment_bkash_username' => MainSiteData::getValue('payment_bkash_username'),
+            'payment_bkash_password' => MainSiteData::getValue('payment_bkash_password'),
+            'payment_bkash_app_key' => MainSiteData::getValue('payment_bkash_app_key'),
+            'payment_bkash_app_secret' => MainSiteData::getValue('payment_bkash_app_secret'),
+
+            'payment_nagad_enabled' => MainSiteData::getValue('payment_nagad_enabled', 0) ? 1 : 0,
+            'payment_nagad_base_url' => MainSiteData::getValue('payment_nagad_base_url', 'http://sandbox.nagad.com.bd:10080/remote-payment-gateway-1.0/api/dfs'),
+            'payment_nagad_merchant_id' => MainSiteData::getValue('payment_nagad_merchant_id'),
+            'payment_nagad_public_key' => MainSiteData::getValue('payment_nagad_public_key'),
+            'payment_nagad_private_key' => MainSiteData::getValue('payment_nagad_private_key'),
+
+            'payment_sslcommerz_enabled' => MainSiteData::getValue('payment_sslcommerz_enabled', 0) ? 1 : 0,
+            'payment_sslcommerz_store_id' => MainSiteData::getValue('payment_sslcommerz_store_id'),
+            'payment_sslcommerz_store_password' => MainSiteData::getValue('payment_sslcommerz_store_password'),
+            'payment_sslcommerz_sandbox' => MainSiteData::getValue('payment_sslcommerz_sandbox', 1) ? 1 : 0,
 
             // Dynamic Web Content (MainSiteData unique)
             'hero_title' => MainSiteData::getValue('hero_title'),
@@ -113,7 +138,7 @@ class MainSiteSetup extends Component implements HasActions, HasForms
             'about_body' => MainSiteData::getValue('about_body'),
             'packages_section_title' => MainSiteData::getValue('packages_section_title', 'Internet Packages'),
             'footer_copyright' => MainSiteData::getValue('footer_copyright'),
-            'is_active' => (bool) MainSiteData::getValue('is_active', true),
+            'is_active' => MainSiteData::getValue('is_active', 1) ? 1 : 0,
             'registration_link' => MainSiteData::getValue('registration_link'),
 
             'hero_slides' => MainSiteData::getValue('hero_slides', []),
@@ -161,7 +186,7 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                                     Select::make('site_status')
                                         ->options([
                                             'active' => 'Active (Live)',
-                                            'disabled' => 'Disabled (Offline)'
+                                            'disabled' => 'Disabled (Offline)',
                                         ])
                                         ->required()
                                         ->default('active')
@@ -170,11 +195,26 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                                         ->label('Enable Maintenance Mode')
                                         ->boolean()
                                         ->grouped()
-                                        ->default('disabled'),
+                                        ->default(0),
                                     Textarea::make('site_message')
                                         ->label('System Announcement')
                                         ->placeholder('Short tagline or notice to display to all users...')
                                         ->rows(2),
+                                ])->columns(2),
+                            Section::make('Portal Settings')
+                                ->icon('heroicon-m-user-group')
+                                ->description('Configure client portal registration and security options.')
+                                ->components([
+                                    ToggleButtons::make('portal_registration_enabled')
+                                        ->label('Enable Client Registration')
+                                        ->boolean()
+                                        ->grouped()
+                                        ->default(1),
+                                    ToggleButtons::make('portal_change_password_enabled')
+                                        ->label('Enable Change Password')
+                                        ->boolean()
+                                        ->grouped()
+                                        ->default(1),
                                 ])->columns(2),
                             Section::make('Assets & Media')
                                 ->icon('heroicon-m-photo')
@@ -214,6 +254,28 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                                         ->placeholder('Enter a short description for search engines...')
                                         ->rows(3),
                                 ])->columns(2),
+                        ]),
+
+                    Tab::make('Portal Theme')
+                        ->icon('heroicon-m-paint-brush')
+                        ->components([
+                            Section::make('Customer Portal Theme Settings')
+                                ->icon('heroicon-m-paint-brush')
+                                ->description('Choose a default theme and color scheme for the client portal dashboard.')
+                                ->components([
+                                    Select::make('portal_theme_preset')
+                                        ->label('Default Portal Theme Preset')
+                                        ->options([
+                                            'indigo' => 'Royal Purple (Indigo/Purple/Pink)',
+                                            'emerald' => 'Forest Mint (Emerald/Teal)',
+                                            'blue' => 'Ocean Breeze (Blue/Sky/Cyan)',
+                                            'orange' => 'Sunset Glow (Orange/Red/Pink)',
+                                            'dark' => 'Midnight Slate (Slate/Dark)',
+                                        ])
+                                        ->required()
+                                        ->default('indigo')
+                                        ->prefixIcon('heroicon-m-paint-brush'),
+                                ])->columns(1),
                         ]),
 
                     Tab::make('Contact & Social')
@@ -263,6 +325,12 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                                 ->components([
                                     TextInput::make('site_currency')->default('BDT')->prefixIcon('heroicon-m-banknotes'),
                                     TextInput::make('site_invoice_prefix')->default('INV-')->prefixIcon('heroicon-m-hashtag'),
+                                    TextInput::make('customer_id_prefix')
+                                        ->label('Customer ID Prefix')
+                                        ->default('FCNET')
+                                        ->placeholder('e.g., FCNET')
+                                        ->required()
+                                        ->prefixIcon('heroicon-m-user'),
                                     TextInput::make('disable_check_no')
                                         ->label('Grace Limit Amount')
                                         ->numeric()
@@ -299,6 +367,84 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                                 ])->columns(2),
                         ]),
 
+                    Tab::make('Payment Gateways')
+                        ->icon('heroicon-m-credit-card')
+                        ->components([
+                            Section::make('bKash Checkout Settings')
+                                ->icon('heroicon-m-credit-card')
+                                ->description('Configure your bKash payment gateway credentials.')
+                                ->components([
+                                    ToggleButtons::make('payment_bkash_enabled')
+                                        ->label('Enable bKash Gateway')
+                                        ->boolean()
+                                        ->grouped()
+                                        ->default(0),
+                                    TextInput::make('payment_bkash_base_url')
+                                        ->label('bKash Base URL')
+                                        ->required()
+                                        ->default('https://tokenized.sandbox.bka.sh/v1.2.0-beta'),
+                                    TextInput::make('payment_bkash_username')
+                                        ->label('bKash Username'),
+                                    TextInput::make('payment_bkash_password')
+                                        ->label('bKash Password')
+                                        ->password()
+                                        ->revealable(),
+                                    TextInput::make('payment_bkash_app_key')
+                                        ->label('bKash App Key')
+                                        ->password()
+                                        ->revealable(),
+                                    TextInput::make('payment_bkash_app_secret')
+                                        ->label('bKash App Secret')
+                                        ->password()
+                                        ->revealable(),
+                                ])->columns(2),
+
+                            Section::make('Nagad Pay Settings')
+                                ->icon('heroicon-m-credit-card')
+                                ->description('Configure your Nagad payment gateway credentials.')
+                                ->components([
+                                    ToggleButtons::make('payment_nagad_enabled')
+                                        ->label('Enable Nagad Gateway')
+                                        ->boolean()
+                                        ->grouped()
+                                        ->default(0),
+                                    TextInput::make('payment_nagad_base_url')
+                                        ->label('Nagad Base URL')
+                                        ->required()
+                                        ->default('http://sandbox.nagad.com.bd:10080/remote-payment-gateway-1.0/api/dfs'),
+                                    TextInput::make('payment_nagad_merchant_id')
+                                        ->label('Nagad Merchant ID'),
+                                    Textarea::make('payment_nagad_public_key')
+                                        ->label('Nagad Public Key')
+                                        ->rows(3),
+                                    Textarea::make('payment_nagad_private_key')
+                                        ->label('Merchant Private Key')
+                                        ->rows(3),
+                                ])->columns(2),
+
+                            Section::make('SSLCommerz Settings')
+                                ->icon('heroicon-m-credit-card')
+                                ->description('Configure your SSLCommerz payment gateway credentials.')
+                                ->components([
+                                    ToggleButtons::make('payment_sslcommerz_enabled')
+                                        ->label('Enable SSLCommerz Gateway')
+                                        ->boolean()
+                                        ->grouped()
+                                        ->default(0),
+                                    TextInput::make('payment_sslcommerz_store_id')
+                                        ->label('Store ID'),
+                                    TextInput::make('payment_sslcommerz_store_password')
+                                        ->label('Store Password')
+                                        ->password()
+                                        ->revealable(),
+                                    ToggleButtons::make('payment_sslcommerz_sandbox')
+                                        ->label('Sandbox Mode')
+                                        ->boolean()
+                                        ->grouped()
+                                        ->default(1),
+                                ])->columns(2),
+                        ]),
+
                     Tab::make('Security & Tech')
                         ->icon('heroicon-m-shield-check')
                         ->components([
@@ -330,6 +476,7 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                                         ->label('Enable Remote Log Streaming')
                                         ->boolean()
                                         ->grouped()
+                                        ->default(0)
                                         ->helperText('Enables the background listener for incoming router logs.'),
                                     Select::make('log_server_routers')
                                         ->multiple()
@@ -379,7 +526,7 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                                                 ->automaticallyResizeImagesMode('cover')
                                                 ->automaticallyResizeImagesToWidth('1920')
                                                 ->automaticallyResizeImagesToHeight('720')
-                                                ->rules(['image','max:20480'])
+                                                ->rules(['image', 'max:20480'])
                                                 ->required()
                                                 ->directory('hero'),
                                             TextInput::make('caption')->placeholder('Slide caption...'),
@@ -462,7 +609,7 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                                             Select::make('category')
                                                 ->label('Category')
                                                 ->options(fn () => collect(MainSiteData::getValue('gallery_categories', []))
-                                                    ->mapWithKeys(fn($c) => [($c['key'] ?? $c['label'] ?? '') => $c['label'] ?? $c['key'] ?? ''])
+                                                    ->mapWithKeys(fn ($c) => [($c['key'] ?? $c['label'] ?? '') => $c['label'] ?? $c['key'] ?? ''])
                                                     ->toArray())
                                                 ->default('category-1'),
                                         ])
@@ -481,6 +628,7 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                                         ->boolean()
                                         ->grouped()
                                         ->label('Public Website Visible')
+                                        ->default(1)
                                         ->helperText('Turn off to hide the public website while keeping the admin panel active.'),
                                 ])->columns(2),
                         ]),
@@ -502,22 +650,38 @@ class MainSiteSetup extends Component implements HasActions, HasForms
 
     public function save(): void
     {
-        $state = $this->form->getState();
+        try {
+            $state = $this->form->getState();
+            Log::debug('MainSiteSetup save state: '.json_encode([
+                'payment_bkash_enabled' => $state['payment_bkash_enabled'] ?? 'not_in_state',
+                'payment_nagad_enabled' => $state['payment_nagad_enabled'] ?? 'not_in_state',
+                'payment_sslcommerz_enabled' => $state['payment_sslcommerz_enabled'] ?? 'not_in_state',
+            ]));
+        } catch (ValidationException $e) {
+            Log::error('MainSiteSetup validation failed: '.json_encode($e->errors()));
+            flash()->error('Validation failed: '.implode(', ', Arr::flatten($e->errors())));
+            throw $e;
+        }
 
         // All keys from both migrations
         $keys = [
             'site_name', 'portal_name', 'site_title', 'site_status', 'site_maintenance', 'site_message',
+            'portal_theme_preset',
+            'portal_registration_enabled', 'portal_change_password_enabled',
             'site_logo', 'site_icon', 'site_favicon',
             'site_description', 'site_keywords', 'site_author',
             'site_email', 'site_phone', 'site_address', 'site_map',
             'site_facebook', 'site_twitter', 'site_instagram', 'site_whatsapp', 'site_linkedin', 'site_youtube', 'site_pinterest',
-            'site_currency', 'site_invoice_prefix', 'site_invoice_logo', 'site_invoice_color', 'site_invoice_footer', 'site_invoice_notes', 'site_invoice_terms', 'site_invoice_signature',
+            'site_currency', 'site_invoice_prefix', 'customer_id_prefix', 'site_invoice_logo', 'site_invoice_color', 'site_invoice_footer', 'site_invoice_notes', 'site_invoice_terms', 'site_invoice_signature',
             'disable_check_no', 'disable_check_days',
             'site_secret_key', 'site_secret_value', 'site_secret_validity', 'site_secret_url', 'site_secret_email',
             'mysql_binary_path', 'log_server_enabled', 'log_server_routers', 'log_retention_days',
             'hero_title', 'hero_subtitle', 'hero_button_text', 'hero_button_link', 'registration_link',
             'about_title', 'about_body', 'packages_section_title', 'testimonial_title', 'footer_copyright', 'is_active',
             'hero_slides', 'services', 'testimonials', 'gallery_items', 'gallery_categories', 'valuable_clients',
+            'payment_bkash_enabled', 'payment_bkash_base_url', 'payment_bkash_username', 'payment_bkash_password', 'payment_bkash_app_key', 'payment_bkash_app_secret',
+            'payment_nagad_enabled', 'payment_nagad_base_url', 'payment_nagad_merchant_id', 'payment_nagad_public_key', 'payment_nagad_private_key',
+            'payment_sslcommerz_enabled', 'payment_sslcommerz_store_id', 'payment_sslcommerz_store_password', 'payment_sslcommerz_sandbox',
         ];
 
         foreach ($keys as $key) {
@@ -709,7 +873,7 @@ class MainSiteSetup extends Component implements HasActions, HasForms
         }
 
         $passwordStr = $password ? "--password=\"{$password}\"" : '';
-        $command = "{$mysqlCmd} -h {$host} -P {$port} -u {$username} {$passwordStr} {$dbName} < ".escapeshellarg($path)." 2>&1";
+        $command = "{$mysqlCmd} -h {$host} -P {$port} -u {$username} {$passwordStr} {$dbName} < ".escapeshellarg($path).' 2>&1';
 
         exec($command, $output, $returnVar);
 

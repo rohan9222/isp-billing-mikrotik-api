@@ -14,7 +14,7 @@ class LiveTraffic extends Page
 
     protected static ?string $title = 'Live Traffic Monitor';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 2;
 
     public static function shouldRegisterNavigation(): bool
     {

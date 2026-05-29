@@ -6,11 +6,13 @@ use App\Models\CustomersInfo;
 use Filament\Actions\Action;
 use Filament\Auth\Pages\EditProfile as BaseEditProfile;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use Illuminate\Support\HtmlString;
 
 class EditProfile extends BaseEditProfile
 {
@@ -22,13 +24,14 @@ class EditProfile extends BaseEditProfile
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $customerInfo = CustomersInfo::where('ppp_user_id', auth()->id())->first();
-        $customerAddresses = [];
-        foreach ($customerInfo->customerAddress as $address) {
-            $customerAddresses[] = $address->label_name.' : '.($address->input_type_text ?? $address->input_type_dropdown ?? $address->input_type_textarea);
-        }
-        $full_address = implode(', ', $customerAddresses);
 
         if ($customerInfo) {
+            $customerAddresses = [];
+            foreach ($customerInfo->customerAddress as $address) {
+                $customerAddresses[] = $address->label_name.' : '.($address->input_type_text ?? $address->input_type_dropdown ?? $address->input_type_textarea);
+            }
+            $full_address = implode(', ', $customerAddresses);
+
             $data['user_id'] = $customerInfo->customer_unique_id;
             $data['pppoe_secret'] = auth()->user()->username;
             $data['customer_name'] = $customerInfo->customer_name;
@@ -52,6 +55,9 @@ class EditProfile extends BaseEditProfile
 
     public function form(Schema $schema): Schema
     {
+        $customerInfo = CustomersInfo::where('ppp_user_id', auth()->id())->first();
+        $hasProfile = $customerInfo !== null;
+
         return $schema
             ->components([
                 Section::make('Customer Information')
@@ -59,35 +65,53 @@ class EditProfile extends BaseEditProfile
                         Action::make('status')
                             ->label(fn () => auth()->user()->status)
                             ->color(fn () => (auth()->user()->status === 'active') ? 'success' : ((auth()->user()->status === 'free') ? 'info' : 'warning'))
-                            ->icon(fn () => auth()->user()->status === 'active' ? 'heroicon-m-check-circle' : ((auth()->user()->status === 'free') ? 'heroicon-m-clock' : 'heroicon-m-x-circle')),
+                            ->icon(fn () => auth()->user()->status === 'active' ? 'heroicon-m-check-circle' : ((auth()->user()->status === 'free') ? 'heroicon-m-clock' : 'heroicon-m-x-circle'))
+                            ->disabled(),
                     ])
                     ->schema([
+                        Placeholder::make('warning')
+                            ->hiddenLabel()
+                            ->content(new HtmlString('
+                                <div class="cp-p-4 cp-bg-amber-500/10 cp-border cp-border-amber-500/20 cp-text-amber-600 dark:cp-text-amber-400 cp-rounded-2xl cp-text-sm cp-flex cp-items-start cp-gap-3">
+                                    <svg style="width: 24px; height: 24px; min-width: 24px; min-height: 24px;" class="cp-mt-0.5 cp-text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                    </svg>
+                                    <div>
+                                        <span class="cp-font-bold cp-block">Customer Profile Not Found</span>
+                                        Your PPPoE account is active, but it is not linked to a customer profile. Please contact support to complete your profile.
+                                    </div>
+                                </div>
+                            '))
+                            ->hidden($hasProfile)
+                            ->columnSpanFull(),
                         TextInput::make('user_id')
                             ->label('User ID')
                             ->disabled()
-                            ->dehydrated(),
+                            ->dehydrated()
+                            ->hidden(! $hasProfile),
                         TextInput::make('pppoe_secret')
                             ->label('PPPOE Secret')
                             ->disabled()
                             ->dehydrated(),
                         TextInput::make('customer_name')
                             ->label('Customer Name')
-                            ->required()
-                            ->maxLength(255),
+                            ->required($hasProfile)
+                            ->maxLength(255)
+                            ->hidden(! $hasProfile),
                         TextInput::make('email')
                             ->label('Email')
-                            ->required()
                             ->email()
                             ->maxLength(255),
                         TextInput::make('mobile')
                             ->label('Mobile')
-                            ->required()
+                            ->disabled()
                             ->prefix('880')
                             ->numeric()
                             ->length(10)
                             ->validationMessages([
                                 'length' => 'The mobile number must be exactly 10 digits after 880.',
-                            ]),
+                            ])
+                            ->hidden(! $hasProfile),
                         TextInput::make('alternative_mobile')
                             ->label('Alternative Mobile')
                             ->prefix('880')
@@ -95,13 +119,14 @@ class EditProfile extends BaseEditProfile
                             ->length(10)
                             ->validationMessages([
                                 'length' => 'The alternative mobile number must be exactly 10 digits after 880.',
-                            ]),
+                            ])
+                            ->hidden(! $hasProfile),
                     ])->columns(2),
                 Section::make('Contact & Identification')
                     ->schema([
                         TextInput::make('contact_person')
                             ->label('Contact Person')
-                            ->required()
+                            ->required($hasProfile)
                             ->maxLength(255),
                         TextInput::make('parents_name')
                             ->label('Parents Name')
@@ -111,11 +136,11 @@ class EditProfile extends BaseEditProfile
                             ->maxLength(255),
                         TextInput::make('profession')
                             ->label('Profession')
-                            ->required()
+                            ->required($hasProfile)
                             ->maxLength(255),
                         TextInput::make('identification_no')
                             ->label('Identification No')
-                            ->required()
+                            ->required($hasProfile)
                             ->maxLength(255),
                         FileUpload::make('photo_url')
                             ->label('Photo')
@@ -123,15 +148,17 @@ class EditProfile extends BaseEditProfile
                             ->imageEditor()
                             ->disk('direct_public')
                             ->directory('customer-images')
-                            ->required(),
-                    ])->columns(2),
+                            ->required($hasProfile),
+                    ])->columns(2)
+                    ->hidden(! $hasProfile),
                 Section::make('Address')
                     ->schema([
                         TextInput::make('full_address')
                             ->label('Address')
                             ->disabled()
                             ->dehydrated(),
-                    ]),
+                    ])
+                    ->hidden(! $hasProfile),
             ]);
     }
 

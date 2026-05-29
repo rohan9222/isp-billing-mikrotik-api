@@ -14,8 +14,8 @@ class HotspotVoucher extends Model
     ];
 
     protected $casts = [
-        'price'      => 'decimal:2',
-        'used_at'    => 'datetime',
+        'price' => 'decimal:2',
+        'used_at' => 'datetime',
         'expires_at' => 'datetime',
     ];
 

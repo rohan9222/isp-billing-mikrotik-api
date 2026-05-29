@@ -5,18 +5,21 @@ namespace App\Livewire\Mikrotik;
 use App\Http\Controllers\MikrotikController;
 use App\Models\PermittedUrl;
 use App\Models\RouterList;
-use App\Services\MikrotikSSHService;
 use Livewire\Component;
 
 class WalledGardenSetup extends Component
 {
     public string $selectedRouter = '';
+
     public string $url_or_ip = '';
+
     public string $type = 'url';
+
     public string $comment = '';
-    
+
     // Setup fields
     public string $portal_ip = '';
+
     public string $expired_speed = '128k/128k';
 
     public function mount(): void
@@ -37,15 +40,16 @@ class WalledGardenSetup extends Component
         ]);
 
         $router = RouterList::find($this->selectedRouter);
-        if (!$router) {
+        if (! $router) {
             flash()->error('Router not found.');
+
             return;
         }
 
         try {
             $ctrl = app(MikrotikController::class);
             $routerName = $router->router_name;
-            
+
             // 1. Add to Hotspot Walled Garden
             try {
                 if ($this->type == 'url') {
@@ -55,7 +59,7 @@ class WalledGardenSetup extends Component
                 }
             } catch (\Exception $e) {
                 // Ignore if it already exists or if hotspot package is missing
-                if (!str_contains($e->getMessage(), 'already has') && !str_contains($e->getMessage(), 'no such item')) {
+                if (! str_contains($e->getMessage(), 'already has') && ! str_contains($e->getMessage(), 'no such item')) {
                     throw $e;
                 }
             }
@@ -65,7 +69,7 @@ class WalledGardenSetup extends Component
                 $ctrl->singleWrite($routerName, "/ip firewall address-list add list=PERMITTED_URLS address={$this->url_or_ip} comment=\"{$this->comment}\"");
             } catch (\Exception $e) {
                 // Ignore if it already exists
-                if (!str_contains($e->getMessage(), 'already has')) {
+                if (! str_contains($e->getMessage(), 'already has')) {
                     throw $e;
                 }
             }
@@ -79,23 +83,25 @@ class WalledGardenSetup extends Component
 
             flash()->success('Permitted URL/IP added and synced to Mikrotik router.');
             $this->reset(['url_or_ip', 'type', 'comment']);
-            
+
         } catch (\Exception $e) {
-            flash()->error('Mikrotik sync error: ' . $e->getMessage());
+            flash()->error('Mikrotik sync error: '.$e->getMessage());
         }
     }
 
     public function deletePermitted($id)
     {
         $permitted = PermittedUrl::find($id);
-        if (!$permitted) return;
+        if (! $permitted) {
+            return;
+        }
 
         $router = RouterList::find($permitted->router_id);
         if ($router) {
             try {
                 $ctrl = app(MikrotikController::class);
                 $routerName = $router->router_name;
-                
+
                 // Remove from Hotspot Walled Garden
                 try {
                     if ($permitted->type == 'url') {
@@ -115,7 +121,8 @@ class WalledGardenSetup extends Component
                 }
 
             } catch (\Exception $e) {
-                flash()->error('Failed to remove from Mikrotik router: ' . $e->getMessage());
+                flash()->error('Failed to remove from Mikrotik router: '.$e->getMessage());
+
                 return;
             }
         }
@@ -133,8 +140,9 @@ class WalledGardenSetup extends Component
         ]);
 
         $router = RouterList::find($this->selectedRouter);
-        if (!$router) {
+        if (! $router) {
             flash()->error('Router not found.');
+
             return;
         }
 
@@ -170,15 +178,16 @@ class WalledGardenSetup extends Component
             // 3. Create Firewall NAT Rule
             // First, remove old redirect rule if exists to avoid duplicates
             try {
-                $ctrl->singleWrite($routerName, "/ip firewall nat remove [find comment=\"Redirect Expired Users\"]");
-            } catch (\Exception $e) {}
+                $ctrl->singleWrite($routerName, '/ip firewall nat remove [find comment="Redirect Expired Users"]');
+            } catch (\Exception $e) {
+            }
 
             $ctrl->singleWrite($routerName, "/ip firewall nat add chain=dstnat src-address-list=EXPIRED_USERS dst-address-list=!PERMITTED_URLS protocol=tcp dst-port=80 action=dst-nat to-addresses=\"{$this->portal_ip}\" to-ports=80 comment=\"Redirect Expired Users\"");
 
             flash()->success('Router redirection setup completed successfully!');
-            
+
         } catch (\Exception $e) {
-            flash()->error('Router setup failed: ' . $e->getMessage());
+            flash()->error('Router setup failed: '.$e->getMessage());
         }
     }
 
@@ -191,7 +200,7 @@ class WalledGardenSetup extends Component
 
         return view('livewire.mikrotik.walled-garden-setup', [
             'routers' => RouterList::where('action', 'connected')->get(),
-            'urls' => $urls
+            'urls' => $urls,
         ])->layout('layouts.app', ['title' => 'Walled Garden Setup']);
     }
 }

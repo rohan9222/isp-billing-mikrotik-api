@@ -27,7 +27,9 @@ class IpSetup extends Component
     public string $pool_ranges = '';
 
     public string $pool_next_pool = '';
+
     public string $pool_comment = '';
+
     public ?string $editPoolId = null;
 
     // DHCP Server form
@@ -53,6 +55,7 @@ class IpSetup extends Component
     public string $net_comment = '';
 
     public ?string $editNetId = null;
+
     public string $net_pool = '';
 
     // Search and Pagination
@@ -254,10 +257,12 @@ class IpSetup extends Component
 
     public function updatedNetPool(): void
     {
-        if (!$this->net_pool) return;
-        
+        if (! $this->net_pool) {
+            return;
+        }
+
         $pool = collect($this->ipPools)->firstWhere('name', $this->net_pool);
-        if ($pool && !empty($pool['ranges'])) {
+        if ($pool && ! empty($pool['ranges'])) {
             // Very basic logic to guess network from first range
             $range = explode('-', $pool['ranges'])[0];
             $parts = explode('.', $range);
