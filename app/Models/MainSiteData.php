@@ -101,6 +101,21 @@ class MainSiteData extends Model
                 'social_youtube' => null,
                 'social_whatsapp' => null,
                 'valuable_clients' => [],
+                'theme_preset' => 'fintech',
+                'theme_name' => 'ocean_blue',
+                'theme_primary_color' => '#0284c7',
+                'theme_accent_color' => '#38bdf8',
+                'theme_card_style' => 'glass',
+                'theme_border_radius' => '16px',
+                'theme_font_size' => 'medium',
+                'theme_font_family' => 'Outfit',
+                'theme_nav_style' => 'sidebar',
+                'theme_widget_style' => 'glass',
+                'theme_mode' => 'dark',
+                'theme_transparency' => '0.5',
+                'theme_blur' => '16px',
+                'theme_animations' => '1.0',
+                'theme_gradient_intensity' => '0.7',
             ];
 
             foreach ($defaults as $key => $defaultValue) {

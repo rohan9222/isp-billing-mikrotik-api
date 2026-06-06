@@ -33,7 +33,7 @@ class CollectionReportController extends Controller
             $to = $request->toDate ?? Carbon::now()->endOfMonth()->format('Y-m-d');
             $customer = $request->collector;
 
-            // Query নির্মাণ
+            // Build query
             $query = CollectionSummary::with('customer', 'customer.pppUser')->whereBetween('collection_date', [$from, $to]);
             if ($customer) {
                 $query->where('collected_by', $customer);

@@ -58,6 +58,21 @@ class MainSiteSetup extends Component implements HasActions, HasForms
             'portal_registration_enabled' => MainSiteData::getValue('portal_registration_enabled', 1) ? 1 : 0,
             'portal_change_password_enabled' => MainSiteData::getValue('portal_change_password_enabled', 1) ? 1 : 0,
             'portal_theme_preset' => MainSiteData::getValue('portal_theme_preset', 'indigo'),
+            'theme_preset' => MainSiteData::getValue('theme_preset', 'fintech'),
+            'theme_name' => MainSiteData::getValue('theme_name', 'ocean_blue'),
+            'theme_primary_color' => MainSiteData::getValue('theme_primary_color', '#0284c7'),
+            'theme_accent_color' => MainSiteData::getValue('theme_accent_color', '#38bdf8'),
+            'theme_card_style' => MainSiteData::getValue('theme_card_style', 'glass'),
+            'theme_border_radius' => MainSiteData::getValue('theme_border_radius', '16px'),
+            'theme_font_size' => MainSiteData::getValue('theme_font_size', 'medium'),
+            'theme_font_family' => MainSiteData::getValue('theme_font_family', 'Outfit'),
+            'theme_nav_style' => MainSiteData::getValue('theme_nav_style', 'sidebar'),
+            'theme_widget_style' => MainSiteData::getValue('theme_widget_style', 'glass'),
+            'theme_mode' => MainSiteData::getValue('theme_mode', 'dark'),
+            'theme_transparency' => MainSiteData::getValue('theme_transparency', '0.5'),
+            'theme_blur' => MainSiteData::getValue('theme_blur', '16px'),
+            'theme_animations' => MainSiteData::getValue('theme_animations', '1.0'),
+            'theme_gradient_intensity' => MainSiteData::getValue('theme_gradient_intensity', '0.7'),
 
             // Assets
             'site_logo' => MainSiteData::getValue('site_logo'),
@@ -256,12 +271,12 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                                 ])->columns(2),
                         ]),
 
-                    Tab::make('Portal Theme')
+                    Tab::make('Theme & Colors')
                         ->icon('heroicon-m-paint-brush')
                         ->components([
                             Section::make('Customer Portal Theme Settings')
                                 ->icon('heroicon-m-paint-brush')
-                                ->description('Choose a default theme and color scheme for the client portal dashboard.')
+                                ->description('Choose a default theme preset and color scheme for the client portal dashboard.')
                                 ->components([
                                     Select::make('portal_theme_preset')
                                         ->label('Default Portal Theme Preset')
@@ -276,6 +291,171 @@ class MainSiteSetup extends Component implements HasActions, HasForms
                                         ->default('indigo')
                                         ->prefixIcon('heroicon-m-paint-brush'),
                                 ])->columns(1),
+
+                            Section::make('Global Default Theme Customization')
+                                ->icon('heroicon-m-paint-brush')
+                                ->description('Configure the default styles for the client portal and the main landing page. These will serve as fallback settings if users do not customize their views.')
+                                ->components([
+                                    Select::make('theme_preset')
+                                        ->label('UI Style Preset')
+                                        ->options([
+                                            'fintech' => 'Modern Fintech',
+                                            'islamic' => 'Minimal Islamic',
+                                            'cyber' => 'Cyber Dark',
+                                            'elegant' => 'Elegant Soft',
+                                            'glass' => 'Glassmorphism',
+                                            'neo' => 'Neo Modern',
+                                            'spiritual' => 'Calm Spiritual',
+                                        ])
+                                        ->required()
+                                        ->default('fintech')
+                                        ->reactive()
+                                        ->prefixIcon('heroicon-m-sparkles')
+                                        ->afterStateUpdated(fn ($state, $set) => self::applyPresetToForm($state, $set)),
+
+                                    Select::make('theme_name')
+                                        ->label('Theme Selection')
+                                        ->options([
+                                            'amoled' => 'AMOLED Dark',
+                                            'minimal_light' => 'Minimal Light',
+                                            'islamic_emerald' => 'Islamic Emerald',
+                                            'ocean_blue' => 'Ocean Blue',
+                                            'midnight_purple' => 'Midnight Purple',
+                                            'soft_gold' => 'Soft Gold',
+                                            'modern_cyan' => 'Modern Cyan',
+                                            'dynamic_gradient' => 'Dynamic Gradient Theme',
+                                        ])
+                                        ->required()
+                                        ->default('ocean_blue')
+                                        ->prefixIcon('heroicon-m-swatch'),
+
+                                    ColorPicker::make('theme_primary_color')
+                                        ->label('Primary Color')
+                                        ->required()
+                                        ->default('#0284c7'),
+
+                                    ColorPicker::make('theme_accent_color')
+                                        ->label('Accent Color')
+                                        ->required()
+                                        ->default('#38bdf8'),
+
+                                    Select::make('theme_card_style')
+                                        ->label('Card Style')
+                                        ->options([
+                                            'flat' => 'Flat / Solid',
+                                            'glass' => 'Glassmorphism',
+                                            'minimal' => 'Minimal Outline',
+                                            'cyber' => 'Cyber Glow',
+                                            'soft' => 'Soft Shadow',
+                                            'neo' => 'Neo Pop (3D)',
+                                            'spiritual' => 'Spiritual Rounded',
+                                        ])
+                                        ->required()
+                                        ->default('glass')
+                                        ->prefixIcon('heroicon-m-square-2-stack'),
+
+                                    Select::make('theme_border_radius')
+                                        ->label('Border Radius')
+                                        ->options([
+                                            '0px' => 'Sharp (0px)',
+                                            '4px' => 'Subtle (4px)',
+                                            '8px' => 'Standard (8px)',
+                                            '12px' => 'Medium (12px)',
+                                            '16px' => 'Large (16px)',
+                                            '24px' => 'Extra Large (24px)',
+                                            '32px' => 'Calm Rounded (32px)',
+                                        ])
+                                        ->required()
+                                        ->default('16px')
+                                        ->prefixIcon('heroicon-m-view-columns'),
+
+                                    Select::make('theme_font_size')
+                                        ->label('Default Font Size')
+                                        ->options([
+                                            'small' => 'Small',
+                                            'medium' => 'Medium',
+                                            'large' => 'Large',
+                                        ])
+                                        ->required()
+                                        ->default('medium')
+                                        ->prefixIcon('heroicon-m-document-text'),
+
+                                    Select::make('theme_font_family')
+                                        ->label('Font Family')
+                                        ->options([
+                                            'Inter' => 'Inter (Modern Sans)',
+                                            'Outfit' => 'Outfit (Clean Geometric)',
+                                            'Plus Jakarta Sans' => 'Plus Jakarta Sans (Sleek)',
+                                            'Playfair Display' => 'Playfair Display (Serif)',
+                                            'Figtree' => 'Figtree (Friendly)',
+                                            'Courier New' => 'Monospace (Cyber)',
+                                            'Nunito' => 'Nunito (Rounded)',
+                                        ])
+                                        ->required()
+                                        ->default('Outfit')
+                                        ->prefixIcon('heroicon-m-language'),
+
+                                    Select::make('theme_nav_style')
+                                        ->label('Navigation Style')
+                                        ->options([
+                                            'sidebar' => 'Vertical Sidebar',
+                                            'top' => 'Top Bar',
+                                            'bottom' => 'Bottom Navigation',
+                                            'double-top' => 'Double Top Navigation',
+                                        ])
+                                        ->required()
+                                        ->default('sidebar')
+                                        ->prefixIcon('heroicon-m-bars-3-bottom-left'),
+
+                                    Select::make('theme_widget_style')
+                                        ->label('Widget Appearance')
+                                        ->options([
+                                            'compact' => 'Compact',
+                                            'minimal' => 'Minimal',
+                                            'glass' => 'Modern Glassmorphism',
+                                            'amoled' => 'AMOLED Solid',
+                                            'transparent' => 'Transparent Outline',
+                                        ])
+                                        ->required()
+                                        ->default('glass')
+                                        ->prefixIcon('heroicon-m-puzzle-piece'),
+
+                                    Select::make('theme_mode')
+                                        ->label('Default Mode')
+                                        ->options([
+                                            'dark' => 'Dark Mode',
+                                            'light' => 'Light Mode',
+                                            'auto' => 'Auto System Theme',
+                                            'scheduled' => 'Scheduled Theme Switching',
+                                            'battery' => 'Battery Saver Theme',
+                                        ])
+                                        ->required()
+                                        ->default('dark')
+                                        ->prefixIcon('heroicon-m-sun'),
+
+                                    TextInput::make('theme_transparency')
+                                        ->label('Transparency Level')
+                                        ->numeric()
+                                        ->default(0.5)
+                                        ->helperText('Range: 0.0 (opaque) to 1.0 (fully transparent)'),
+
+                                    TextInput::make('theme_blur')
+                                        ->label('Blur Effect (px)')
+                                        ->default('16px')
+                                        ->placeholder('e.g., 16px'),
+
+                                    TextInput::make('theme_animations')
+                                        ->label('Animation Intensity')
+                                        ->numeric()
+                                        ->default(1.0)
+                                        ->helperText('Range: 0.0 (none) to 2.0 (vibrant)'),
+
+                                    TextInput::make('theme_gradient_intensity')
+                                        ->label('Gradient Intensity')
+                                        ->numeric()
+                                        ->default(0.7)
+                                        ->helperText('Range: 0.0 to 1.0'),
+                                ])->columns(3),
                         ]),
 
                     Tab::make('Contact & Social')
@@ -682,6 +862,9 @@ class MainSiteSetup extends Component implements HasActions, HasForms
             'payment_bkash_enabled', 'payment_bkash_base_url', 'payment_bkash_username', 'payment_bkash_password', 'payment_bkash_app_key', 'payment_bkash_app_secret',
             'payment_nagad_enabled', 'payment_nagad_base_url', 'payment_nagad_merchant_id', 'payment_nagad_public_key', 'payment_nagad_private_key',
             'payment_sslcommerz_enabled', 'payment_sslcommerz_store_id', 'payment_sslcommerz_store_password', 'payment_sslcommerz_sandbox',
+            'theme_preset', 'theme_name', 'theme_primary_color', 'theme_accent_color', 'theme_card_style',
+            'theme_border_radius', 'theme_font_size', 'theme_font_family', 'theme_nav_style',
+            'theme_widget_style', 'theme_mode', 'theme_transparency', 'theme_blur', 'theme_animations', 'theme_gradient_intensity',
         ];
 
         foreach ($keys as $key) {
@@ -984,6 +1167,130 @@ class MainSiteSetup extends Component implements HasActions, HasForms
         }
 
         return $binary; // Fallback
+    }
+
+    public static function applyPresetToForm(string $preset, callable $set): void
+    {
+        $presets = [
+            'fintech' => [
+                'theme_name' => 'ocean_blue',
+                'theme_primary_color' => '#00f2fe',
+                'theme_accent_color' => '#4facfe',
+                'theme_card_style' => 'flat',
+                'theme_border_radius' => '12px',
+                'theme_font_size' => 'medium',
+                'theme_font_family' => 'Outfit',
+                'theme_nav_style' => 'sidebar',
+                'theme_widget_style' => 'compact',
+                'theme_mode' => 'dark',
+                'theme_transparency' => 0.05,
+                'theme_blur' => '4px',
+                'theme_animations' => 1.0,
+                'theme_gradient_intensity' => 0.9,
+            ],
+            'islamic' => [
+                'theme_name' => 'islamic_emerald',
+                'theme_primary_color' => '#065f46',
+                'theme_accent_color' => '#10b981',
+                'theme_card_style' => 'minimal',
+                'theme_border_radius' => '24px',
+                'theme_font_size' => 'medium',
+                'theme_font_family' => 'Inter',
+                'theme_nav_style' => 'sidebar',
+                'theme_widget_style' => 'minimal',
+                'theme_mode' => 'dark',
+                'theme_transparency' => 0.1,
+                'theme_blur' => '8px',
+                'theme_animations' => 0.8,
+                'theme_gradient_intensity' => 0.4,
+            ],
+            'cyber' => [
+                'theme_name' => 'amoled',
+                'theme_primary_color' => '#00ffcc',
+                'theme_accent_color' => '#ff007f',
+                'theme_card_style' => 'cyber',
+                'theme_border_radius' => '0px',
+                'theme_font_size' => 'medium',
+                'theme_font_family' => 'Courier New',
+                'theme_nav_style' => 'sidebar',
+                'theme_widget_style' => 'amoled',
+                'theme_mode' => 'dark',
+                'theme_transparency' => 0.0,
+                'theme_blur' => '0px',
+                'theme_animations' => 1.5,
+                'theme_gradient_intensity' => 1.0,
+            ],
+            'elegant' => [
+                'theme_name' => 'minimal_light',
+                'theme_primary_color' => '#f43f5e',
+                'theme_accent_color' => '#fda4af',
+                'theme_card_style' => 'soft',
+                'theme_border_radius' => '16px',
+                'theme_font_size' => 'medium',
+                'theme_font_family' => 'Plus Jakarta Sans',
+                'theme_nav_style' => 'sidebar',
+                'theme_widget_style' => 'minimal',
+                'theme_mode' => 'light',
+                'theme_transparency' => 0.1,
+                'theme_blur' => '6px',
+                'theme_animations' => 0.6,
+                'theme_gradient_intensity' => 0.5,
+            ],
+            'glass' => [
+                'theme_name' => 'dynamic_gradient',
+                'theme_primary_color' => '#ffffff',
+                'theme_accent_color' => '#00f2fe',
+                'theme_card_style' => 'glass',
+                'theme_border_radius' => '24px',
+                'theme_font_size' => 'medium',
+                'theme_font_family' => 'Outfit',
+                'theme_nav_style' => 'sidebar',
+                'theme_widget_style' => 'glass',
+                'theme_mode' => 'dark',
+                'theme_transparency' => 0.6,
+                'theme_blur' => '24px',
+                'theme_animations' => 1.2,
+                'theme_gradient_intensity' => 0.9,
+            ],
+            'neo' => [
+                'theme_name' => 'midnight_purple',
+                'theme_primary_color' => '#4f46e5',
+                'theme_accent_color' => '#06b6d4',
+                'theme_card_style' => 'neo',
+                'theme_border_radius' => '12px',
+                'theme_font_size' => 'medium',
+                'theme_font_family' => 'Outfit',
+                'theme_nav_style' => 'sidebar',
+                'theme_widget_style' => 'glass',
+                'theme_mode' => 'dark',
+                'theme_transparency' => 0.2,
+                'theme_blur' => '10px',
+                'theme_animations' => 1.0,
+                'theme_gradient_intensity' => 0.85,
+            ],
+            'spiritual' => [
+                'theme_name' => 'soft_gold',
+                'theme_primary_color' => '#0f766e',
+                'theme_accent_color' => '#0d9488',
+                'theme_card_style' => 'spiritual',
+                'theme_border_radius' => '32px',
+                'theme_font_size' => 'large',
+                'theme_font_family' => 'Playfair Display',
+                'theme_nav_style' => 'sidebar',
+                'theme_widget_style' => 'transparent',
+                'theme_mode' => 'dark',
+                'theme_transparency' => 0.35,
+                'theme_blur' => '16px',
+                'theme_animations' => 0.5,
+                'theme_gradient_intensity' => 0.6,
+            ],
+        ];
+
+        if (isset($presets[$preset])) {
+            foreach ($presets[$preset] as $key => $value) {
+                $set($key, $value);
+            }
+        }
     }
 
     public function render()

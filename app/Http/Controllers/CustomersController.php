@@ -159,7 +159,7 @@ class CustomersController extends Controller
     public function edit(string $id)
     {
         return view('edit-customer', [
-            'customerId' => $id, // Blade ফাইলে customerId পাঠাচ্ছে
+            'customerId' => $id, // Send customerId to the Blade file
         ]);
     }
 
@@ -189,7 +189,7 @@ class CustomersController extends Controller
         try {
             \DB::beginTransaction();
 
-            // ১. যদি এই মাসের Payment Summary না থাকে, তাহলে তৈরি করো
+            // 1. If Payment Summary does not exist for this month, create it
             $summaryExists = PaymentSummary::where('customer_payment_unique_id', $unique_id)
                 ->where('summary_date', Carbon::now()->firstOfMonth()->format('Y-m-d'))
                 ->exists();
@@ -207,12 +207,12 @@ class CustomersController extends Controller
                 ]);
             }
 
-            // ২. গ্রাহকের স্ট্যাটাস active করো এবং disable_count রিসেট করো
+            // 2. Set customer status to active and reset disable_count
             $customer->status = 'active';
             $customer->disable_count = 0;
             $customer->save();
 
-            // ৩. auto_disable_date*auto_disable_month আজকের সমান বা ছোট হলে, যতবার দরকার ১ মাস করে বাড়াও
+            // 3. If auto_disable_date * auto_disable_month is equal to or less than today, increment by 1 month as needed
             if ($bill->auto_disable_date) {
                 $autoDisableDate = Carbon::parse($bill->auto_disable_date)->startOfDay();
                 $autoDisableMonth = $bill->auto_disable_month;
@@ -230,14 +230,14 @@ class CustomersController extends Controller
 
             if ($customer->pppUser) {
                 if (! empty($customer->pppUser->router_name)) {
-                    // ৪. মিক্রোটিকে enablePPPSecret কল করো (throws on failure)
+                    // 4. Call enablePPPSecret in Mikrotik (throws on failure)
                     app(MikrotikController::class)->enablePPPSecret(
                         $unique_id,
                         $customer->pppUser->router_name,
                         $customer->pppUser->username
                     );
 
-                    // ৫. Restore the profile on the router
+                    // 5. Restore the profile on the router
                     app(MikrotikController::class)->updatePPPSecret(
                         $customer->pppUser->router_name,
                         $customer->pppUser->username,
@@ -245,7 +245,7 @@ class CustomersController extends Controller
                         $customer->pppUser->profile
                     );
 
-                    // ৬. Kick any active session (non-critical)
+                    // 6. Kick any active session (non-critical)
                     try {
                         app(MikrotikController::class)->singleWrite(
                             $customer->pppUser->router_name,
@@ -256,7 +256,7 @@ class CustomersController extends Controller
                     }
                 }
 
-                // ৭. Sync ppp_secrets.status
+                // 7. Sync ppp_secrets.status
                 PPPSecrets::where('id', $customer->ppp_user_id)->update(['status' => 'active']);
             }
 

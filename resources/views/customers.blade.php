@@ -179,7 +179,7 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 }
             });
-                // Datatable destroy করে আবার ইনিশিয়ালাইজ করুন
+                // Destroy Datatable and re-initialize it
             if ($.fn.dataTable.isDataTable('.data-table')) {
                 $('.data-table').DataTable().destroy();
             }

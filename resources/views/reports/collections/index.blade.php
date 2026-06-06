@@ -51,11 +51,11 @@
     @push('scripts')
         <script>
             document.addEventListener('livewire:navigated', function () {
-              // Datatable destroy করে আবার ইনিশিয়ালাইজ করুন
+              // Destroy Datatable and re-initialize it
                 if ($.fn.dataTable.isDataTable('.data-table')) {
                     $('.data-table').DataTable().destroy();
                 }
-                var reportTable; // DataTable instance সংরক্ষণের জন্য
+                var reportTable; // For storing the DataTable instance
                 $('#report-submit').on('click', function (e) {
                     e.preventDefault();
                     // if the table already exists, destroy it

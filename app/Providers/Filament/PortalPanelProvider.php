@@ -45,13 +45,21 @@ class PortalPanelProvider extends PanelProvider
             ->profile(EditProfile::class)
             ->maxContentWidth(Width::Full)
             ->colors([
-                'primary' => Color::Green,
+                'primary' => Color::hex(siteUrlSettings('theme_primary_color') ?: '#0284c7'),
             ])
             ->sidebarCollapsibleOnDesktop()
             ->assets([
                 Css::make('portal-custom-styles', Vite::asset('resources/css/filament.css')),
                 Js::make('portal-custom-js', Vite::asset('resources/js/app.js'))->module(),
             ])
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::HEAD_END,
+                fn (): string => view('components.portal-dynamic-theme')->render(),
+            )
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::BODY_END,
+                fn (): string => view('components.theme-customizer')->render(),
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->middleware([

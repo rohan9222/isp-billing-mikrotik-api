@@ -12,7 +12,7 @@ class BkashController extends Controller
         return view('bkash_payment');
     }
 
-    // Token Generation ফাংশন
+    // Token Generation Function
     public function generateToken()
     {
         $response = Http::withBasicAuth(config('services.bkash.username'), config('services.bkash.password'))
@@ -30,10 +30,10 @@ class BkashController extends Controller
         return $responseBody;
     }
 
-    // পেমেন্ট রিকুয়েস্ট ফাংশন
+    // Payment Request Function
     public function createPayment(Request $request)
     {
-        $token = $this->generateToken(); // টোকেন জেনারেট
+        $token = $this->generateToken(); // Token generate
 
         $payment = Http::withToken($token['id_token'])
             ->post(config('services.bkash.base_url').'/tokenized/checkout/create', [
@@ -47,7 +47,7 @@ class BkashController extends Controller
         return $payment->json();
     }
 
-    // পেমেন্ট এক্সিকিউশন ফাংশন
+    // Payment Execution Function
     public function executePayment($paymentID)
     {
         $token = $this->generateToken();

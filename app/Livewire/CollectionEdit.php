@@ -94,7 +94,7 @@ class CollectionEdit extends Component
         }
         if ($this->paid_amount > 0) {
             $this->advance_paid = (int) $this->paid_amount - (int) $this->total_amount;
-            $extra_month = floor(((int) $this->paid_amount + (int) $this->info_data->billing->paid_amount) / (int) ($this->info_data->billing->monthly_rent == 0 || $this->info_data->billing->monthly_rent == null ? 1 : $this->info_data->billing->monthly_rent)); // দশমিক কেটে ফেলে পূর্ণ সংখ্যা নেওয়ায়া
+            $extra_month = floor(((int) $this->paid_amount + (int) $this->info_data->billing->paid_amount) / (int) ($this->info_data->billing->monthly_rent == 0 || $this->info_data->billing->monthly_rent == null ? 1 : $this->info_data->billing->monthly_rent)); // Discard decimals to get a whole number
 
             $this->expire_date = Carbon::parse($this->info_data->billing->auto_disable_date)
                 ->addMonths($extra_month)

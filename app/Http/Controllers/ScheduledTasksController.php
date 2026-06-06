@@ -175,7 +175,7 @@ class ScheduledTasksController extends Controller
                 }
             });
 
-        // সফল বার্তা গুলো এবং ত্রুটি বার্তা গুলোকে লগে সংরক্ষণ করুন
+        // Save success and error messages in the log
         if (! empty($successfulIDs)) {
             NotificationLogs::create([
                 'title' => 'Monthly Bill Alert',
@@ -196,7 +196,7 @@ class ScheduledTasksController extends Controller
 
     public function createAlert()
     {
-        $expiredDate = Carbon::now()->addDays(2)->toDateString(); // শুধুমাত্র তারিখ হিসাবে সেট করুন
+        $expiredDate = Carbon::now()->addDays(2)->toDateString(); // Set as date only
         $successfulIDs = [];
         $errorIDs = [];
         CustomersInfo::where('status', 'active')
@@ -287,19 +287,19 @@ class ScheduledTasksController extends Controller
                 $shouldDisable = false;
                 $disableFor = '';
 
-                // ✅ logic ১: Disable for previous due on the exact due date
+                // ✅ logic 1: Disable for previous due on the exact due date
                 if ($billing->previous_due > 0 && $due > $totalBill && $today->isSameDay($previousDueDisableDate)) {
                     $shouldDisable = true;
                     $disableFor = 'Auto Disable for Previous Due';
                 }
 
-                // ✅ logic ২: Due exceeds totalBill → disable when autoDisableDate is reached
+                // ✅ logic 2: Due exceeds totalBill → disable when autoDisableDate is reached
                 if ($due > $totalBill && $today->gte($autoDisableDate)) {
                     $shouldDisable = true;
                     $disableFor = 'Auto Disable for Due';
                 }
 
-                // ✅ logic ৩: Small due (≤ totalBill) → only disable after full grace period (disableLimitDate)
+                // ✅ logic 3: Small due (≤ totalBill) → only disable after full grace period (disableLimitDate)
                 elseif ($due > 0 && $due <= $totalBill && $today->gte($disableLimitDate)) {
                     $shouldDisable = true;
                     $disableFor = 'Auto Disable Date reached';

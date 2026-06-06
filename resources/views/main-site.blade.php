@@ -10,16 +10,9 @@
 
     <link rel="shortcut icon" href="{{ site_image(siteUrlSettings('site_favicon')) }}" type="image/x-icon">
 
-    <script>
-        (function () {
-            const theme = localStorage.getItem('site-theme') || 'dark';
-            if (theme === 'light') {
-                document.documentElement.classList.add('theme-light');
-            }
-        })();
-    </script>
-
     @vite(['resources/sass/main-site.scss', 'resources/js/main-site.js'])
+
+    <x-portal-dynamic-theme />
 </head>
 
 <body id="top" class="container-fluid m-0 p-0">
@@ -936,6 +929,7 @@
             });
         });
     </script>
+    <x-theme-customizer />
 </body>
 
 </html>

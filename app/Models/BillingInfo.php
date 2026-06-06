@@ -63,12 +63,12 @@ class BillingInfo extends Model
     {
         // static::created(function ($billingInfo) {
         //     \Log::info('BillingInfo created: ' . $billingInfo->customer_bill_unique_id);
-        //     // অন্যান্য কোড...
+        //     // other code...
         // });
 
         // static::updated(function ($billingInfo) {
         //     \Log::info('BillingInfo updated: ' . $billingInfo->customer_bill_unique_id);
-        //     // অন্যান্য কোড...
+        //     // other code...
         // });
 
         // static::created(function ($billingInfo) {

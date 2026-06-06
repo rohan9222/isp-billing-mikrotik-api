@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('log_tables', function (Blueprint $table) {
             $table->id();
-            $table->string('table_name'); // যেই টেবিলের জন্য লগ করা হচ্ছে তার নাম
-            $table->string('action'); // কার্যকলাপের ধরন (যেমন আপডেট, ডিলিট)
-            $table->unsignedBigInteger('record_id')->nullable(); // সংশ্লিষ্ট রেকর্ডের ID
-            $table->json('old_data')->nullable(); // পূর্বের ডেটা
-            $table->json('new_data')->nullable(); // নতুন ডেটা
-            $table->unsignedBigInteger('user_id')->nullable(); // যিনি পরিবর্তন করেছেন তার ID
+            $table->string('table_name'); // Name of the table being logged
+            $table->string('action'); // Action type (e.g., update, delete)
+            $table->unsignedBigInteger('record_id')->nullable(); // ID of the associated record
+            $table->json('old_data')->nullable(); // Old data
+            $table->json('new_data')->nullable(); // New data
+            $table->unsignedBigInteger('user_id')->nullable(); // ID of the user who made the change
             $table->timestamps();
         });
     }
