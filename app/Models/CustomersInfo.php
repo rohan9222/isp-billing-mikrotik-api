@@ -27,6 +27,7 @@ class CustomersInfo extends Model
         'connection_date',
         'package_id',
         'status',
+        'reseller_id',
         // 'auto_disabled',
         // 'expired_date',
         // 'auto_disabled_month',
@@ -93,5 +94,10 @@ class CustomersInfo extends Model
             ->orWhereHas('pppUser', function ($q) use ($search) {
                 $q->where('username', 'like', '%'.$search.'%');
             });
+    }
+
+    public function reseller()
+    {
+        return $this->belongsTo(Reseller::class, 'reseller_id');
     }
 }

@@ -102,6 +102,91 @@
         </div>
     </div>
 
+    {{-- Reseller Overview Stat Cards Row --}}
+    <div class="row g-3 mb-4">
+        <!-- Card 1: Total Resellers -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm overflow-hidden h-100" style="background: linear-gradient(135deg, #1e293b, #334155); color: #fff; border-radius: 12px;">
+                <div class="card-body position-relative z-1">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase fw-bold mb-1 text-white-50" style="font-size: 0.72rem; letter-spacing: 1px;">Total Resellers</h6>
+                            <h3 class="fw-bold mb-0">{{ $resellerData['total_resellers'] ?? 0 }}</h3>
+                        </div>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: rgba(255,255,255,0.15);">
+                            <i class="bi bi-people fs-4 text-info"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-2 border-top border-white border-opacity-10 small text-white-50">
+                        <span>Active: <strong>{{ $resellerData['active_resellers'] ?? 0 }}</strong></span>
+                        <span class="float-end">Suspended: <strong>{{ $resellerData['suspended_resellers'] ?? 0 }}</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Reseller Customers -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm overflow-hidden h-100" style="background: linear-gradient(135deg, #4f46e5, #6366f1); color: #fff; border-radius: 12px;">
+                <div class="card-body position-relative z-1">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase fw-bold mb-1 text-white-50" style="font-size: 0.72rem; letter-spacing: 1px;">Reseller Customers</h6>
+                            <h3 class="fw-bold mb-0">{{ $resellerData['total_customers'] ?? 0 }}</h3>
+                        </div>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: rgba(255,255,255,0.15);">
+                            <i class="bi bi-person-check fs-4 text-warning"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-2 border-top border-white border-opacity-10 small text-white-50">
+                        <span>Active: <strong>{{ $resellerData['active_customers'] ?? 0 }}</strong></span>
+                        <span class="float-end">Pending: <strong>{{ $resellerData['pending_customers'] ?? 0 }}</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Total Reseller Balance -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm overflow-hidden h-100" style="background: linear-gradient(135deg, #0d9488, #14b8a6); color: #fff; border-radius: 12px;">
+                <div class="card-body position-relative z-1">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase fw-bold mb-1 text-white-50" style="font-size: 0.72rem; letter-spacing: 1px;">Wallet Balances</h6>
+                            <h3 class="fw-bold mb-0">৳{{ number_format($resellerData['total_balance'] ?? 0, 2) }}</h3>
+                        </div>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: rgba(255,255,255,0.15);">
+                            <i class="bi bi-cash-stack fs-4 text-success"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-2 border-top border-white border-opacity-10 small text-white-50">
+                        Cumulative reseller wallet balance.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Total Reseller Commission -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm overflow-hidden h-100" style="background: linear-gradient(135deg, #db2777, #ec4899); color: #fff; border-radius: 12px;">
+                <div class="card-body position-relative z-1">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase fw-bold mb-1 text-white-50" style="font-size: 0.72rem; letter-spacing: 1px;">Total Commissions</h6>
+                            <h3 class="fw-bold mb-0">৳{{ number_format($resellerData['total_commission'] ?? 0, 2) }}</h3>
+                        </div>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: rgba(255,255,255,0.15);">
+                            <i class="bi bi-percent fs-4 text-light"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-2 border-top border-white border-opacity-10 small text-white-50">
+                        Total reseller commission awarded.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-4 mb-4">
         {{-- Unified Row for Routers and Graphs to allow dynamic "weight" adjustment --}}
         @foreach ($systemOverview as $routerName => $routerData)

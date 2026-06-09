@@ -46,12 +46,29 @@ class CollectionEdit extends Component
 
         return true;
     }
+    
+    /**
+     * Returns a CustomersInfo query builder scoped to the reseller's
+     * own customers when the logged-in user is a Reseller, otherwise
+     * returns an unscoped query for admins.
+     */
+    private function resellerScope()
+    {
+        $user = auth()->user();
+
+        if ($user->hasRole('Reseller') && $user->reseller) {
+            return CustomersInfo::where('reseller_id', $user->reseller->id);
+        }
+
+        return CustomersInfo::query();
+    }
 
     public function updatedCustomerList()
     {
         if ($this->customer_list) {
             // Fetch customers dynamically based on the search term
-            $this->customers = CustomersInfo::search($this->customer_list)
+            $this->customers = $this->resellerScope()
+                ->search($this->customer_list)
                 ->join('p_p_p_secrets', 'p_p_p_secrets.id', '=', 'customers_infos.ppp_user_id')
                 ->with('customerAddress')
                 ->select('customers_infos.id', 'customers_infos.customer_unique_id', 'customers_infos.customer_name', 'customers_infos.email', 'customers_infos.mobile', 'p_p_p_secrets.username as username')
@@ -158,7 +175,8 @@ class CollectionEdit extends Component
         $customer_id = decrypt($value);
         $this->customer_list = '';
         $this->customers = [];
-        $this->info_data = CustomersInfo::where('customer_unique_id', $customer_id)
+        $this->info_data = $this->resellerScope()
+            ->where('customer_unique_id', $customer_id)
             ->with([
                 'customerAddress',
                 'billing',
@@ -184,38 +202,73 @@ class CollectionEdit extends Component
         $collection = CollectionSummary::find($id);
         if ($collection) {
             $colleted = $collection->collection_amount;
-            $billUpdate = BillingInfo::where('customer_bill_unique_id', $collection->customer_collection_unique_id)
-                ->update([
-                    'paid_amount' => $this->info_data->billing->paid_amount - $colleted,
-                    'due_amount' => $this->info_data->billing->due_amount + $colleted,
-                ]);
-            if ($billUpdate) {
-                $collection->delete();
-                flash()->success('Collection deleted successfully.');
-                $data = [
-                    'recipient' => $this->info_data->mobile,
-                    'customer_name' => $this->info_data->customer_name,
-                    'collection_amount' => $colleted,
-                    'ip_or_user_name' => $this->info_data->pppUser->username,
-                    'due_amount' => $this->info_data->billing->due_amount + $colleted,
-                    'company_name' => siteUrlSettings('site_name'),
-                    'company_mobile' => siteUrlSettings('site_phone'),
-                ];
-
-                // Call the SMSController's method
-                $response = app(SMSController::class)->collectionDeleteSMS($data);
-                if ($response['status'] == 'success') {
-                    flash()->success($response['message']);
-                } elseif ($response['status'] == 'error') {
-                    flash()->error($response['message']);
-                } else {
-                    flash()->error('SMS sending failed.');
-                }
-                $this->info_data = [];
-            } else {
-                flash()->error('Collection not deleted.');
+            
+            $billing = BillingInfo::where('customer_bill_unique_id', $collection->customer_collection_unique_id)->first();
+            if (!$billing) {
+                flash()->error('Billing information not found.');
+                return;
             }
-            $this->info_data = [];
+
+            DB::beginTransaction();
+            try {
+                // Update billing record
+                $billing->update([
+                    'paid_amount' => $billing->paid_amount - $colleted,
+                    'due_amount' => $billing->due_amount + $colleted,
+                ]);
+
+                // Revert Voucher status if it was a voucher payment
+                if ($collection->payment_method === 'voucher' || $collection->payment_type === 'voucher') {
+                    $voucher = \App\Models\Voucher::where('code', $collection->transaction_id)->first();
+                    if ($voucher) {
+                        $voucher->update([
+                            'status' => 'unused',
+                            'used_by_customer_id' => null,
+                            'used_at' => null,
+                        ]);
+                    }
+                }
+
+                // Delete the collection record
+                $collection->delete();
+
+                DB::commit();
+                
+                $successMsg = 'Collection deleted successfully.';
+                if ($collection->payment_type === 'online' || $collection->payment_method === 'voucher') {
+                    $successMsg .= " Method: " . strtoupper($collection->payment_method) . ", TrxID/Code: " . $collection->transaction_id;
+                }
+                flash()->success($successMsg);
+
+                // Send SMS if customer info is loaded
+                if ($this->info_data && isset($this->info_data->customer_unique_id) && $this->info_data->customer_unique_id === $collection->customer_collection_unique_id) {
+                    $data = [
+                        'recipient' => $this->info_data->mobile,
+                        'customer_name' => $this->info_data->customer_name,
+                        'collection_amount' => $colleted,
+                        'ip_or_user_name' => $this->info_data->pppUser->username ?? '',
+                        'due_amount' => $billing->due_amount,
+                        'company_name' => siteUrlSettings('site_name'),
+                        'company_mobile' => siteUrlSettings('site_phone'),
+                    ];
+
+                    try {
+                        $response = app(SMSController::class)->collectionDeleteSMS($data);
+                        if ($response['status'] == 'success') {
+                            flash()->success($response['message']);
+                        } elseif ($response['status'] == 'error') {
+                            flash()->error($response['message']);
+                        }
+                    } catch (\Exception $smsEx) {
+                        \Log::error("Collection Delete SMS failed: " . $smsEx->getMessage());
+                    }
+                }
+                
+                $this->info_data = [];
+            } catch (\Exception $e) {
+                DB::rollBack();
+                flash()->error('Error deleting collection: ' . $e->getMessage());
+            }
         } else {
             flash()->error('Collection not found.');
         }

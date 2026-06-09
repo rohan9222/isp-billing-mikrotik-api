@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\CollectionSummary;
 use App\Models\CustomersInfo;
 use App\Models\HotspotSale;
+use App\Models\Reseller;
+use App\Models\ResellerCommission;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -14,6 +16,10 @@ class DashboardController extends Controller
      */
     public function index()
     {
+        if (auth()->check() && auth()->user()->hasRole('Reseller')) {
+            return redirect()->route('reseller.dashboard');
+        }
+
         $results = [];
 
         $currentYear = Carbon::now()->year;
@@ -44,6 +50,18 @@ class DashboardController extends Controller
             'due_amount' => -1 * $customersAllData->reject(function ($customer) {
                 return $customer->status === 'inactive';
             })->pluck('billing')->flatten()->sum('due_amount'),
+        ];
+
+        // Reseller data for admin
+        $resellerData = [
+            'total_resellers' => Reseller::count(),
+            'active_resellers' => Reseller::where('status', 'active')->count(),
+            'suspended_resellers' => Reseller::where('status', 'suspended')->count(),
+            'total_balance' => Reseller::sum('balance'),
+            'total_customers' => CustomersInfo::whereNotNull('reseller_id')->count(),
+            'active_customers' => CustomersInfo::whereNotNull('reseller_id')->where('status', 'active')->count(),
+            'pending_customers' => CustomersInfo::whereNotNull('reseller_id')->where('status', 'pending')->count(),
+            'total_commission' => ResellerCommission::sum('amount'),
         ];
 
         // Loop through each month
@@ -82,6 +100,6 @@ class DashboardController extends Controller
         }
 
         // Calculate total cashflow, income, and revenue difference for the year
-        return view('dashboard', compact('results', 'customersData', 'billInformationData', 'systemOverview'));
+        return view('dashboard', compact('results', 'customersData', 'billInformationData', 'systemOverview', 'resellerData'));
     }
 }

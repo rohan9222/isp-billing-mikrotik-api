@@ -48,12 +48,29 @@ class PaymentCollection extends Component
 
         return true;
     }
+    
+    /**
+     * Returns a CustomersInfo query builder scoped to the reseller's
+     * own customers when the logged-in user is a Reseller, otherwise
+     * returns an unscoped query for admins.
+     */
+    private function resellerScope()
+    {
+        $user = auth()->user();
+
+        if ($user->hasRole('Reseller') && $user->reseller) {
+            return CustomersInfo::where('reseller_id', $user->reseller->id);
+        }
+
+        return CustomersInfo::query();
+    }
 
     public function updatedCustomerList()
     {
         if ($this->customer_list) {
             // Fetch customers dynamically based on the search term
-            $this->customers = CustomersInfo::search($this->customer_list)
+            $this->customers = $this->resellerScope()
+                ->search($this->customer_list)
                 ->join('p_p_p_secrets', 'p_p_p_secrets.id', '=', 'customers_infos.ppp_user_id')
                 ->with('customerAddress')
                 ->select('customers_infos.id', 'customers_infos.customer_unique_id', 'customers_infos.customer_name', 'customers_infos.email', 'customers_infos.mobile', 'p_p_p_secrets.username as username')
@@ -115,7 +132,7 @@ class PaymentCollection extends Component
                 if ($this->info_data->billing->monthly_rent == 0 || $this->info_data->billing->monthly_rent == null) {
                     $extra_month = 1;
                 } else {
-                    $extra_month = floor(((int) $this->advance_paid) / (int) $this->info_data->billing->monthly_rent);
+                    $extra_month = 1 + floor(((int) $this->advance_paid) / (int) $this->info_data->billing->monthly_rent);
                 }
 
                 $this->expire_date = Carbon::parse($this->info_data->billing->auto_disable_date)->month(now()->month)->year(now()->year)
@@ -138,7 +155,8 @@ class PaymentCollection extends Component
         $customer_id = decrypt($value);
         $this->customer_list = '';
         $this->customers = [];
-        $this->info_data = CustomersInfo::where('customer_unique_id', $customer_id)
+        $this->info_data = $this->resellerScope()
+            ->where('customer_unique_id', $customer_id)
             ->with([
                 'customerAddress',
                 'billing',
@@ -206,6 +224,10 @@ class PaymentCollection extends Component
                     'due_amount' => $this->due_amount,
                 ]);
             DB::commit();
+
+            // Fire reseller commission event
+            event(new \App\Events\PackagePurchased($this->info_data, (float) $this->paid_amount));
+
             flash()->success('Payment added successfully.');
             $data = [
                 'recipient' => $this->info_data->mobile,

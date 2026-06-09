@@ -124,9 +124,11 @@ class NewCustomer extends Component
 
     public function mount()
     {
-        if (! auth()->user()->can('create-customer')) {
+        if (! auth()->user()->can('create-customer') && ! auth()->user()->hasRole('Reseller')) {
             abort(403, 'Unauthorized action.');
         }
+
+        $this->connected_by = auth()->id();
 
         return true;
     }
@@ -186,9 +188,18 @@ class NewCustomer extends Component
     {
         // If package name is set, get the package price
         if ($this->package_name) {
-            $package = PackageList::where('package', $this->package_name)
-                ->where('router_name', ! empty($this->router_name) ? $this->router_name : null)
-                ->first();
+            if (auth()->user()->hasRole('Reseller')) {
+                $reseller = auth()->user()->reseller;
+                $package = PackageList::where('package', $this->package_name)
+                    ->where(function ($q) use ($reseller) {
+                        $q->whereIn('id', $reseller->assignedPackages->pluck('id'))
+                            ->orWhere('reseller_id', $reseller->id);
+                    })->first();
+            } else {
+                $package = PackageList::where('package', $this->package_name)
+                    ->where('router_name', ! empty($this->router_name) ? $this->router_name : null)
+                    ->first();
+            }
             $this->monthly_rent = $package?->price ?? '';
         }
 
@@ -287,6 +298,7 @@ class NewCustomer extends Component
     public function save()
     {
         try {
+            $this->calculateTotal('package_name');
             $this->validate();
 
             if ($this->service == 'pppoe') {
@@ -360,6 +372,7 @@ class NewCustomer extends Component
                 $image->save(public_path("$path"));
             }
 
+            $pppUser = null;
             if (auth()->user()->can('mikrotik-user-create')) {
                 // create ppp_user table record
                 $pppUserCheck = PPPSecrets::where('username', $this->username)->orwhere('username', $this->queue_name)->first();
@@ -401,11 +414,15 @@ class NewCustomer extends Component
                         $lastId = 99;
                     }
                 }
-                $newId = $prefix . ($lastId + 1);
+                $newId = $prefix.($lastId + 1);
             } else {
-                $newId = $prefix . '100';
+                $newId = $prefix.'100';
             }
             $customer = new CustomersInfo;
+            if (auth()->user()->hasRole('Reseller')) {
+                $customer->reseller_id = auth()->user()->reseller->id;
+                $customer->status = 'pending';
+            }
             $customer->customer_unique_id = $newId;
             $customer->customer_name = $this->customer_name;
             $customer->email = $this->email;
@@ -414,15 +431,25 @@ class NewCustomer extends Component
             $customer->mobile = '88'.$this->mobile;
             $customer->alternative_mobile = '88'.$this->alternative_mobile;
             $customer->profession = $this->profession;
-            $customer->ppp_user_id = $pppUser->id ?? null;
+            $customer->ppp_user_id = $pppUser?->id;
             $customer->connection_date = $this->connection_date;
 
             // Get package_id based on selected package name and router
             $assignedPackageId = null;
             if ($this->package_name) {
-                $pkg = PackageList::where('package', $this->package_name)
-                    ->where('router_name', ! empty($this->router_name) ? $this->router_name : null);
-                $assignedPackageId = $pkg->first()?->id;
+                if (auth()->user()->hasRole('Reseller')) {
+                    $reseller = auth()->user()->reseller;
+                    $pkg = PackageList::where('package', $this->package_name)
+                        ->where(function ($q) use ($reseller) {
+                            $q->whereIn('id', $reseller->assignedPackages->pluck('id'))
+                                ->orWhere('reseller_id', $reseller->id);
+                        })->first();
+                    $assignedPackageId = $pkg?->id;
+                } else {
+                    $pkg = PackageList::where('package', $this->package_name)
+                        ->where('router_name', ! empty($this->router_name) ? $this->router_name : null);
+                    $assignedPackageId = $pkg->first()?->id;
+                }
             }
             $customer->package_id = $assignedPackageId;
 
@@ -482,6 +509,10 @@ class NewCustomer extends Component
             $this->reset();
 
             // Redirect to customers list
+            if (auth()->user()->hasRole('Reseller')) {
+                return redirect()->route('reseller.customers.index');
+            }
+
             return redirect('/customers');
 
         } catch (\Exception $e) {
@@ -508,9 +539,21 @@ class NewCustomer extends Component
     {
         $this->addressFields = AddressField::orderBy('order', 'asc')->get();
         $this->routers = RouterList::select('router_name')->where('action', 'connected')->get();
-        $this->packages = PackageList::select('price', 'package')
-            ->when(! empty($this->router_name), fn ($q) => $q->where('router_name', $this->router_name))
-            ->get();
+
+        if (auth()->user()->hasRole('Reseller')) {
+            $reseller = auth()->user()->reseller;
+            $this->packages = PackageList::where(function ($q) use ($reseller) {
+                $q->whereIn('id', $reseller->assignedPackages->pluck('id'))
+                    ->orWhere('reseller_id', $reseller->id);
+            })
+                ->select('price', 'package')
+                ->get();
+        } else {
+            $this->packages = PackageList::select('price', 'package')
+                ->when(! empty($this->router_name), fn ($q) => $q->where('router_name', $this->router_name))
+                ->get();
+        }
+
         // $users = User::permission('create-user')->get();
         $this->users = User::all();
 

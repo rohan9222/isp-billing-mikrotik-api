@@ -10,9 +10,10 @@ use App\Models\CustomersInfo;
 use App\Models\OfficialInfo;
 use App\Models\PackageList;
 use App\Models\PPPSecrets;
+use App\Models\Reseller;
 use App\Models\RouterList;
-use App\Models\User;
 // MikrotikSSHService removed — all router I/O routed through MikrotikController (pooled + cached)
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -89,7 +90,7 @@ class EditCustomer extends Component
 
     public function mount($customerId)
     {
-        if (! hasAccess(['Super Admin'], ['edit-customer'])) {
+        if (! hasAccess(['Super Admin'], ['edit-customer']) && ! auth()->user()->hasRole('Reseller')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -101,10 +102,20 @@ class EditCustomer extends Component
         $this->loadCustomerData($customerId);
         $this->loadInterfaceNames();
 
-        // Load packages based on the customer's router
-        $routerName = $this->fields['pppUser']['router_name'] ?? null;
-        $this->packageLists = PackageList::where('router_name', ! empty($routerName) ? $routerName : null)
-            ->pluck('package');
+        // Load packages based on the customer's router or reseller mapping
+        $customer = CustomersInfo::where('customer_unique_id', decrypt($customerId))->first();
+        if ($customer && $customer->reseller_id) {
+            $reseller = Reseller::find($customer->reseller_id);
+            $this->packageLists = PackageList::where(function ($q) use ($reseller) {
+                $q->whereIn('id', $reseller->assignedPackages->pluck('id'))
+                    ->orWhere('reseller_id', $reseller->id);
+            })
+                ->pluck('package');
+        } else {
+            $routerName = $this->fields['pppUser']['router_name'] ?? null;
+            $this->packageLists = PackageList::where('router_name', ! empty($routerName) ? $routerName : null)
+                ->pluck('package');
+        }
     }
 
     public function loadInterfaceNames()
@@ -141,6 +152,12 @@ class EditCustomer extends Component
             ->first();
 
         if ($customer) {
+            if (auth()->user()->hasRole('Reseller')) {
+                $reseller = auth()->user()->reseller;
+                if (! $reseller || $customer->reseller_id !== $reseller->id) {
+                    abort(403, 'Unauthorized action.');
+                }
+            }
             $addressFields = $this->addressFields; // Retrieve all AddressField entries
 
             $customerAddresses = $addressFields->mapWithKeys(function ($field) use ($customer) {
@@ -248,6 +265,9 @@ class EditCustomer extends Component
 
     public function deletePPPUser()
     {
+        if (auth()->user()->hasRole('Reseller')) {
+            abort(403, 'Unauthorized action.');
+        }
         $customer = CustomersInfo::where('customer_unique_id', decrypt($this->customerId))->with('pppUser')->first();
 
         // Remove PPP secret from router using the correct [find name=...] selector
@@ -385,6 +405,9 @@ class EditCustomer extends Component
 
     public function savePPPUser()
     {
+        if (auth()->user()->hasRole('Reseller')) {
+            abort(403, 'Unauthorized action.');
+        }
         try {
             $this->validate();
 
@@ -593,6 +616,12 @@ class EditCustomer extends Component
 
     public function updateCustomer($field, $value)
     {
+        if (auth()->user()->hasRole('Reseller') && ($field === 'status' || str_ends_with($field, '.status')) && $value === 'free') {
+            flash()->error('Unauthorized to set status to free.');
+
+            return;
+        }
+
         // Define validation rules directly if there's an issue with accessing the rules method
         $rules = [
             'customer_name' => 'required|min:3|max:255',
@@ -684,6 +713,12 @@ class EditCustomer extends Component
         }
 
         if ($customer) {
+            if (auth()->user()->hasRole('Reseller')) {
+                $reseller = auth()->user()->reseller;
+                if (! $reseller || $customer->reseller_id !== $reseller->id) {
+                    abort(403, 'Unauthorized action.');
+                }
+            }
             if (str_contains($field, '.')) {
                 [$relation, $attribute] = explode('.', $field, 2);
                 if ($relation == 'customerAddress') {
@@ -704,10 +739,20 @@ class EditCustomer extends Component
                     data_set($this->fields, $field, $value);
                 } elseif ($relation == 'pppUser' && ($attribute == 'connection_date' || $attribute == 'package_name')) {
                     if ($attribute == 'package_name') {
-                        $router = $customer->pppUser->router_name ?? null;
-                        $pkg = PackageList::where('package', $value)
-                            ->where('router_name', ! empty($router) ? $router : null)
-                            ->first();
+                        if ($customer->reseller_id) {
+                            $reseller = Reseller::find($customer->reseller_id);
+                            $pkg = PackageList::where('package', $value)
+                                ->where(function ($q) use ($reseller) {
+                                    $q->whereIn('id', $reseller->assignedPackages->pluck('id'))
+                                        ->orWhere('reseller_id', $reseller->id);
+                                })
+                                ->first();
+                        } else {
+                            $router = $customer->pppUser->router_name ?? null;
+                            $pkg = PackageList::where('package', $value)
+                                ->where('router_name', ! empty($router) ? $router : null)
+                                ->first();
+                        }
                         $customer->package_id = $pkg?->id;
                     } else {
                         $customer->connection_date = date('Y-m-d', strtotime($value));

@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Controllers\Admin\ProfitSummaryController;
+use App\Http\Controllers\Admin\ResellerController;
+use App\Livewire\Admin\ExpenseManager;
+use App\Livewire\Admin\ActivityLogViewer;
 use App\Http\Controllers\CollectionReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportController;
@@ -7,6 +11,8 @@ use App\Http\Controllers\MainSiteController;
 use App\Http\Controllers\Payment\BkashPaymentController;
 use App\Http\Controllers\Payment\NagadPaymentController;
 use App\Http\Controllers\Payment\SslCommerzPaymentController;
+use App\Http\Controllers\Portal\PortalVoucherController;
+use App\Http\Controllers\Reseller\ResellerDashboardController;
 use App\Livewire\AddressSetup;
 use App\Livewire\Admin\ManageRole;
 use App\Livewire\Admin\ManageTickets;
@@ -15,6 +21,7 @@ use App\Livewire\CollectionEdit;
 use App\Livewire\CommentSubmit;
 use App\Livewire\CustomerList;
 use App\Livewire\CustomerSummary;
+use App\Livewire\EditCustomer;
 use App\Livewire\MainSiteSetup;
 use App\Livewire\Mikrotik\BackupManager;
 use App\Livewire\Mikrotik\FirewallSetup;
@@ -35,6 +42,10 @@ use App\Livewire\PackageListSetup;
 use App\Livewire\Payment\Invoice;
 use App\Livewire\PaymentCollection;
 use App\Livewire\Report\DisReport;
+use App\Livewire\Reseller\ResellerCustomerList;
+use App\Livewire\Reseller\ResellerPackageManagement;
+use App\Livewire\Reseller\ResellerVoucherManagement;
+use App\Livewire\Reseller\ResellerWalletManagement;
 use App\Livewire\SMSSetup;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Illuminate\Support\Facades\Route;
@@ -165,27 +176,54 @@ Route::middleware([
         // Route::get('/user/password/update', [UserProfileController::class, 'updatePassword'])->name('user.password.update');
 
         Route::get('/submit-comment', CommentSubmit::class)->name('submit.comment');
-    });
 
-    // Route::get('/schedulesTask', [ScheduledTasksController::class, 'userDisable']);
-    // Route::get('/backup-database', [ScheduledTasksController::class, 'backupDatabase']);
+        // Admin Reseller Management
+        Route::prefix('admin')->name('admin.')->group(function () {
+            Route::resource('resellers', ResellerController::class)->except(['show']);
+            Route::post('resellers/{reseller}/adjust-balance', [ResellerController::class, 'adjustBalance'])->name('resellers.adjust-balance');
 
-    // Route::get('/bkash', [BkashController::class, 'index']);
-    // Route::post('/bkash/payment', [BkashController::class, 'createPayment']);
-    // Route::post('/bkash/execute/{paymentID}', [BkashController::class, 'executePayment']);
+            // Expense tracking
+            Route::get('expenses', ExpenseManager::class)->name('expenses');
 
-    Route::domain('portal.'.$baseDomain)->group(function () {
-        // Authenticated portal payment initiation routes
-        Route::middleware(['auth:ppp'])->group(function () {
-            Route::get('/payment/bkash/initiate', [BkashPaymentController::class, 'initiate'])->name('payment.bkash.initiate');
-            Route::get('/payment/nagad/initiate', [NagadPaymentController::class, 'initiate'])->name('payment.nagad.initiate');
-            Route::get('/payment/sslcommerz/initiate', [SslCommerzPaymentController::class, 'initiate'])->name('payment.sslcommerz.initiate');
+            // Profit & Loss summary
+            Route::get('profit-summary', [ProfitSummaryController::class, 'index'])->name('profit-summary');
+
+            // Activity Log Viewer
+            Route::get('activity-logs', ActivityLogViewer::class)->name('activity-logs');
         });
 
-        // Public payment callback routes (Gateways redirect here, CSRF is disabled for POSTs)
-        Route::any('/payment/bkash/callback', [BkashPaymentController::class, 'callback'])->name('payment.bkash.callback');
-        Route::any('/payment/nagad/callback', [NagadPaymentController::class, 'callback'])->name('payment.nagad.callback');
-        Route::any('/payment/sslcommerz/callback', [SslCommerzPaymentController::class, 'callback'])->name('payment.sslcommerz.callback');
-        Route::post('/payment/mock/submit', [BkashPaymentController::class, 'mockSubmit'])->name('payment.mock.submit');
+        // Reseller Portal Routes
+        Route::prefix('reseller')->middleware(['reseller'])->name('reseller.')->group(function () {
+            Route::get('/dashboard', [ResellerDashboardController::class, 'index'])->name('dashboard');
+            Route::get('customers/data', [ResellerCustomerList::class, 'getData'])->name('customers.data');
+            Route::get('customers', ResellerCustomerList::class)->name('customers.index');
+            Route::get('customers/create', NewCustomer::class)->name('customers.create');
+            Route::get('customers/{customerId}/edit', EditCustomer::class)->name('customers.edit');
+
+            Route::get('packages', ResellerPackageManagement::class)->name('packages.index');
+
+            // Vouchers & Wallet — always accessible to all resellers
+            Route::get('vouchers', ResellerVoucherManagement::class)->name('vouchers.index');
+            Route::get('wallet', ResellerWalletManagement::class)->name('wallet.index');
+        });
     });
+});
+
+Route::domain('portal.'.$baseDomain)->group(function () {
+    // Authenticated portal payment initiation routes
+    Route::middleware(['auth:ppp'])->group(function () {
+        Route::get('/payment/bkash/initiate', [BkashPaymentController::class, 'initiate'])->name('payment.bkash.initiate');
+        Route::get('/payment/nagad/initiate', [NagadPaymentController::class, 'initiate'])->name('payment.nagad.initiate');
+        Route::get('/payment/sslcommerz/initiate', [SslCommerzPaymentController::class, 'initiate'])->name('payment.sslcommerz.initiate');
+    });
+
+    // Public payment callback routes (Gateways redirect here, CSRF is disabled for POSTs)
+    Route::any('/payment/bkash/callback', [BkashPaymentController::class, 'callback'])->name('payment.bkash.callback');
+    Route::any('/payment/nagad/callback', [NagadPaymentController::class, 'callback'])->name('payment.nagad.callback');
+    Route::any('/payment/sslcommerz/callback', [SslCommerzPaymentController::class, 'callback'])->name('payment.sslcommerz.callback');
+    Route::post('/payment/mock/submit', [BkashPaymentController::class, 'mockSubmit'])->name('payment.mock.submit');
+
+    // Public voucher redemption route
+    Route::get('/recharge/voucher', [PortalVoucherController::class, 'showRechargeForm'])->name('portal.voucher.recharge');
+    Route::post('/recharge/voucher', [PortalVoucherController::class, 'redeem'])->name('portal.voucher.redeem');
 });

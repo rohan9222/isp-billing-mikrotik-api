@@ -56,8 +56,7 @@
                                                 style="display: none;" class="input-group mt-2">
 
                                                 @if ($field === 'status')
-                                                    <select x-model="tempValue['{{ $field }}']"
-                                                            class="form-control form-control-sm h-50">
+                                                    <select x-model="tempValue['{{ $field }}']" class="form-control form-control-sm h-50">
                                                         <option value="">Select Status</option>
                                                         <option value="active">Active</option>
                                                         <option value="inactive">Inactive</option>
@@ -200,6 +199,7 @@
         </div>
         <div class="col-md-6">
             <!-- Server Information Section -->
+            @if(!auth()->user()->hasRole('Reseller'))
             <div class="col-md-12">
                 <x-mikrotik.section-form>
                     <x-slot name="title">{{ __('Server Information') }}</x-slot>
@@ -361,7 +361,7 @@
                                                         {!! !empty($fields['pppUser'][$field]) ? $fields['pppUser'][$field] : '<span class="text-danger">Empty</span>' !!}
                                                     </span>
                                                 @endif
-
+ 
                                                 <div x-show="isEditing === 'pppUser.{{ $field }}'"
                                                     @click.away="isEditing = null;
                                                     tempValue['pppUser.{{ $field }}'] = '{{ $fields['pppUser'][$field] ?? '' }}';
@@ -414,11 +414,11 @@
                                                         class="form-control form-control-sm h-50"
                                                         placeholder="Edit {{ ucfirst(str_replace('_', ' ', $field)) }}" autofocus />
                                                     @endif
-
+ 
                                                     <button @click="$wire.updateCustomer('pppUser.{{ $field }}', tempValue['pppUser.{{ $field }}']);
                                                             isEditing = null"
                                                             class="btn btn-white text-success h-50"><i class="bi bi-check2-circle"></i></button>
-
+ 
                                                     <button @click="isEditing = null;
                                                             tempValue['pppUser.{{ $field }}'] = @js(  $fields['pppUser'][$field] ?? '' );
                                                             $wire.cancelEditing('pppUser.{{ $field }}')"
@@ -433,6 +433,7 @@
                     </x-slot>
                 </x-mikrotik.section-form>
             </div>
+            @endif
             <!-- official Information Section -->
             <div class="col-md-12 pt-2">
                 <x-mikrotik.section-form>
@@ -479,7 +480,9 @@
                                                         @if($field === 'status')
                                                             <option value="active">Active</option>
                                                             <option value="disable">Temporary Disable</option>
-                                                            <option value="free">Free</option>
+                                                            @if(!auth()->user()->hasRole('Reseller'))
+                                                                <option value="free">Free</option>
+                                                            @endif
                                                         @elseif ($field === 'client_type')
                                                             <option value="home">Home</option>
                                                             <option value="commercial">Commercial</option>

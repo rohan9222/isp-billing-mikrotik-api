@@ -1,3 +1,127 @@
+@if(auth()->user()->hasRole('Reseller'))
+<ul class="navbar-nav flex-column mb-3" id="navbarVerticalNav">
+
+    {{-- ── Dashboard (always visible) ── --}}
+    <li class="nav-item">
+        <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
+            <div class="col-auto navbar-vertical-label">Reseller Panel</div>
+            <div class="col ps-0"><hr class="mb-0 navbar-vertical-divider" /></div>
+        </div>
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('reseller.dashboard') }}" role="button">
+            <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><i class="bi bi-speedometer2 me-2"></i></span>
+                <span class="nav-link-text ps-1">Dashboard</span>
+            </div>
+        </a>
+    </li>
+
+    {{-- ── Customers ── --}}
+    @canany(['view-customer', 'create-customer', 'edit-customer', 'delete-customer'])
+    <li class="nav-item">
+        <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
+            <div class="col-auto navbar-vertical-label">Customers</div>
+            <div class="col ps-0"><hr class="mb-0 navbar-vertical-divider" /></div>
+        </div>
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('reseller.customers.index') }}" role="button">
+            <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><i class="bi bi-people-fill"></i></span>
+                <span class="nav-link-text ps-1">Customer List</span>
+            </div>
+        </a>
+        @can('create-customer')
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('reseller.customers.create') }}" role="button">
+            <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><i class="bi bi-person-fill-add"></i></span>
+                <span class="nav-link-text ps-1">New Customer</span>
+            </div>
+        </a>
+        @endcan
+    </li>
+    @endcanany
+
+    {{-- ── Billing & Payments ── --}}
+    @canany(['payment-collection', 'payment-collection-edit', 'payment-collection-invoice', 'payment-history', 'payment-collection-report', 'collection-list', 'without-collection-list', 'amount-collection'])
+    <li class="nav-item">
+        <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
+            <div class="col-auto navbar-vertical-label">Billing</div>
+            <div class="col ps-0"><hr class="mb-0 navbar-vertical-divider" /></div>
+        </div>
+        @can('payment-collection')
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('payment-collection') }}" role="button">
+            <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><i class="bi bi-cash-coin"></i></span>
+                <span class="nav-link-text ps-1">Payment Collection</span>
+            </div>
+        </a>
+        @endcan
+        @can('payment-collection-edit')
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('collection-edit') }}" role="button">
+            <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><i class="bi bi-pencil-square"></i></span>
+                <span class="nav-link-text ps-1">Collection Edit</span>
+            </div>
+        </a>
+        @endcan
+        @can('payment-collection-invoice')
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('payment-invoice') }}" role="button">
+            <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><i class="bi bi-receipt"></i></span>
+                <span class="nav-link-text ps-1">Payment Invoice</span>
+            </div>
+        </a>
+        @endcan
+        @canany(['payment-collection-report', 'collection-list', 'without-collection-list', 'amount-collection'])
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('collection-report.index') }}" role="button">
+            <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><i class="bi bi-bar-chart-line"></i></span>
+                <span class="nav-link-text ps-1">Collection Report</span>
+            </div>
+        </a>
+        @endcanany
+    </li>
+    @endcanany
+
+    {{-- ── Wallet & Vouchers (always visible to all resellers) ── --}}
+    <li class="nav-item">
+        <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
+            <div class="col-auto navbar-vertical-label">My Account</div>
+            <div class="col ps-0"><hr class="mb-0 navbar-vertical-divider" /></div>
+        </div>
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('reseller.wallet.index') }}" role="button">
+            <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><i class="bi bi-wallet2"></i></span>
+                <span class="nav-link-text ps-1">Wallet & Earnings</span>
+            </div>
+        </a>
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('reseller.vouchers.index') }}" role="button">
+            <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><i class="bi bi-ticket-perforated-fill"></i></span>
+                <span class="nav-link-text ps-1">Vouchers</span>
+            </div>
+        </a>
+    </li>
+
+    {{-- ── Setup & Access ── --}}
+    @canany(['package-setup'])
+    <li class="nav-item">
+        <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
+            <div class="col-auto navbar-vertical-label">Setup</div>
+            <div class="col ps-0"><hr class="mb-0 navbar-vertical-divider" /></div>
+        </div>
+        @can('package-setup')
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('reseller.packages.index') }}" role="button">
+            <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><i class="bi bi-box2"></i></span>
+                <span class="nav-link-text ps-1">Packages</span>
+            </div>
+        </a>
+        @endcan
+    </li>
+    @endcanany
+
+</ul>
+
+@else
 <ul class="navbar-nav flex-column mb-3" id="navbarVerticalNav">
     <li class="nav-item">
         <!-- label-->
@@ -163,20 +287,41 @@
                 </div>
             </a>
             <ul class="nav collapse" id="reports" style="">
-                <li class="nav-item"><a wire:current="active" class="nav-link" href="{{route('collection-report.index') }}">
+                <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('collection-report.index') }}">
                     <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Collections Report</span></div>
                     </a></li>
                 <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('customer-summary') }}">
                         <div class="d-flex align-items-center"><span class="nav-link-text ps-1">Customer Summary</span></div>
                     </a>
                 </li>
-                <li class="nav-item"><a wire:current="active" class="nav-link" href="{{route('dis-report') }}">
+                <li class="nav-item"><a wire:navigate.hover wire:current="active" class="nav-link" href="{{route('dis-report') }}">
                         <div class="d-flex align-items-center"><span class="nav-link-text ps-1">DIS Summary</span><span class="badge rounded-pill ms-2 badge-subtle-success">New</span></div>
                     </a>
                 </li>
             </ul>
         </li>
     </li>
+
+    {{-- ── Finance ── --}}
+    <li class="nav-item">
+        <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
+            <div class="col-auto navbar-vertical-label">Finance</div>
+            <div class="col ps-0"><hr class="mb-0 navbar-vertical-divider" /></div>
+        </div>
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('admin.expenses') }}" role="button">
+            <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><i class="bi bi-wallet2"></i></span>
+                <span class="nav-link-text ps-1">Expense Management</span>
+            </div>
+        </a>
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('admin.profit-summary') }}" role="button">
+            <div class="d-flex align-items-center">
+                <span class="nav-link-icon"><i class="bi bi-graph-up-arrow text-success"></i></span>
+                <span class="nav-link-text ps-1">Profit & Loss</span>
+            </div>
+        </a>
+    </li>
+
     <li class="nav-item">
         <!-- label-->
         <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
@@ -212,6 +357,24 @@
                 <span class="nav-link-text ps-1">Package Setup</span>
             </div>
         </a>
+        <!-- reseller setup page-->
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('admin.resellers.index') }}" role="button">
+            <div class="d-flex align-items-center">
+                <span class="nav-link-icon">
+                    <i class="bi bi-person-badge-fill"></i>
+                </span>
+                <span class="nav-link-text ps-1">Reseller Setup</span>
+            </div>
+        </a>
+        <!-- Activity Logs page-->
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('admin.activity-logs') }}" role="button">
+            <div class="d-flex align-items-center">
+                <span class="nav-link-icon">
+                    <i class="bi bi-clock-history"></i>
+                </span>
+                <span class="nav-link-text ps-1">Activity Logs</span>
+            </div>
+        </a>
         <!-- parent pages-->
         <!-- SMS Management Dropdown -->
         <a class="nav-link dropdown-indicator collapsed" href="#smsSetupDropdown" role="button" data-bs-toggle="collapse" aria-expanded="false" aria-controls="smsSetupDropdown">
@@ -236,3 +399,4 @@
         </ul>
     </li>
 </ul>
+@endif

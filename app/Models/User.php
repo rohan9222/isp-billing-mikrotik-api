@@ -105,4 +105,13 @@ class User extends Authenticatable implements HasAvatar
     {
         return $this->profile_photo_url;
     }
+
+    /**
+     * Get the reseller profile associated with this user.
+     */
+    public function reseller()
+    {
+        return $this->hasOne(Reseller::class);
+    }
 }
+

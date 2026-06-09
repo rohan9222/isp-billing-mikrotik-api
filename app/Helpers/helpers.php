@@ -12,7 +12,14 @@ use App\Models\MainSiteData;
 if (! function_exists('siteUrlSettings')) {
     function siteUrlSettings($key)
     {
-        return MainSiteData::getValue($key);
+        try {
+            if (! \Illuminate\Support\Facades\Schema::hasTable('main_site_data')) {
+                return null;
+            }
+            return MainSiteData::getValue($key);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }
 

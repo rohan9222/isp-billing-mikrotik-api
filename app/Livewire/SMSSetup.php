@@ -8,13 +8,13 @@ use Livewire\Component;
 
 class SMSSetup extends Component
 {
-    public $smsTemps;
-
     public $smsTempList = [];
 
     public $profile;
 
     public $balance;
+
+    public $search = '';
 
     // Load SMS templates initially
     public function mount()
@@ -25,7 +25,6 @@ class SMSSetup extends Component
 
         $this->profile = SmsBridge::profile();
         $this->balance = SmsBridge::balance();
-        $this->smsTemps = SmsTemplate::all();
         // Map SMS template content for Livewire binding
         $this->smsTempList = SmsTemplate::pluck('template', 'id')->toArray();
     }
@@ -39,8 +38,6 @@ class SMSSetup extends Component
             $smsTemplate->is_active = ! $smsTemplate->is_active;
             $smsTemplate->save();
             flash()->success('SMS template status updated successfully.');
-            // Refresh the templates list
-            $this->smsTemps = SmsTemplate::all();
         }
     }
 
@@ -54,9 +51,6 @@ class SMSSetup extends Component
             $smsTemplate->template = $this->smsTempList[$id] ?? $smsTemplate->template;
             $smsTemplate->save();
             flash()->success('SMS template updated successfully.');
-
-            // Refresh the templates list
-            $this->smsTemps = SmsTemplate::all();
         } else {
             flash()->error('SMS template not found.');
         }
@@ -64,6 +58,11 @@ class SMSSetup extends Component
 
     public function render()
     {
-        return view('livewire.s-m-s-setup')->layout('layouts.app');
+        $smsTemps = SmsTemplate::when($this->search, function ($q) {
+            $q->where('template_name', 'like', '%' . $this->search . '%')
+              ->orWhere('template', 'like', '%' . $this->search . '%');
+        })->get();
+
+        return view('livewire.s-m-s-setup', compact('smsTemps'))->layout('layouts.app');
     }
 }

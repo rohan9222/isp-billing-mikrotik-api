@@ -9,6 +9,7 @@ use App\Models\NotificationLogs;
 use App\Models\PaymentSummary;
 use App\Models\PPPSecrets;
 use App\Models\RouterList;
+use App\Models\SmsTemplate;
 use App\Services\MikrotikSSHService;
 use Carbon\Carbon;
 use Codepagol\SmsBridge\Facades\SmsBridge;
@@ -58,6 +59,16 @@ class ScheduledTasksController extends Controller
     {
         BillingInfo::query()->cursor()->each(function ($billing) {
             $customer = CustomersInfo::where('customer_unique_id', $billing->customer_bill_unique_id)->first();
+
+            if (!$customer) {
+                NotificationLogs::create([
+                    'title' => 'Monthly Bill Generation Error',
+                    'message' => "Billing info exists for customer ID '{$billing->customer_bill_unique_id}' but the customer record was not found.",
+                    'status' => 'Orphaned Billing Record Found',
+                    'type' => 'System Alert',
+                ]);
+                return;
+            }
 
             $nextMonthStart = Carbon::now()->addMonthNoOverflow()->startOfMonth();
             // dd($nextMonthStart);
@@ -199,11 +210,17 @@ class ScheduledTasksController extends Controller
         $expiredDate = Carbon::now()->addDays(2)->toDateString(); // Set as date only
         $successfulIDs = [];
         $errorIDs = [];
+
+        $template = SmsTemplate::where('template_name', 'reminder')->first();
+        if ($template && !$template->is_active) {
+            return;
+        }
+
         CustomersInfo::where('status', 'active')
             ->where('ppp_user_id', '!=', null)
             ->whereHas('billing', fn ($q) => $q->autoDisable()->unpaid())
             ->with(['pppUser', 'billing'])
-            ->each(function ($customer) use (&$successfulIDs, &$errorIDs, &$expiredDate) {
+            ->each(function ($customer) use (&$successfulIDs, &$errorIDs, &$expiredDate, $template) {
                 $disableDate = Carbon::parse($customer->billing->auto_disable_date)->format('Y-m-d');
                 $disableDate2 = Carbon::parse($customer->billing->auto_disable_date)->addMonths($customer->billing->auto_disable_month)->format('Y-m-d');
                 if ($disableDate === $expiredDate || $disableDate2 === $expiredDate) {
@@ -211,7 +228,22 @@ class ScheduledTasksController extends Controller
                     $due_amount = $customer->billing->due_amount;
 
                     if ($customer_bill * ($customer->billing->auto_disable_month) < $due_amount) {
-                        $message = 'Dear '.$customer->customer_name.', Your ID '.$customer->customer_unique_id.'('.($customer->pppUser->username ?? '').') is EXPIRED on: '.Carbon::parse($expiredDate)->format('d-M-Y').', Your Due amount: '.$customer->billing->due_amount.'TK, Please Pay it before '.Carbon::parse($expiredDate)->format('d-M-Y').' to avoid Disconnection. Regards, '.siteUrlSettings('site_name').', Mobile: '.siteUrlSettings('site_phone');
+                        if ($template) {
+                            $message = str_replace(
+                                ['{CUSTOMER_NAME}', '{AUTO_TEMPORARY_DAY}', '{ID}', '{DUE_AMOUNT}', '{COMPANY_NAME}', '{COMPANY_MOBILE}'],
+                                [
+                                    $customer->customer_name,
+                                    Carbon::parse($expiredDate)->format('d-M-Y'),
+                                    $customer->customer_unique_id . '(' . ($customer->pppUser->username ?? '') . ')',
+                                    $customer->billing->due_amount,
+                                    siteUrlSettings('site_name'),
+                                    siteUrlSettings('site_phone')
+                                ],
+                                $template->template
+                            );
+                        } else {
+                            $message = 'Dear '.$customer->customer_name.', Your ID '.$customer->customer_unique_id.'('.($customer->pppUser->username ?? '').') is EXPIRED on: '.Carbon::parse($expiredDate)->format('d-M-Y').', Your Due amount: '.$customer->billing->due_amount.'TK, Please Pay it before '.Carbon::parse($expiredDate)->format('d-M-Y').' to avoid Disconnection. Regards, '.siteUrlSettings('site_name').', Mobile: '.siteUrlSettings('site_phone');
+                        }
 
                         // Send SMS
                         $response = SmsBridge::to($customer->mobile)
@@ -252,12 +284,14 @@ class ScheduledTasksController extends Controller
         $successfulIDs = [];
         $errorIDs = [];
 
+        $template = SmsTemplate::where('template_name', 'auto_temporary_disable_alert')->first();
+
         CustomersInfo::active()
             ->underDisableLimit(siteUrlSettings('disable_check_no') ?? 1)
             ->hasPPPUser()
             ->whereHas('billing', fn ($q) => $q->autoDisable()->unpaid())
             ->with(['pppUser', 'billing'])
-            ->each(function ($customer) use (&$successfulIDs, &$errorIDs, $today) {
+            ->each(function ($customer) use (&$successfulIDs, &$errorIDs, $today, $template) {
                 $billing = $customer->billing;
                 $pppUser = $customer->pppUser;
 
@@ -294,7 +328,7 @@ class ScheduledTasksController extends Controller
                 }
 
                 // ✅ logic 2: Due exceeds totalBill → disable when autoDisableDate is reached
-                if ($due > $totalBill && $today->gte($autoDisableDate)) {
+                elseif ($due > $totalBill && $today->gte($autoDisableDate)) {
                     $shouldDisable = true;
                     $disableFor = 'Auto Disable for Due';
                 }
@@ -329,17 +363,46 @@ class ScheduledTasksController extends Controller
                                 ]);
                             }
 
-                            $message = 'Dear '.$customer->customer_name.', Your ID '.$customer->customer_unique_id.'('.($customer->pppUser->username ?? '').') is temporarily disconnected, Your Due amount: '.$due.'TK. Regards, '.siteUrlSettings('site_name').', Mobile: '.siteUrlSettings('site_phone');
+                            if ($template) {
+                                if ($template->is_active) {
+                                    $message = str_replace(
+                                        ['{CUSTOMER_NAME}', '{CUSTOMER_ID}', '{DUE_AMOUNT}', '{COMPANY_NAME}', '{COMPANY_MOBILE}'],
+                                        [
+                                            $customer->customer_name,
+                                            $customer->customer_unique_id . '(' . ($pppUser->username ?? '') . ')',
+                                            $due,
+                                            siteUrlSettings('site_name'),
+                                            siteUrlSettings('site_phone')
+                                        ],
+                                        $template->template
+                                    );
 
-                            // Send SMS
-                            $responseSms = SmsBridge::to($customer->mobile)
-                                ->message($message)
-                                ->send();
+                                    // Send SMS
+                                    $responseSms = SmsBridge::to($customer->mobile)
+                                        ->message($message)
+                                        ->send();
 
-                            if ($responseSms['status'] == 'success') {
-                                $successfulSMS = '->{sms sent}';
-                            } elseif ($responseSms['status'] == 'error') {
-                                $errorSMS = '->{sms error}';
+                                    if ($responseSms['status'] == 'success') {
+                                        $successfulSMS = '->{sms sent}';
+                                    } elseif ($responseSms['status'] == 'error') {
+                                        $errorSMS = '->{sms error}';
+                                    }
+                                } else {
+                                    $successfulSMS = '->{sms disabled}';
+                                }
+                            } else {
+                                $message = 'Dear '.$customer->customer_name.', Your ID '.$customer->customer_unique_id.'('.($customer->pppUser->username ?? '').') is temporarily disconnected, Your Due amount: '.$due.'TK. Regards, '.siteUrlSettings('site_name').', Mobile: '.siteUrlSettings('site_phone');
+
+                                // Send SMS
+                                $responseSms = SmsBridge::to($customer->mobile)
+                                    ->message($message)
+                                    ->send();
+
+                                if ($responseSms['status'] == 'success') {
+                                    $successfulSMS = '->{sms sent}';
+                                } elseif ($responseSms['status'] == 'error') {
+                                    $errorSMS = '->{sms error}';
+                                }
                             }
 
                             if (isset($successfulID)) {
@@ -354,6 +417,14 @@ class ScheduledTasksController extends Controller
                             ]);
                             $errorIDs[] = $customer->customer_unique_id.' ('.$pppUser->username.') {'.$e->getMessage().'}';
                         }
+                    } else {
+                        NotificationLogs::create([
+                            'title' => 'Disconnection Warning',
+                            'message' => "Router '{$pppUser->router_name}' not found in router list for customer ID '{$customer->customer_unique_id}'.",
+                            'status' => 'Router Not Found',
+                            'type' => 'System Alert',
+                        ]);
+                        $errorIDs[] = $customer->customer_unique_id.' ('.$pppUser->username.') {Router not found}';
                     }
                 }
             });

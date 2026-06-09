@@ -7,6 +7,7 @@ use App\Models\BillingInfo;
 use App\Models\CustomersInfo;
 use App\Models\PaymentSummary;
 use App\Models\PPPSecrets;
+use App\Models\Reseller;
 use App\Models\RouterList;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -61,8 +62,9 @@ class CustomerList extends Component
         }
 
         $this->routers = RouterList::all();
+        $resellers = Reseller::with('user')->get();
 
-        return view('livewire.customer-list')->layout('layouts.app');
+        return view('livewire.customer-list', compact('resellers'))->layout('layouts.app');
     }
 
     public function getData(Request $request)
@@ -74,7 +76,7 @@ class CustomerList extends Component
         $statusFilter = ['pending', 'disable', 'free', 'inactive'];
 
         $data = CustomersInfo::query()
-            ->with(['billing', 'pppUser', 'customerAddress', 'official', 'package'])
+            ->with(['billing', 'pppUser', 'customerAddress', 'official', 'package', 'reseller'])
             ->select('customers_infos.*');
 
         // Router Filter
@@ -105,6 +107,14 @@ class CustomerList extends Component
                 })->whereNotIn('status', $statusFilter);
                 break;
 
+            case 'reseller':
+                if ($request->reseller_id) {
+                    $data->where('reseller_id', $request->reseller_id);
+                } else {
+                    $data->whereNotNull('reseller_id');
+                }
+                break;
+
             case 'pending':
             case 'disable':
             case 'free':
@@ -119,10 +129,16 @@ class CustomerList extends Component
         return DataTables::eloquent($data)
             ->addIndexColumn()
             ->addColumn('customer_identity', function ($row) {
+                $resellerBadge = $row->reseller_id && $row->reseller
+                    ? ' <span class="badge ms-1" style="background-color: rgba(111, 66, 193, 0.1); color: rgb(111, 66, 193); border: 1px solid rgba(111, 66, 193, 0.25); font-size: 0.75rem;"><i class="bi bi-person-badge me-1"></i>'.$row->reseller->name.'</span>'
+                    : '';
+
                 return '<div class="d-flex align-items-center">'.
                     '<div>'.
                     '<div class="fw-bold text-dark">'.$row->customer_name.
-                    (! empty($row->contact_person && $row->contact_person != '-') ? '<small class="text-muted"> ('.$row->contact_person.')</small>' : '').'</div>'.
+                    (! empty($row->contact_person && $row->contact_person != '-') ? '<small class="text-muted"> ('.$row->contact_person.')</small>' : '').
+                    $resellerBadge.
+                    '</div>'.
 
                     '<div class="small">
                         <span class="badge bg-secondary bg-opacity-10 text-secondary pe-2">'.$row->customer_unique_id.'</span> '.

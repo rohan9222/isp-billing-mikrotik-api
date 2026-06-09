@@ -54,6 +54,13 @@
                             <label class="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-none fw-600" for="inactive_customer">
                                 <i class="bi bi-person-x me-1"></i> Inactive <span class="badge bg-white text-secondary fw-bold"></span>
                             </label>
+
+                            @foreach($resellers as $reseller)
+                                <input type="radio" class="btn-check" name="collection" id="reseller_{{ $reseller->id }}" data-reseller-id="{{ $reseller->id }}" autocomplete="off">
+                                <label class="btn btn-outline-purple btn-sm rounded-pill px-3 shadow-none fw-600" for="reseller_{{ $reseller->id }}">
+                                    <i class="bi bi-person-badge-fill me-1"></i> {{ $reseller->company ?: ($reseller->user->name ?? 'Reseller') }} <span class="badge bg-white text-purple fw-bold"></span>
+                                </label>
+                            @endforeach
                         </div>
                         <div class="ms-auto border-start ps-2">
                             <button type="button" id="reset_table" class="btn btn-light btn-sm rounded-pill px-3 fw-bold border" title="Reset all filters and search">
@@ -284,6 +291,17 @@
         .text-indigo { color: #6610f2 !important; }
         .bg-indigo { background-color: #6610f2; color: #fff; }
         
+        .btn-outline-purple {
+            color: #6f42c1;
+            border-color: #6f42c1;
+        }
+        .btn-outline-purple:hover, .btn-check:checked + .btn-outline-purple {
+            background-color: #6f42c1;
+            color: #fff;
+        }
+        .text-purple { color: #6f42c1 !important; }
+        .bg-purple { background-color: #6f42c1; color: #fff; }
+        
         .billing-card {
             min-width: 120px;
             padding: 5px;
@@ -389,6 +407,9 @@
                 ajax: {
                     url: "{{ route('customers.data') }}", 
                     data: function(d) {
+                        var checkedRadio = $('input[name="collection"]:checked');
+                        var checkedId = checkedRadio.attr('id');
+
                         if ($('#all_list').is(':checked')) {
                             d.filter = 'all';
                         } else if ($('#all_active_list').is(':checked')) {
@@ -405,6 +426,9 @@
                             d.filter = 'free';
                         }else if ($('#inactive_customer').is(':checked')) {
                             d.filter = 'inactive';
+                        }else if (checkedId && checkedId.startsWith('reseller_')) {
+                            d.filter = 'reseller';
+                            d.reseller_id = checkedRadio.data('reseller-id');
                         }
                         d.router_name = $('#router_filter').val();
                     }

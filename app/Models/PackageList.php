@@ -14,6 +14,7 @@ class PackageList extends Model
         'plan_label', 'speed', 'features', 'is_featured', 'show_on_site', 'sort_order',
         'mikrotik_rate_limit', 'push_to_mikrotik', 'mikrotik_local_address', 'mikrotik_remote_address',
         'router_name',
+        'reseller_id',
     ];
 
     protected $casts = [
@@ -26,5 +27,10 @@ class PackageList extends Model
     public function router()
     {
         return $this->belongsTo(RouterList::class, 'router_name', 'router_name');
+    }
+
+    public function reseller()
+    {
+        return $this->belongsTo(Reseller::class, 'reseller_id');
     }
 }

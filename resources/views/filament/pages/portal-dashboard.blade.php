@@ -285,7 +285,7 @@
                                                         {{ $payment->payment_method ?? 'Cash' }}
                                                     </span>
                                                 </td>
-                                                <td class="cp-py-3.5 cp-text-right cp-font-black cp-text-emerald-500">৳ {{ number_format($payment->paid_amount, 2) }}</td>
+                                                <td class="cp-py-3.5 cp-text-right cp-font-black cp-text-emerald-500">৳ {{ number_format($payment->collection_amount, 2) }}</td>
                                             </tr>
                                         @endforeach
                                     </tbody>
@@ -362,15 +362,25 @@
                                 </div>
                             @endif
 
-                            @if($dueAmount > 0)
-                                <a href="{{ route('filament.portal.pages.pay-bill') }}" 
-                                   class="btn-shimmer cp-w-full cp-bg-indigo-600 hover:cp-bg-indigo-500 cp-text-white cp-font-bold cp-py-3.5 cp-rounded-2xl cp-shadow-lg cp-transition-all cp-duration-200 cp-flex cp-items-center cp-justify-center cp-gap-2">
+                            <div class="cp-flex cp-flex-col cp-gap-2.5 cp-mt-4">
+                                @if($dueAmount > 0)
+                                    <a href="{{ route('filament.portal.pages.pay-bill') }}" 
+                                       class="btn-shimmer cp-w-full cp-bg-indigo-600 hover:cp-bg-indigo-500 cp-text-white cp-font-bold cp-py-3.5 cp-rounded-2xl cp-shadow-lg cp-transition-all cp-duration-200 cp-flex cp-items-center cp-justify-center cp-gap-2">
+                                        <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                                        </svg>
+                                        Pay Outstanding Due
+                                    </a>
+                                @endif
+
+                                <a href="/recharge/voucher" 
+                                   class="cp-w-full cp-bg-emerald-600 hover:cp-bg-emerald-500 cp-text-white cp-font-bold cp-py-3.5 cp-rounded-2xl cp-shadow-lg cp-transition-all cp-duration-200 cp-flex cp-items-center cp-justify-center cp-gap-2">
                                     <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"></path>
                                     </svg>
-                                    Pay Outstanding Due
+                                    Recharge with Voucher
                                 </a>
-                            @endif
+                            </div>
                         </div>
                     </div>
 

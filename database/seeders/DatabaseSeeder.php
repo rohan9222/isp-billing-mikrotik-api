@@ -35,6 +35,7 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             RoleSeeder::class,
             SuperAdminSeeder::class,
+            ResellerModuleSeeder::class,
             // DefaultSettingsTableSeeder::class,
             // ProductSeeder::class,
         ]);

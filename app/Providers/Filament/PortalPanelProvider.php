@@ -15,6 +15,7 @@ use Filament\Support\Assets\Css;
 use Filament\Support\Assets\Js;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Width;
+use Filament\Navigation\NavigationItem;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -48,6 +49,12 @@ class PortalPanelProvider extends PanelProvider
                 'primary' => Color::hex(siteUrlSettings('theme_primary_color') ?: '#0284c7'),
             ])
             ->sidebarCollapsibleOnDesktop()
+            ->navigationItems([
+                NavigationItem::make('Recharge via Voucher')
+                    ->url('/recharge/voucher')
+                    ->icon('heroicon-o-ticket')
+                    ->sort(5),
+            ])
             ->assets([
                 Css::make('portal-custom-styles', Vite::asset('resources/css/filament.css')),
                 Js::make('portal-custom-js', Vite::asset('resources/js/app.js'))->module(),

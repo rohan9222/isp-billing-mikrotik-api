@@ -51,7 +51,7 @@ class PaymentService
                         ->format('Y-m-d');
                 }
             } elseif ($advancePaid > 0) {
-                $extra_month = floor($advancePaid / $rent);
+                $extra_month = 1 + floor($advancePaid / $rent);
                 $expireDate = Carbon::parse($billing->auto_disable_date)
                     ->month(now()->month)->year(now()->year)
                     ->addMonths($extra_month)
@@ -160,6 +160,9 @@ class PaymentService
             }
 
             DB::commit();
+
+            // Fire reseller commission event
+            event(new \App\Events\PackagePurchased($customer, $amount));
 
             // 8. Send SMS confirmation
             try {

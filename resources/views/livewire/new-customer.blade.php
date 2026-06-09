@@ -81,6 +81,7 @@
                     <x-section-border/>
                 </x-mikrotik.section-form>
             </div>
+            @if(!auth()->user()->hasRole('Reseller'))
             <div class="col-12">
                 {{-- Server Information --}}
                 @can('mikrotik-user-create')
@@ -214,6 +215,7 @@
                     </x-mikrotik.section-form>
                 @endcan
             </div>
+            @endif
             <div class="col-12">
                 {{-- Billing Information --}}
                 <x-mikrotik.section-form :class="'row'">
