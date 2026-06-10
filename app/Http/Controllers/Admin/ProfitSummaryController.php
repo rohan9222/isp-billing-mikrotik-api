@@ -55,17 +55,44 @@ class ProfitSummaryController extends Controller
             ->get();
 
         // ── Year-over-year chart data (last 12 months) ────────────
+        $startDate = Carbon::now()->subMonths(11)->startOfMonth();
+        $endDate   = Carbon::now()->endOfMonth();
+
+        // 1. Collections sum by Year-Month
+        $collectionsByMonth = CollectionSummary::whereBetween('collection_date', [$startDate, $endDate])
+            ->selectRaw("DATE_FORMAT(collection_date, '%Y-%m') as month_year, SUM(collection_amount) as total")
+            ->groupBy('month_year')
+            ->pluck('total', 'month_year')
+            ->toArray();
+
+        // 2. HotspotSales sum by Year-Month
+        $hotspotByMonth = HotspotSale::whereBetween('sale_date', [$startDate, $endDate])
+            ->selectRaw("DATE_FORMAT(sale_date, '%Y-%m') as month_year, SUM(amount) as total")
+            ->groupBy('month_year')
+            ->pluck('total', 'month_year')
+            ->toArray();
+
+        // 3. Expenses sum by Year-Month
+        $expensesByMonth = IspExpense::whereBetween('expense_date', [$startDate, $endDate])
+            ->selectRaw("DATE_FORMAT(expense_date, '%Y-%m') as month_year, SUM(amount) as total")
+            ->groupBy('month_year')
+            ->pluck('total', 'month_year')
+            ->toArray();
+
+        // 4. ResellerCommissions sum by Year-Month
+        $commissionsByMonth = ResellerCommission::whereBetween('created_at', [$startDate, $endDate])
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month_year, SUM(amount) as total")
+            ->groupBy('month_year')
+            ->pluck('total', 'month_year')
+            ->toArray();
+
         $chartData = [];
         for ($i = 11; $i >= 0; $i--) {
-            $date       = Carbon::now()->subMonths($i);
-            $mStart     = $date->copy()->startOfMonth();
-            $mEnd       = $date->copy()->endOfMonth();
+            $date = Carbon::now()->subMonths($i);
+            $key  = $date->format('Y-m');
 
-            $mRevenue  = CollectionSummary::whereBetween('collection_date', [$mStart, $mEnd])->sum('collection_amount')
-                + HotspotSale::whereBetween('sale_date', [$mStart, $mEnd])->sum('amount');
-
-            $mExpense  = IspExpense::whereBetween('expense_date', [$mStart, $mEnd])->sum('amount')
-                + ResellerCommission::whereBetween('created_at', [$mStart, $mEnd])->sum('amount');
+            $mRevenue = ($collectionsByMonth[$key] ?? 0) + ($hotspotByMonth[$key] ?? 0);
+            $mExpense = ($expensesByMonth[$key] ?? 0) + ($commissionsByMonth[$key] ?? 0);
 
             $chartData[] = [
                 'label'   => $date->format('M Y'),

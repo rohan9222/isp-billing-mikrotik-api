@@ -7,7 +7,6 @@ use App\Models\CustomersInfo;
 use App\Models\ResellerCommission;
 use App\Models\Voucher;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class ResellerDashboardController extends Controller
 {
@@ -40,17 +39,24 @@ class ResellerDashboardController extends Controller
         $packageSales = CustomersInfo::where('reseller_id', $reseller->id)
             ->whereNotNull('package_id')
             ->groupBy('package_id')
-            ->select('package_id', DB::raw('count(*) as count'))
+            ->selectRaw('package_id, count(*) as count')
             ->with('package')
             ->get();
 
         // Commission history chart data (last 7 days)
+        $startDate = Carbon::today()->subDays(6);
+        $commissions = ResellerCommission::where('reseller_id', $reseller->id)
+            ->where('created_at', '>=', $startDate)
+            ->selectRaw('DATE(created_at) as date, SUM(amount) as total')
+            ->groupBy('date')
+            ->pluck('total', 'date')
+            ->toArray();
+
         $chartData = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::today()->subDays($i);
-            $amount = ResellerCommission::where('reseller_id', $reseller->id)
-                ->whereDate('created_at', $date)
-                ->sum('amount');
+            $dateStr = $date->toDateString();
+            $amount = $commissions[$dateStr] ?? 0;
             
             $chartData[] = [
                 'day' => $date->format('D, M d'),

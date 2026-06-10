@@ -358,13 +358,15 @@ class MikrotikSync extends Component
     public function delete($id)
     {
         $router = RouterList::find($id);  // Check if router exists
-        if ($router) {
-            $router->delete();
-            flash()->success('Router deleted successfully!');
-            // $this->dispatch('showToast', 'Router deleted successfully!', 'success');
-        } else {
-            flash()->error('Router not found!');
-            // $this->dispatch('showToast', 'Router not found!', 'error');
+        try {
+            if ($router) {
+                $router->delete();
+                flash()->success('Router deleted successfully!');
+            } else {
+                flash()->error('Router not found!');
+            }
+        } catch (\Exception $e) {
+            flash()->error('Error deleting router: '.$e->getMessage());
         }
     }
 }
