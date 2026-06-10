@@ -28,6 +28,7 @@
 	<!-- <link rel="stylesheet" href="css/style.css"> -->
 	<link rel="stylesheet" href="https://fcnetwork24.com/style.css">
 	<!-- <link rel="stylesheet" href="css/responsive.css"> -->
+	@livewireStyles
 </head>
 
 <body id="top" class="container-fluid m-0 p-0">
@@ -407,7 +408,7 @@
 								</h2>
 							</div>
 							<div class="pricing-btn">
-								<a href="https://package.fcnetwork24.com/" class="price-btn">
+								<a href="javascript:void(0)" onclick="Livewire.dispatch('open-purchase-modal', { packageName: '8 Mbps', price: 500 })" class="price-btn">
 								<span>+</span>Get Online Register </a>
 							</div>
 						</div>
@@ -437,7 +438,7 @@
 							</h2>
 							</div>
 							<div class="pricing-btn">
-							<a href="https://package.fcnetwork24.com/" class="price-btn">
+							<a href="javascript:void(0)" onclick="Livewire.dispatch('open-purchase-modal', { packageName: '10 Mbps', price: 650 })" class="price-btn">
 								<span>+</span>Get Online Register </a>
 							</div>
 						</div>
@@ -476,7 +477,7 @@
 							</h2>
 							</div>
 							<div class="pricing-btn">
-							<a href="hhttps://package.fcnetwork24.com/" class="price-btn">
+							<a href="javascript:void(0)" onclick="Livewire.dispatch('open-purchase-modal', { packageName: '15 Mbps', price: 800 })" class="price-btn">
 								<span>+</span>Get Online Register </a>
 							</div>
 						</div>
@@ -506,7 +507,7 @@
 							</h2>
 							</div>
 							<div class="pricing-btn">
-							<a href="https://package.fcnetwork24.com/" class="price-btn">
+							<a href="javascript:void(0)" onclick="Livewire.dispatch('open-purchase-modal', { packageName: '20 Mbps', price: 1000 })" class="price-btn">
 								<span>+</span>Get Online Register </a>
 							</div>
 						</div>
@@ -827,6 +828,8 @@
 	<script src="https://fcnetwork24.com/js/lightbox.js"></script>
 	<script src="https://fcnetwork24.com/js/script.js"></script>
 
+    @livewireScripts
+    <livewire:package-purchase-form />
 </body>
 
 </html>

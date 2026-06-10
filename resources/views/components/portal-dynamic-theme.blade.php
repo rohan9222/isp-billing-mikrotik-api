@@ -89,16 +89,8 @@
         }
 
         function loadThemeFont(font) {
-            if (!font || font === 'Sans' || font === 'monospace' || font === 'Courier New') return;
-            const linkId = 'theme-google-font';
-            let link = document.getElementById(linkId);
-            if (!link) {
-                link = document.createElement('link');
-                link.id = linkId;
-                link.rel = 'stylesheet';
-                document.head.appendChild(link);
-            }
-            link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(font)}:wght@300;400;500;600;700;800;900&display=swap`;
+            // Google Fonts remote CDN loading disabled to comply with no-CDN requirements
+            return;
         }
 
         function hexToRgb(hex) {

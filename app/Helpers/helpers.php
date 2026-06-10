@@ -9,14 +9,26 @@ use App\Models\MainSiteData;
  * Date: 25-Jun-2024
  * Time: 03.01 PM
  */
+
 if (! function_exists('siteUrlSettings')) {
     function siteUrlSettings($key)
     {
+        static $hasTable = null;
+        static $runtimeCache = [];
+
         try {
-            if (! \Illuminate\Support\Facades\Schema::hasTable('main_site_data')) {
+            if ($hasTable === null) {
+                $hasTable = \Illuminate\Support\Facades\Schema::hasTable('main_site_data');
+            }
+            if (! $hasTable) {
                 return null;
             }
-            return MainSiteData::getValue($key);
+
+            if (array_key_exists($key, $runtimeCache)) {
+                return $runtimeCache[$key];
+            }
+
+            return $runtimeCache[$key] = MainSiteData::getValue($key);
         } catch (\Throwable $e) {
             return null;
         }

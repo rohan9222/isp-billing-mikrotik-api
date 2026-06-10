@@ -15,7 +15,12 @@
     <x-portal-dynamic-theme />
 </head>
 
-<body id="top" class="container-fluid m-0 p-0">
+<body id="top" class="container-fluid m-0 p-0 position-relative overflow-x-hidden">
+
+    {{-- Background mesh gradient blobs --}}
+    <div class="gradient-blob blob-1"></div>
+    <div class="gradient-blob blob-2"></div>
+    <div class="gradient-blob blob-3"></div>
 
     {{-- =========================================================
          NAVBAR
@@ -497,27 +502,23 @@
                                             <div class="col-xl-3 col-md-6 pb-1 d-flex">
                                                 <div class="pricing-box {{ $colorClass }} mb-30 {{ $package->is_featured ? 'pricing-box-featured' : '' }} w-100">
                                                     <div class="pricing-head">
-                                                        <h6>{{ strtoupper($package->plan_label ?? $package->package) }}</h6>
-                                                        <div class="pricing-icon services-icon">
-                                                            <i class="bi bi-wifi"></i>
+                                                        <h6>{{ strtoupper($package->plan_label ?? 'Standard') }}</h6>
+                                                        <div class="pricing-speed-badge">
+                                                            <i class="bi bi-speedometer2"></i>
+                                                            <span>{{ $package->speed }}</span>
                                                         </div>
                                                     </div>
                                                     <div class="pricing-lists mb-30">
-                                                        @if ($package->speed)
-                                                            <h5>{{ $package->speed }}</h5>
-                                                        @endif
+                                                        <h5>{{ $package->package }}</h5>
                                                         <ul class="mt-3">
                                                             @if ($package->features && count($package->features) > 0)
                                                                 @foreach ($package->features as $feature)
-                                                                    <li>{{ $feature['value'] ?? $feature }}</li>
+                                                                    <li><i class="bi bi-check-circle-fill"></i> {{ $feature['value'] ?? $feature }}</li>
                                                                 @endforeach
                                                             @else
-                                                                <li>24 HOURS UNLIMITED</li>
-                                                                <li>Fiber Optics</li>
-                                                                <li>24/7 Customer Care</li>
-                                                                @if ($package->description)
-                                                                    <li>{{ $package->description }}</li>
-                                                                @endif
+                                                                <li><i class="bi bi-check-circle-fill"></i> 24 HOURS UNLIMITED</li>
+                                                                <li><i class="bi bi-check-circle-fill"></i> Fiber Optics Support</li>
+                                                                <li><i class="bi bi-check-circle-fill"></i> 24/7 Priority Support</li>
                                                             @endif
                                                         </ul>
                                                     </div>
@@ -527,8 +528,8 @@
                                                         </h2>
                                                     </div>
                                                     <div class="pricing-btn">
-                                                        <a href="{{ $regLink }}" class="price-btn">
-                                                            <span>+</span>Get Online Register
+                                                        <a href="javascript:void(0)" onclick="Livewire.dispatch('open-purchase-modal', { packageName: '{{ addslashes($package->package) }}', price: {{ $package->price }} })" class="price-btn">
+                                                            <span>+</span>Buy Package
                                                         </a>
                                                     </div>
                                                 </div>
@@ -930,6 +931,7 @@
         });
     </script>
     <x-theme-customizer />
+    <livewire:package-purchase-form />
 </body>
 
 </html>

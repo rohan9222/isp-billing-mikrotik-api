@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ProfitSummaryController;
 use App\Http\Controllers\Admin\ResellerController;
 use App\Livewire\Admin\ExpenseManager;
 use App\Livewire\Admin\ActivityLogViewer;
+use App\Livewire\Admin\ManagePurchaseRequests;
 use App\Http\Controllers\CollectionReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportController;
@@ -190,6 +191,9 @@ Route::middleware([
 
             // Activity Log Viewer
             Route::get('activity-logs', ActivityLogViewer::class)->name('activity-logs');
+
+            // Package purchase requests
+            Route::get('purchase-requests', ManagePurchaseRequests::class)->name('purchase-requests');
         });
 
         // Reseller Portal Routes

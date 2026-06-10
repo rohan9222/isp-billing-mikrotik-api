@@ -20,6 +20,15 @@ class MainSiteData extends Model
      */
     public static function getValue(string $type, $default = null)
     {
+        try {
+            $active = self::getActive();
+            if (property_exists($active, $type)) {
+                return $active->$type;
+            }
+        } catch (\Throwable $e) {
+            // Fallback to database query if cache fails
+        }
+
         $record = self::where('type', $type)->first();
 
         if (! $record) {
@@ -132,5 +141,6 @@ class MainSiteData extends Model
     {
         static::saved(fn () => Cache::flush());
         static::updated(fn () => Cache::flush());
+        static::deleted(fn () => Cache::flush());
     }
 }

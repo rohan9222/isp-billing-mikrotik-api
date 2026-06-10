@@ -357,6 +357,15 @@
                 <span class="nav-link-text ps-1">Package Setup</span>
             </div>
         </a>
+        <!-- Purchase Requests page-->
+        <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('admin.purchase-requests') }}" role="button">
+            <div class="d-flex align-items-center">
+                <span class="nav-link-icon">
+                    <i class="bi bi-cart-check-fill"></i>
+                </span>
+                <span class="nav-link-text ps-1">Purchase Requests</span>
+            </div>
+        </a>
         <!-- reseller setup page-->
         <a wire:navigate.hover wire:current="active" class="nav-link" href="{{ route('admin.resellers.index') }}" role="button">
             <div class="d-flex align-items-center">

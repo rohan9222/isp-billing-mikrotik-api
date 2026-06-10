@@ -15,7 +15,11 @@ class NotificationList extends Component
 
     public function mount()
     {
-        $this->notificationCount = NotificationLogs::whereNull('read_by')->count();
+        static $count = null;
+        if ($count === null) {
+            $count = NotificationLogs::whereNull('read_by')->count();
+        }
+        $this->notificationCount = $count;
     }
 
     public function loadNotifications()
